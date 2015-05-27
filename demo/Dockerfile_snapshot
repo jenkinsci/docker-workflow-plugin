@@ -48,8 +48,10 @@ RUN /usr/local/bin/gen-security-data.sh /tmp/files/regup/sec
 COPY run-demo.sh /usr/local/bin/run-demo.sh
 
 COPY plugins.txt /tmp/files/
+RUN sed -i "s/docker-workflow:@VERSION@//g" /tmp/files/plugins.txt
 RUN /usr/local/bin/plugins.sh /tmp/files/plugins.txt
 RUN touch /usr/share/jenkins/ref/plugins/credentials.jpi.pinned
+ADD snapshot-plugins /usr/share/jenkins/ref/plugins
 
 ADD JENKINS_HOME /usr/share/jenkins/ref
 

@@ -40,13 +40,15 @@ VOLUME /var/lib/docker
 #
 ###############################################################
 
+RUN apt-get install -y apparmor apache2-utils
+
 COPY workflow-reg-proxy.conf /tmp/files/regup/workflow-reg-proxy.conf
 COPY gen-security-data.sh /usr/local/bin/gen-security-data.sh
 RUN /usr/local/bin/gen-security-data.sh /tmp/files/regup/sec
-RUN apt-get install -y apparmor
 COPY run-demo.sh /usr/local/bin/run-demo.sh
 
-COPY plugins.txt /tmp/files/
+COPY plugins.txt docker-workflow-version.txt /tmp/files/
+RUN sed -i "s/@VERSION@/`cat /tmp/files/docker-workflow-version.txt`/g" /tmp/files/plugins.txt
 RUN /usr/local/bin/plugins.sh /tmp/files/plugins.txt
 RUN touch /usr/share/jenkins/ref/plugins/credentials.jpi.pinned
 
