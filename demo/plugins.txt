@@ -1,0 +1,3 @@
+docker-commons:1.0
+authentication-tokens:1.1
+credentials:1.22

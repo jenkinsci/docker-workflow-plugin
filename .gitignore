@@ -1,0 +1,7 @@
+target
+work
+
+demo/Dockerfile
+demo/.cache/
+# TODO: remove once this plugin is released
+demo/JENKINS_HOME/plugins/

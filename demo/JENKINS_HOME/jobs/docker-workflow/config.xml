@@ -1,0 +1,72 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<flow-definition>
+  <actions/>
+  <description>Demonstrates Jenkins Workflow integration with Docker based on&#xd;
+&lt;a href=&quot;https://wiki.jenkins-ci.org/display/JENKINS/CloudBees+Docker+Workflow+Plugin&quot;&gt;CloudBees Docker Workflow&lt;/a&gt; plugin
+  </description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition">
+    <script>node {
+def maven32 = docker.image(&apos;maven:3.2-jdk-7-onbuild&apos;); // https://registry.hub.docker.com/_/maven/;
+
+stage &apos;Mirror&apos;
+// First make sure the slave has this image.
+// (If you could set your registry below to mirror Docker Hub,
+// this would be unnecessary as maven32.inside would pull the image.)
+maven32.pull()
+// We are pushing to a private secure docker registry in this demo.
+// &apos;docker-registry-login&apos; is the username/password credentials ID as defined in Jenkins Credentials.
+// This is used to authenticate the docker client to the registry.
+docker.withRegistry(&apos;https://docker.example.com/&apos;, &apos;docker-registry-login&apos;) {
+
+    stage &apos;Build&apos;
+
+    // spin up a Maven container to build the petclinic app from source
+    // (we are only using -v here to share the Maven local repository across demo runs; otherwise would set localRepository=${pwd}/m2repo)
+    maven32.inside(&apos;-v /m2repo:/m2repo&apos;) {
+        // Check out the source code.
+        git &apos;https://github.com/tfennelly/spring-petclinic.git&apos;
+
+        // Set up a shared Maven repo so we don&apos;t need to download all dependencies on every build.
+        writeFile file: &apos;settings.xml&apos;, text: &apos;&lt;settings&gt;&lt;localRepository&gt;/m2repo&lt;/localRepository&gt;&lt;/settings&gt;&apos;
+        // Build with Maven settings.xml file that specs the local Maven repo.
+        sh &apos;mvn -B -s settings.xml clean install -DskipTests&apos;
+
+        // The app .war and Dockerfile are now available in the workspace. See below.
+    }
+    
+    stage &apos;Bake Docker image&apos;
+    // use the spring-petclinic Dockerfile (see above &apos;maven32.inside()&apos; block)
+    // to build container that can run the app. The Dockerfile is in the cwd of the active workspace
+    // (see above maven32.inside() block), so we pass &apos;.&apos; as the build PATH param. The Dockerfile
+    // (see https://github.com/tfennelly/spring-petclinic/blob/master/Dockerfile) expects the petclinic.war
+    // file to be in the &apos;target&apos; dir of the workspace, which will be the case.
+    def pcImg = docker.build(&quot;examplecorp/spring-petclinic:${env.BUILD_TAG}&quot;, &apos;.&apos;)
+
+    // Let&apos;s tag and push the newly built image. Will tag using the image name provided
+    // in the &apos;docker.build&apos; call above (which included the build number on the tag).
+    pcImg.push();
+
+    stage &apos;Test Image&apos;
+    // Run the petclinic app in its own docker container
+    pcImg.withRun {petclinic -&gt;
+        // Spin up a maven test container, linking it to the petclinic app container allowing
+        // the maven tests to fire HTTP requests between the containers.
+        maven32.inside(&quot;-v /m2repo:/m2repo --link=${petclinic.id}:petclinic&quot;) {
+            git &apos;https://github.com/tfennelly/spring-petclinic-tests.git&apos;
+
+            writeFile file: &apos;settings.xml&apos;, text: &apos;&lt;settings&gt;&lt;localRepository&gt;/m2repo&lt;/localRepository&gt;&lt;/settings&gt;&apos;
+            sh &apos;mvn -B -s settings.xml clean package&apos;
+        }
+    }
+
+    stage name: &apos;Promote Image&apos;, concurrency: 1
+    // All the tests passed. We can now retag and push the &apos;latest&apos; image
+    pcImg.push(&apos;latest&apos;);    
+}
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+</flow-definition>

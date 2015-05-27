@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core">
+    <p>
+        The <code>docker</code> variable offers convenient access to Docker-related functions from a Workflow script.
+    </p>
+    <p>
+        Methods needing a slave will implicitly run a <code>node {…}</code> block if you have not wrapped them in one.
+        It is a good idea to enclose a block of steps which should all run on the same node in such a block yourself.
+        (If using a Swarm server, or any other specific Docker server, this probably does not matter, but if you are using the default server on localhost it likely will.)
+    </p>
+    <p>
+        Some methods return instances of auxiliary classes which serve as holders for an ID and which have their own methods and properties.
+        Methods taking a body return any value returned by the body itself.
+        Some method parameters are optional and are enclosed with <code>[]</code>.
+        Reference:
+    </p>
+    <dl>
+        <dt><code>withRegistry(url[, credentialsId]) {…}</code></dt>
+        <dd>
+            <p>
+                Specifies a registry URL such as <code>https://docker.mycorp.com/</code>, plus an optional credentials ID to connect to it.
+            </p>
+        </dd>
+        <dt><code>withServer(uri[, credentialsId]) {…}</code></dt>
+        <dd>
+            <p>
+                Specifies a server URI such as <code>tcp://swarm.mycorp.com:2376</code>, plus an optional credentials ID to connect to it.
+            </p>
+        </dd>
+        <dt><code>withTool(toolName) {…}</code></dt>
+        <dd>
+            <p>
+                Specifies the name of a Docker installation to use, if any are defined in Jenkins global configuration.
+                If unspecified, <code>docker</code> is assumed to be in the <code>$PATH</code> of the slave agent.
+            </p>
+        </dd>
+        <dt><code>image(id)</code></dt>
+        <dd>
+            <p>
+                Creates an <code>Image</code> object with a specified name or ID. See below.
+            </p>
+        </dd>
+        <dt><code>build(image[, dir])</code></dt>
+        <dd>
+            <p>
+                Runs <code>docker build</code> to create and tag the specified image from a <code>Dockerfile</code> in the current directory (or <code>dir</code>).
+                Returns the resulting <code>Image</code> object.
+                Records a <code>FROM</code> fingerprint in the build.
+            </p>
+        </dd>
+        <dt><code>Image.id</code></dt>
+        <dd>
+            <p>
+                The image name with optional tag (<code>mycorp/myapp</code>, <code>mycorp/myapp:latest</code>) or ID (hexadecimal hash).
+            </p>
+        </dd>
+        <dt><code>Image.run([args])</code></dt>
+        <dd>
+            <p>
+                Uses <code>docker run</code> to run the image, and returns a <code>Container</code> which you could <code>stop</code> later.
+                Additional <code>args</code> may be added, such as <code>'-p 8080:8080 --memory-swap=-1'</code>.
+                Records a run fingerprint in the build.
+            </p>
+        </dd>
+        <dt><code>Image.withRun[(args)] {…}</code></dt>
+        <dd>
+            <p>
+                Like <code>run</code> but stops the container as soon as its body exits, so you do not need a <code>try</code>-<code>finally</code> block.
+            </p>
+        </dd>
+        <dt><code>Image.inside[(args)] {…}</code></dt>
+        <dd>
+            <p>
+                Like <code>withRun</code> this starts a container for the duration of the body, but all external commands (<code>sh</code>) launched by the body run inside the container rather than on the host.
+                These commands run in the same working directory (normally a slave workspace), which means that the Docker server must be on localhost.
+            </p>
+        </dd>
+        <dt><code>Image.tag([tagname[, force]])</code></dt>
+        <dd>
+            <p>
+                Runs <code>docker tag</code> to record a tag of this image (defaulting to the tag it already has).
+                By default will rewrite an existing tag; pass <code>false</code> for the second argument to fail instead.
+            </p>
+        </dd>
+        <dt><code>Image.push([tagname[, force]])</code></dt>
+        <dd>
+            <p>
+                Pushes an image to the registry after tagging it as with the <code>tag</code> method.
+                For example, you can use <code>image.push 'latest'</code> to publish it as the latest version in its repository.
+            </p>
+        </dd>
+        <dt><code>Image.pull()</code></dt>
+        <dd>
+            <p>
+                Runs <code>docker pull</code>.
+                Not necessary before <code>run</code>, <code>withRun</code>, or <code>inside</code>.
+            </p>
+        </dd>
+        <dt><code>Image.imageName()</code></dt>
+        <dd>
+            <p>
+                The <code>id</code> prefixed as needed with registry information, such as <code>docker.mycorp.com/mycorp/myapp</code>.
+                May be used if running your own Docker commands using <code>sh</code>.
+            </p>
+        </dd>
+        <dt><code>Container.id</code></dt>
+        <dd>
+            <p>
+                Hexadecimal ID of a running container.
+            </p>
+        </dd>
+        <dt><code>Container.stop</code></dt>
+        <dd>
+            <p>
+                Runs <code>docker stop</code> and <code>docker rm</code> to shut down a container and remove its storage.
+            </p>
+        </dd>
+    </dl>
+</j:jelly>
