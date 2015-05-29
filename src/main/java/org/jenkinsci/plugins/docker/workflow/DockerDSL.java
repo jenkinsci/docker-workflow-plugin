@@ -50,15 +50,17 @@ import org.jenkinsci.plugins.workflow.cps.GlobalVariable;
         return docker;
     }
 
-    @Extension public static class MiscWhitelist extends ProxyWhitelist { // TODO things that ought to be in script-security or docker-commons
+    @Extension public static class MiscWhitelist extends ProxyWhitelist {
         public MiscWhitelist() throws IOException {
             super(new StaticWhitelist(
+                    // TODO should docker-commons just get a script-security dependency and mark these things @Whitelisted?
+                    "new org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint java.lang.String java.lang.String",
+                    "method org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint imageName java.lang.String",
+                    // TODO delete after using https://github.com/jenkinsci/script-security-plugin/pull/15
                     "method java.util.concurrent.Callable call",
                     "method groovy.lang.Closure call java.lang.Object",
                     "method java.lang.Object toString",
                     "method java.lang.String trim",
-                    "new org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint java.lang.String java.lang.String",
-                    "method org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint imageName java.lang.String",
                     "staticMethod org.codehaus.groovy.runtime.ScriptBytecodeAdapter compareNotEqual java.lang.Object java.lang.Object",
                     "staticMethod org.codehaus.groovy.runtime.ScriptBytecodeAdapter compareEqual java.lang.Object java.lang.Object"));
         }
