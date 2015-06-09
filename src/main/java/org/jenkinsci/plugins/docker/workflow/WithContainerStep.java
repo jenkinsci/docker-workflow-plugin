@@ -53,6 +53,7 @@ import javax.annotation.Nonnull;
 
 import hudson.util.VersionNumber;
 import org.jenkinsci.plugins.docker.commons.fingerprint.DockerFingerprints;
+import org.jenkinsci.plugins.docker.workflow.client.LaunchResult;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepExecutionImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
@@ -134,6 +135,14 @@ public class WithContainerStep extends AbstractStepImpl {
                 listener.error("Failed to parse docker version. Please note there is a minimum docker version requirement of v1.3.");
             }
             
+            // Check that the workspace is writable
+            final LaunchResult result = dockerClient.run(env, step.image, Collections.EMPTY_LIST, ws, 
+                    Collections.singletonMap(ws, ws), envReduced, dockerClient.whoAmI(), "touch", ".writable_test");
+            if (result.getStatus() != 0) {
+                throw new AbortException("Cannot check the workspace. Err: " + result.getErr());
+            }
+            
+            // Run a container instance, which will wait till the workflow block completion 
             container = dockerClient.run(env, step.image, step.args, ws, Collections.singletonMap(ws, ws), envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
             ImageAction.add(step.image, run);
