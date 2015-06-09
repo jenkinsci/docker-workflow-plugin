@@ -72,6 +72,8 @@ public class FromFingerprintStep extends AbstractStepImpl {
     }
 
     public static class Execution extends AbstractSynchronousStepExecution<Void> {
+        
+        private static final long serialVersionUID = 1L;
 
         @Inject(optional=true) private transient FromFingerprintStep step;
         @SuppressWarnings("rawtypes") // TODO not compiling on cloudbees.ci
@@ -105,11 +107,11 @@ public class FromFingerprintStep extends AbstractStepImpl {
                 throw new AbortException("could not find FROM instruction in " + dockerfile);
             }
             DockerClient client = new DockerClient(launcher, node, step.toolName);
-            String descendantImageId = client.inspect(env, step.image, ".Id");
+            String descendantImageId = client.inspectRequiredField(env, step.image, ".Id");
             if (fromImage.equals("scratch")) { // we just made a base image
                 DockerFingerprints.addFromFacet(null, descendantImageId, run);
             } else {
-                DockerFingerprints.addFromFacet(client.inspect(env, fromImage, ".Id"), descendantImageId, run);
+                DockerFingerprints.addFromFacet(client.inspectRequiredField(env, fromImage, ".Id"), descendantImageId, run);
                 ImageAction.add(fromImage, run);
             }
             return null;
