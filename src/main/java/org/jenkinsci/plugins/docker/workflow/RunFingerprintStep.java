@@ -61,6 +61,8 @@ public class RunFingerprintStep extends AbstractStepImpl {
     }
 
     public static class Execution extends AbstractSynchronousStepExecution<Void> {
+        
+        private static final long serialVersionUID = 1L;
 
         @Inject(optional=true) private transient RunFingerprintStep step;
         @SuppressWarnings("rawtypes") // TODO not compiling on cloudbees.ci
