@@ -49,6 +49,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 
 /**
@@ -126,7 +127,7 @@ public class DockerClient {
         if (args != null) {
             argb.add(args.toArray(new String[args.size()]));
         }
-
+        
         if (workdir != null) {
             argb.add("-w", workdir);
         }
@@ -180,7 +181,7 @@ public class DockerClient {
      * @param launchEnv Docker client launch environment.
      * @param objectId The image/container ID.
      * @param fieldPath The data path of the data required e.g. {@code .NetworkSettings.IPAddress}.
-     * @return The inspected field value.
+     * @return The inspected field value. Null if the command failed
      */
     public @CheckForNull String inspect(@Nonnull EnvVars launchEnv, @Nonnull String objectId, @Nonnull String fieldPath) throws IOException, InterruptedException {
         LaunchResult result = launch(launchEnv, true, "inspect", "-f", String.format("{{%s}}", fieldPath), objectId);
@@ -190,8 +191,27 @@ public class DockerClient {
             return null;
         }
     }
-
-    private Date getCreatedDate(@Nonnull EnvVars launchEnv, @Nonnull String objectId) throws IOException, InterruptedException {
+    
+    /**
+     * Inspect a docker image/container.
+     * @param launchEnv Docker client launch environment.
+     * @param objectId The image/container ID.
+     * @param fieldPath The data path of the data required e.g. {@code .NetworkSettings.IPAddress}.
+     * @return The inspected field value. May be an empty string
+     * @throws IOException Execution error. Also fails if cannot retrieve the requested field from the request
+     * @throws InterruptedException Interrupted
+     * @since TODO
+     */
+    public @Nonnull String inspectRequiredField(@Nonnull EnvVars launchEnv, @Nonnull String objectId, 
+            @Nonnull String fieldPath) throws IOException, InterruptedException {
+        final String fieldValue = inspect(launchEnv, objectId, fieldPath);
+        if (fieldValue == null) {
+            throw new IOException("Cannot retrieve " + fieldPath + " from 'docker inspect" + objectId + "'");
+        }
+        return fieldValue;
+    }
+    
+    private @CheckForNull Date getCreatedDate(@Nonnull EnvVars launchEnv, @Nonnull String objectId) throws IOException, InterruptedException {
         String createdString = inspect(launchEnv, objectId, ".Created");        
         if (createdString == null) {
             return null;
@@ -261,18 +281,10 @@ public class DockerClient {
         LaunchResult result = new LaunchResult();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
-        try {
-            result.setStatus(procStarter.quiet(quiet).cmds(args).envs(launchEnv).stdout(out).stderr(err).join());
-            return result;
-        } finally {
-            try {
-                result.setOut(out.toString());
-                out.close();
-            } finally {
-                result.setErr(err.toString());
-                err.close();
-            }
-        }
+        result.setStatus(procStarter.quiet(quiet).cmds(args).envs(launchEnv).stdout(out).stderr(err).join());
+        result.setOut(out.toString());
+        result.setErr(err.toString());
+        return result;
     }
 
     /**
@@ -292,10 +304,10 @@ public class DockerClient {
     }
 
     public ContainerRecord getContainerRecord(@Nonnull EnvVars launchEnv, String containerId) throws IOException, InterruptedException {
-        String host = inspect(launchEnv, containerId, ".Config.Hostname");
-        String containerName = inspect(launchEnv, containerId, ".Name");
+        String host = inspectRequiredField(launchEnv, containerId, ".Config.Hostname");
+        String containerName = inspectRequiredField(launchEnv, containerId, ".Name");
         Date created = getCreatedDate(launchEnv, containerId);
-        String image = inspect(launchEnv, containerId, ".Image");
+        String image = inspectRequiredField(launchEnv, containerId, ".Image");
 
         // TODO get tags and add for ContainerRecord
         return new ContainerRecord(host, containerId, image, containerName,
