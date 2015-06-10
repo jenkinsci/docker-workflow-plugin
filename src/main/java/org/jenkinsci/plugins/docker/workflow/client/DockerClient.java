@@ -95,7 +95,7 @@ public class DockerClient {
         }
         argb.add("-t");
         argb.add("-d");
-        LaunchResult result = run(launchEnv, image, argb, workdir, volumes, containerEnv, user, command);
+        LaunchResult result = runImage(launchEnv, image, argb, workdir, volumes, containerEnv, user, command);
         if (result.getStatus() == 0) {
             return result.getOut();
         } else {
@@ -116,7 +116,7 @@ public class DockerClient {
      * @return Execution result
      * @since TODO
      */
-    public @Nonnull LaunchResult run(@Nonnull EnvVars launchEnv, @Nonnull String image, 
+    public @Nonnull LaunchResult runImage(@Nonnull EnvVars launchEnv, @Nonnull String image, 
             @CheckForNull Collection<String> args, @CheckForNull String workdir, 
             @Nonnull Map<String, String> volumes, @Nonnull EnvVars containerEnv, 
             @Nonnull String user, @CheckForNull String... command) throws IOException, InterruptedException {    

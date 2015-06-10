@@ -136,7 +136,7 @@ public class WithContainerStep extends AbstractStepImpl {
             }
             
             // Check that the workspace is writable
-            final LaunchResult result = dockerClient.run(env, step.image, Collections.EMPTY_LIST, ws, 
+            final LaunchResult result = dockerClient.runImage(env, step.image, null, ws, 
                     Collections.singletonMap(ws, ws), envReduced, dockerClient.whoAmI(), "touch", ".writable_test");
             if (result.getStatus() != 0) {
                 throw new AbortException("Cannot check the workspace. Err: " + result.getErr());
