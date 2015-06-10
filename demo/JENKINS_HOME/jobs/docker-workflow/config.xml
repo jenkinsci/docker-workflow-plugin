@@ -1,8 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <flow-definition>
   <actions/>
-  <description>Demonstrates Jenkins Workflow integration with Docker based on&#xd;
-&lt;a href=&quot;https://wiki.jenkins-ci.org/display/JENKINS/CloudBees+Docker+Workflow+Plugin&quot;&gt;CloudBees Docker Workflow&lt;/a&gt; plugin
+  <description>Demonstrates Jenkins Workflow integration with Docker based on CloudBees Docker Workflow Plugin.
   </description>
   <keepDependencies>false</keepDependencies>
   <properties/>
