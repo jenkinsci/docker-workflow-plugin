@@ -23,6 +23,9 @@
  */
 package org.jenkinsci.plugins.docker.workflow.client;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+
 /**
  * Launch result.
  *
@@ -31,12 +34,19 @@ package org.jenkinsci.plugins.docker.workflow.client;
 public class LaunchResult {
 
     private int status;
-    private String out;
-    private String err;
+    private @Nonnull String out;
+    private @Nonnull String err;
 
     LaunchResult() {
+        this(0, "", "");
     }
 
+    public LaunchResult(int status, String out, String err) {
+        this.status = status;
+        this.out = out.trim();
+        this.err = err.trim();
+    }
+    
     public int getStatus() {
         return status;
     }
@@ -46,25 +56,21 @@ public class LaunchResult {
         return this;
     }
 
-    public String getOut() {
+    public @Nonnull String getOut() {
         return out;
     }
 
-    LaunchResult setOut(String out) {
-        if (out != null) {
-            this.out = out.trim();
-        }
+    LaunchResult setOut(@Nonnull String out) {
+        this.out = out.trim();
         return this;
     }
 
-    public String getErr() {
+    public @Nonnull String getErr() {
         return err;
     }
 
-    LaunchResult setErr(String err) {
-        if (err != null) {
-            this.err = err.trim();
-        }
+    LaunchResult setErr(@Nonnull String err) {
+        this.err = err.trim();
         return this;
     }
 }

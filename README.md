@@ -1,17 +1,12 @@
 CloudBees Docker Workflow Plugin
 =====================================
 
-Jenkins plugin, which allows building and using Docker containers from workflows.
+Jenkins plugin which allows building, testing, and using Docker images from Jenkins Workflow projects.
 
 Summary
 ---
-The plugin provides:
-* DSL commands for building and running Docker images
-* Wrapper blocks defining Docker server and registry endpoints
-* Actions displaying images related to the build (to be merged with docker-commons)
-* etc.
 
-More info is available on the plugin's [Wiki page](http://wiki.jenkins-ci.org/display/JENKINS/CloudBees+Docker+Workflow+Plugin)
+A full description is available in the plugin’s [documentation](http://jenkins-enterprise.cloudbees.com/docs/user-guide-docs/docker-workflow.html).
 
 Demo
 ---
