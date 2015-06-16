@@ -7,17 +7,12 @@
   <properties/>
   <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition">
     <script>node {
-def maven32 = docker.image(&apos;maven:3.2-jdk-7-onbuild&apos;); // https://registry.hub.docker.com/_/maven/;
-
-stage &apos;Mirror&apos;
-// First make sure the slave has this image.
-// (If you could set your registry below to mirror Docker Hub,
-// this would be unnecessary as maven32.inside would pull the image.)
-maven32.pull()
 // We are pushing to a private secure docker registry in this demo.
 // &apos;docker-registry-login&apos; is the username/password credentials ID as defined in Jenkins Credentials.
 // This is used to authenticate the docker client to the registry.
 docker.withRegistry(&apos;https://docker.example.com/&apos;, &apos;docker-registry-login&apos;) {
+
+    def maven32 = docker.image(&apos;maven:3.2-jdk-7-onbuild&apos;); // https://registry.hub.docker.com/_/maven/;
 
     stage &apos;Build&apos;
 
