@@ -55,8 +55,8 @@ ADD snapshot-plugins /usr/share/jenkins/ref/plugins
 
 ADD JENKINS_HOME /usr/share/jenkins/ref
 
-# TODO until https://github.com/jenkinsci/docker/pull/89 is picked up upstream, shut up please:
-RUN perl -i -p -e 's/ *echo.+//g' /usr/local/bin/jenkins.sh
+ADD repo /tmp/repo
+RUN git config --global user.email "demo@jenkins-ci.org" && git config --global user.name "Docker Workflow Demo" && cd /tmp/repo && git init && git add . && git commit -m 'demo'
 
 # wrapdocker has been modified to launch Jenkins via the installed run.sh script
 CMD ["wrapdocker"]
