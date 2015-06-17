@@ -44,6 +44,7 @@ node {
     // Run the petclinic app in its own Docker container.
     pcImg.withRun {petclinic ->
       testImg.inside("-v /m2repo:/m2repo --link=${petclinic.id}:petclinic") {
+        // https://github.com/jenkinsci/workflow-plugin/blob/master/basic-steps/CORE-STEPS.md#build-wrappers
         wrap([$class: 'Xvnc', takeScreenshot: false, useXauthority: true]) {
           sh 'mvn -f test -B -s settings.xml clean test'
         }
