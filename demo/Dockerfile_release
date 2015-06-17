@@ -54,5 +54,8 @@ RUN touch /usr/share/jenkins/ref/plugins/credentials.jpi.pinned
 
 ADD JENKINS_HOME /usr/share/jenkins/ref
 
+ADD repo /tmp/repo
+RUN git config --global user.email "demo@jenkins-ci.org" && git config --global user.name "Docker Workflow Demo" && cd /tmp/repo && git init && git add . && git commit -m 'demo'
+
 # wrapdocker has been modified to launch Jenkins via the installed run.sh script
 CMD ["wrapdocker"]
