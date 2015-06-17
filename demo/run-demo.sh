@@ -34,7 +34,7 @@ echo '***************            Please sit tight for a minute                **
 REG_SETUP_PATH=/tmp/files/regup
 
 docker pull registry:0.9.1
-docker run -d --name registry registry:0.9.1
+docker run -d --name registry --restart=always registry:0.9.1
 docker pull nginx:1.9.0
 docker run -d -p 443:443 --name wf-registry-proxy -v $REG_SETUP_PATH:/etc/nginx/conf.d/ -v $REG_SETUP_PATH/sec:/var/registry/certs --link registry:registry nginx:1.9.0
 
