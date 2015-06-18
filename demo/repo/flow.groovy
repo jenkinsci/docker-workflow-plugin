@@ -45,11 +45,12 @@ node {
     pcImg.withRun {petclinic ->
       testImg.inside("-v /m2repo:/m2repo --link=${petclinic.id}:petclinic") {
         // https://github.com/jenkinsci/workflow-plugin/blob/master/basic-steps/CORE-STEPS.md#build-wrappers
-        wrap([$class: 'Xvnc', takeScreenshot: false, useXauthority: true]) {
+        wrap([$class: 'Xvnc', takeScreenshot: true, useXauthority: true]) {
           sh 'mvn -f test -B -s settings.xml clean test'
         }
       }
     }
+    input "How do you like ${env.BUILD_URL}artifact/screenshot.jpg?"
 
     stage name: 'Promote Image', concurrency: 1
     // All the tests passed. We can now retag and push the 'latest' image.
