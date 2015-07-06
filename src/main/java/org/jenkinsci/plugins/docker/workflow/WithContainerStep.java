@@ -40,6 +40,7 @@ import hudson.model.TaskListener;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -186,7 +187,7 @@ public class WithContainerStep extends AbstractStepImpl {
                         throw new IOException("failed to run ps");
                     }
                     List<String> pids = new ArrayList<String>();
-                    LINE: for (String line : baos.toString().split("\n")) {
+                    LINE: for (String line : baos.toString(Charset.defaultCharset().name()).split("\n")) {
                         for (Map.Entry<String,String> entry : modelEnvVars.entrySet()) {
                             // TODO this is imprecise: false positive when argv happens to match KEY=value even if environment does not. Cf. trick in BourneShellScript.
                             if (!line.contains(entry.getKey() + "=" + entry.getValue())) {

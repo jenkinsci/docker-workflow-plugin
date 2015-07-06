@@ -23,6 +23,7 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
+import org.apache.commons.io.IOUtils;
 import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import com.google.inject.Inject;
 import hudson.AbortException;
@@ -36,6 +37,7 @@ import hudson.model.Run;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+
 import org.jenkinsci.plugins.docker.commons.fingerprint.DockerFingerprints;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
@@ -87,8 +89,9 @@ public class FromFingerprintStep extends AbstractStepImpl {
             String fromImage = null;
             FilePath dockerfile = workspace.child(step.dockerfile);
             InputStream is = dockerfile.read();
+            BufferedReader r = null;
             try {
-                BufferedReader r = new BufferedReader(new InputStreamReader(is)); // encoding probably irrelevant since image/tag names must be ASCII
+                r = new BufferedReader(new InputStreamReader(is, "ASCII")); // encoding probably irrelevant since image/tag names must be ASCII
                 String line;
                 while ((line = r.readLine()) != null) {
                     line = line.trim();
@@ -101,7 +104,7 @@ public class FromFingerprintStep extends AbstractStepImpl {
                     }
                 }
             } finally {
-                is.close();
+                IOUtils.closeQuietly(r);
             }
             if (fromImage == null) {
                 throw new AbortException("could not find FROM instruction in " + dockerfile);

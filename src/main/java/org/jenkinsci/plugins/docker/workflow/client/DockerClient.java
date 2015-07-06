@@ -35,6 +35,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
@@ -249,8 +250,9 @@ public class DockerClient {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         result.setStatus(procStarter.quiet(quiet).cmds(args).envs(launchEnv).stdout(out).stderr(err).join());
-        result.setOut(out.toString());
-        result.setErr(err.toString());
+        final String charsetName = Charset.defaultCharset().name();
+        result.setOut(out.toString(charsetName));
+        result.setErr(err.toString(charsetName));
         return result;
     }
 
@@ -266,7 +268,8 @@ public class DockerClient {
         ByteArrayOutputStream groupId = new ByteArrayOutputStream();
         launcher.launch().cmds("id", "-g").quiet(true).stdout(groupId).join();
 
-        return String.format("%s:%s", userId.toString().trim(), groupId.toString().trim());
+        final String charsetName = Charset.defaultCharset().name();
+        return String.format("%s:%s", userId.toString(charsetName).trim(), groupId.toString(charsetName).trim());
 
     }
 
