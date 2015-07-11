@@ -37,14 +37,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 
 /**
@@ -56,8 +57,22 @@ public class DockerClient {
 
     private static final Logger LOGGER = Logger.getLogger(DockerClient.class.getName());
 
-    // e.g. 2015-04-09T13:40:21.981801679Z
-    public static final String DOCKER_DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
+    /*
+        e.g. 2015-04-09T13:40:21.981801679Z
+        the flavor that returns ' ' instead of 'T' is observed:
+
+            % docker inspect compassionate_hypatia | grep Created
+                "Created": "2015-07-11T02:06:01.465533046Z",
+            % docker inspect -f {{.Created}} compassionate_hypatia
+            2015-07-11 02:06:01.465533046 +0000 UTC
+            % docker --version
+            Docker version 1.7.0, build 0baf609
+            % uname -a
+            Linux dragon 3.13.0-53-generic #89-Ubuntu SMP Wed May 20 10:34:39 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux
+    */
+    private static final List<String> DOCKER_DATE_TIME_FORMAT = Arrays.asList(
+            "yyyy-MM-dd'T'HH:mm:ss",
+            "yyyy-MM-dd HH:mm:ss");
 
     private Launcher launcher;
     private final @CheckForNull Node node;
@@ -183,12 +198,16 @@ public class DockerClient {
         if (createdString == null) {
             return null;
         }
-        try {
-            // TODO Currently truncating. Find out how to specify last part for parsing (TZ etc)
-            return new SimpleDateFormat(DOCKER_DATE_TIME_FORMAT).parse(createdString.substring(0, DOCKER_DATE_TIME_FORMAT.length() - 2));
-        } catch (ParseException e) {
-            throw new IOException(String.format("Error parsing created date '%s' for object '%s'.", createdString, objectId), e);
+        IOException problem = null;
+        for (String fmt : DOCKER_DATE_TIME_FORMAT) {
+            try {
+                // TODO Currently truncating. Find out how to specify last part for parsing (TZ etc)
+                return new SimpleDateFormat(fmt).parse(createdString.substring(0, fmt.replace("'","").length()));
+            } catch (ParseException e) {
+                problem = new IOException(String.format("Error parsing created date '%s' for object '%s'.", createdString, objectId), e);
+            }
         }
+        throw problem;
     }
 
     /**
