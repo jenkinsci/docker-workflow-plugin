@@ -179,15 +179,16 @@ public class DockerClient {
     }
     
     private @CheckForNull Date getCreatedDate(@Nonnull EnvVars launchEnv, @Nonnull String objectId) throws IOException, InterruptedException {
-        String createdString = inspect(launchEnv, objectId, ".Created");        
+        String createdString = inspect(launchEnv, objectId, "json .Created");
         if (createdString == null) {
             return null;
         }
+        // TODO Currently truncating. Find out how to specify last part for parsing (TZ etc)
+        String s = createdString.substring(1, DOCKER_DATE_TIME_FORMAT.length() - 1);
         try {
-            // TODO Currently truncating. Find out how to specify last part for parsing (TZ etc)
-            return new SimpleDateFormat(DOCKER_DATE_TIME_FORMAT).parse(createdString.substring(0, DOCKER_DATE_TIME_FORMAT.length() - 2));
+            return new SimpleDateFormat(DOCKER_DATE_TIME_FORMAT).parse(s);
         } catch (ParseException e) {
-            throw new IOException(String.format("Error parsing created date '%s' for object '%s'.", createdString, objectId), e);
+            throw new IOException(String.format("Error parsing created date '%s' for object '%s'.", s, objectId), e);
         }
     }
 
