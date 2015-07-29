@@ -245,7 +245,7 @@ public class DockerDSLTest {
                     "  echo \"built ${built.id}\"\n" +
                     "}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-                String descendantImageId1 = "c04cd8a9a37440562c655c8076dc47a41ae7855096e73c6e8aa5f01f2ed52b85";
+                String descendantImageId1 = "8402e89d5ff08ab6886fb4b274e06974a6d0dc9a2907646d15f6cde800aefab6";
                 story.j.assertLogContains("built hello-world-stuff", b);
                 story.j.assertLogContains(descendantImageId1.substring(0, 12), b);
                 Fingerprint f = DockerFingerprints.of(ancestorImageId);
@@ -263,7 +263,7 @@ public class DockerDSLTest {
                 assertEquals(Collections.singleton(ancestorImageId), ancestorFacet.getAncestorImageIds());
                 assertEquals(descendantImageId1, ancestorFacet.getImageId());
                 b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-                String descendantImageId2 = "0703ebc9f6a713f56191ce4db96338f4572de53479bc32efd60717f789d91089";
+                String descendantImageId2 = "ef0c82b72d4ca8968c3d092cb94994dc45e86295fce8ec2e7c6fb4505cede274";
                 story.j.assertLogContains("built hello-world-stuff", b);
                 story.j.assertLogContains(descendantImageId2.substring(0, 12), b);
                 f = DockerFingerprints.of(ancestorImageId);
