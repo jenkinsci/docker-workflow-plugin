@@ -238,6 +238,8 @@ public class DockerDSLTest {
                     "  writeFile file: 'stuff2', text: 'world'\n" +
                     "  writeFile file: 'stuff3', text: env.BUILD_NUMBER\n" +
                     "  sh 'touch -t 201501010000 stuff*'\n" + // image hash includes timestamps!
+                    "  def helloworld = docker.image('hello-world');\n" +
+                    "  helloworld.pull();\n" +
                     "  writeFile file: 'Dockerfile', text: '# This is a test.\\n\\nFROM hello-world@" + ancestorImageId + "\\nCOPY stuff1 /\\nCOPY stuff2 /\\nCOPY stuff3 /\\n'\n" +
                     "  def built = docker.build 'hello-world-stuff'\n" +
                     "  echo \"built ${built.id}\"\n" +
