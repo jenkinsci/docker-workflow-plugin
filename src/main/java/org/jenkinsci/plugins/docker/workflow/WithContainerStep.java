@@ -213,6 +213,7 @@ public class WithContainerStep extends AbstractStepImpl {
 
     }
 
+    // TODO use BodyExecutionCallback.TailCall from https://github.com/jenkinsci/workflow-plugin/pull/168
     private static class Callback extends BodyExecutionCallback {
 
         private static final long serialVersionUID = 1;
