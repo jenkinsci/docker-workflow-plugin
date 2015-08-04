@@ -231,19 +231,19 @@ public class DockerDSLTest {
             @Override public void evaluate() throws Throwable {
                 assumeDocker();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
-                String ancestorImageId = "91c95931e552b11604fea91c2f537284149ec32fff0f700a4769cfd31d7696ae";
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                     "  writeFile file: 'stuff1', text: 'hello'\n" +
                     "  writeFile file: 'stuff2', text: 'world'\n" +
                     "  writeFile file: 'stuff3', text: env.BUILD_NUMBER\n" +
-                    "  sh 'touch -t 201501010000 stuff*'\n" + // image hash includes timestamps!
-                    "  writeFile file: 'Dockerfile', text: '# This is a test.\\n\\nFROM hello-world@" + ancestorImageId + "\\nCOPY stuff1 /\\nCOPY stuff2 /\\nCOPY stuff3 /\\n'\n" +
+                    "  writeFile file: 'Dockerfile', text: '# This is a test.\\n\\nFROM hello-world\\nCOPY stuff1 /\\nCOPY stuff2 /\\nCOPY stuff3 /\\n'\n" +
                     "  def built = docker.build 'hello-world-stuff'\n" +
                     "  echo \"built ${built.id}\"\n" +
                     "}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-                String descendantImageId1 = "c04cd8a9a37440562c655c8076dc47a41ae7855096e73c6e8aa5f01f2ed52b85";
+                DockerClient client = new DockerClient(new Launcher.LocalLauncher(StreamTaskListener.NULL), null, null);
+                String ancestorImageId = client.inspect(new EnvVars(), "hello-world", ".Id");
+                String descendantImageId1 = client.inspect(new EnvVars(), "hello-world-stuff", ".Id");
                 story.j.assertLogContains("built hello-world-stuff", b);
                 story.j.assertLogContains(descendantImageId1.substring(0, 12), b);
                 Fingerprint f = DockerFingerprints.of(ancestorImageId);
@@ -261,7 +261,7 @@ public class DockerDSLTest {
                 assertEquals(Collections.singleton(ancestorImageId), ancestorFacet.getAncestorImageIds());
                 assertEquals(descendantImageId1, ancestorFacet.getImageId());
                 b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-                String descendantImageId2 = "0703ebc9f6a713f56191ce4db96338f4572de53479bc32efd60717f789d91089";
+                String descendantImageId2 = client.inspect(new EnvVars(), "hello-world-stuff", ".Id");
                 story.j.assertLogContains("built hello-world-stuff", b);
                 story.j.assertLogContains(descendantImageId2.substring(0, 12), b);
                 f = DockerFingerprints.of(ancestorImageId);
