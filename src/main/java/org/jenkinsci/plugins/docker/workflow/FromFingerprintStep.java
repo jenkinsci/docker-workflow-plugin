@@ -91,7 +91,7 @@ public class FromFingerprintStep extends AbstractStepImpl {
             InputStream is = dockerfile.read();
             BufferedReader r = null;
             try {
-                r = new BufferedReader(new InputStreamReader(is, "ASCII")); // encoding probably irrelevant since image/tag names must be ASCII
+                r = new BufferedReader(new InputStreamReader(is, "ISO-8859-1")); // encoding probably irrelevant since image/tag names must be ASCII
                 String line;
                 while ((line = r.readLine()) != null) {
                     line = line.trim();
