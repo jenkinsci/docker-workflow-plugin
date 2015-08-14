@@ -170,7 +170,6 @@ public class WithContainerStep extends AbstractStepImpl {
                     List<String> prefix = new ArrayList<String>(Arrays.asList("docker", "exec", container, "env"));
                     Set<String> envReduced = new TreeSet<String>(Arrays.asList(starter.envs()));
                     envReduced.removeAll(Arrays.asList(envHost));
-                    starter.envs(new String[0]);
                     prefix.addAll(envReduced);
                     // Adapted from decorateByPrefix:
                     starter.cmds().addAll(0, prefix);
@@ -215,6 +214,7 @@ public class WithContainerStep extends AbstractStepImpl {
 
     }
 
+    // TODO use BodyExecutionCallback.TailCall from https://github.com/jenkinsci/workflow-plugin/pull/168
     private static class Callback extends BodyExecutionCallback {
 
         private static final long serialVersionUID = 1;
