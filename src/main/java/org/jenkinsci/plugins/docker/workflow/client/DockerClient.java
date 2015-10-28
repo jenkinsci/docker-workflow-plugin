@@ -44,7 +44,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.commons.lang.StringUtils;
+
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 
 /**
@@ -57,6 +57,7 @@ public class DockerClient {
     private static final Logger LOGGER = Logger.getLogger(DockerClient.class.getName());
 
     // e.g. 2015-04-09T13:40:21.981801679Z
+    private static final String DOCKER_DATE_FORMAT = "yyyy-MM-dd";
     public static final String DOCKER_DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
 
     private Launcher launcher;
@@ -183,14 +184,37 @@ public class DockerClient {
         if (createdString == null) {
             return null;
         }
-        // TODO Currently truncating. Find out how to specify last part for parsing (TZ etc)
-        String s = createdString.substring(1, DOCKER_DATE_TIME_FORMAT.length() - 1);
         try {
-            return new SimpleDateFormat(DOCKER_DATE_TIME_FORMAT).parse(s);
+            return new SimpleDateFormat(DOCKER_DATE_TIME_FORMAT).parse(toNormalizedDateString(createdString));
         } catch (ParseException e) {
-            throw new IOException(String.format("Error parsing created date '%s' for object '%s'.", s, objectId), e);
+            throw new IOException(String.format("Error parsing created date '%s' for object '%s'.", createdString, objectId), e);
         }
     }
+
+    /**
+     * Normalize a docker formatted date string.
+     * <p>
+     * Handles a few different variants as seen by different versions of docker.
+     * @param dateString The date string.
+     * @return A normalized date string that can be parsed with {@link DockerClient#DOCKER_DATE_TIME_FORMAT}.
+     */
+    static @Nonnull String toNormalizedDateString(@Nonnull String dateString) throws ParseException {
+        // Can be wrapped in quotes if the string came from a formatted docker inspect.
+        if (dateString.startsWith("\"")) {
+            dateString = dateString.substring(1);
+        }
+        if (dateString.length() < DOCKER_DATE_TIME_FORMAT.length()) {
+            throw new ParseException("Invalid docker date String format " + dateString, 0);
+        }
+        // Docker versions > 1.7 omit the 'T' token from the date string e.g. for a formatted inspect.
+        // e.g. 2015-10-28 16:34:11 instead of 2015-10-28T16:34:11 (as with docker < 1.6)
+        if (dateString.charAt(DOCKER_DATE_FORMAT.length()) != 'T') {
+            StringBuilder builder = new StringBuilder(dateString);
+            builder.setCharAt(DOCKER_DATE_FORMAT.length(), 'T');
+            dateString = builder.toString();
+        }
+        return dateString.substring(0, DOCKER_DATE_TIME_FORMAT.length() - 2);
+   }
 
     /**
      * Get the docker version.

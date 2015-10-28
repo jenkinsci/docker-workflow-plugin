@@ -35,6 +35,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.Collections;
 
 /**
@@ -86,7 +87,15 @@ public class DockerClientTest {
     public void test_invalid_version() {
         Assert.assertNull(DockerClient.parseVersionNumber("xxx"));
     }
-    
+
+    @Test
+    public void test_toNormalizedDateString() throws ParseException {
+        Assert.assertEquals("2015-10-28T16:34:11", DockerClient.toNormalizedDateString("\"2015-10-28T16:34:11.828653713Z\""));
+        Assert.assertEquals("2015-10-28T16:34:11", DockerClient.toNormalizedDateString("2015-10-28T16:34:11.828653713Z"));
+        Assert.assertEquals("2015-10-28T16:34:11", DockerClient.toNormalizedDateString("\"2015-10-28 16:34:11.828653713 +0000 UTC\""));
+        Assert.assertEquals("2015-10-28T16:34:11", DockerClient.toNormalizedDateString("2015-10-28 16:34:11.828653713 +0000 UTC"));
+    }
+
     private EnvVars newLaunchEnv() {
         // Create the KeyMaterial for connecting to the docker host/server.
         // E.g. currently need to add something like the following to your env
