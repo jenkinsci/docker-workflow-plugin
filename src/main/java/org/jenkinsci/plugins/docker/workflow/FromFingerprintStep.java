@@ -89,22 +89,25 @@ public class FromFingerprintStep extends AbstractStepImpl {
             String fromImage = null;
             FilePath dockerfile = workspace.child(step.dockerfile);
             InputStream is = dockerfile.read();
-            BufferedReader r = null;
             try {
-                r = new BufferedReader(new InputStreamReader(is, "ISO-8859-1")); // encoding probably irrelevant since image/tag names must be ASCII
-                String line;
-                while ((line = r.readLine()) != null) {
-                    line = line.trim();
-                    if (line.startsWith("#")) {
-                        continue;
+                BufferedReader r = new BufferedReader(new InputStreamReader(is, "ISO-8859-1")); // encoding probably irrelevant since image/tag names must be ASCII
+                try {
+                    String line;
+                    while ((line = r.readLine()) != null) {
+                        line = line.trim();
+                        if (line.startsWith("#")) {
+                            continue;
+                        }
+                        if (line.startsWith("FROM ")) {
+                            fromImage = line.substring(5);
+                            break;
+                        }
                     }
-                    if (line.startsWith("FROM ")) {
-                        fromImage = line.substring(5);
-                        break;
-                    }
+                } finally {
+                    r.close();
                 }
             } finally {
-                IOUtils.closeQuietly(r);
+                is.close();
             }
             if (fromImage == null) {
                 throw new AbortException("could not find FROM instruction in " + dockerfile);
