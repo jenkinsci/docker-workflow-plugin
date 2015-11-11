@@ -48,7 +48,7 @@ build-snapshot:
 
 DOCKER_RUN=docker run --rm -p 8080:8080 -p 8081:8081 -p 8022:22 -p 18080:18080 --add-host=docker.example.com:127.0.0.1 -ti --privileged
 
-run:	build
+run:
 	$(DOCKER_RUN) $(IMAGE):$(TAG)
 
 run-snapshot:	build-snapshot
@@ -62,7 +62,7 @@ prep-cache:
 	sudo rm -rf $(CACHE)/docker/containers $(CACHE)/docker/linkgraph.db
 	mkdir -p $(CACHE)/maven
 
-run-cached:	build prep-cache
+run-cached:	prep-cache
 	$(DOCKER_RUN_CACHED) $(IMAGE):$(TAG)
 
 run-snapshot-cached:	build-snapshot prep-cache
