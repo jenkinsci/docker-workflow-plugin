@@ -96,6 +96,23 @@ public class WithContainerStepTest {
         });
     }
 
+    @Test public void death() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                DockerTestUtil.assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                    "  withDockerContainer('httpd:2.4.12') {\n" +
+                    "    sh 'sleep 5; kill -9 `cat .*/pid`'\n" +
+                    "  }\n" +
+                    "}", true));
+                WorkflowRun b = story.j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
+                story.j.assertLogContains("script returned exit code -1", b);
+            }
+        });
+    }
+
     @Test public void restart() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
