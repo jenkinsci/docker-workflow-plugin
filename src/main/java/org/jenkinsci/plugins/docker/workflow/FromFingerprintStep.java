@@ -23,6 +23,7 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
+import org.apache.commons.io.IOUtils;
 import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import com.google.inject.Inject;
 import hudson.AbortException;
@@ -36,6 +37,7 @@ import hudson.model.Run;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+
 import org.jenkinsci.plugins.docker.commons.fingerprint.DockerFingerprints;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
@@ -88,17 +90,21 @@ public class FromFingerprintStep extends AbstractStepImpl {
             FilePath dockerfile = workspace.child(step.dockerfile);
             InputStream is = dockerfile.read();
             try {
-                BufferedReader r = new BufferedReader(new InputStreamReader(is)); // encoding probably irrelevant since image/tag names must be ASCII
-                String line;
-                while ((line = r.readLine()) != null) {
-                    line = line.trim();
-                    if (line.startsWith("#")) {
-                        continue;
+                BufferedReader r = new BufferedReader(new InputStreamReader(is, "ISO-8859-1")); // encoding probably irrelevant since image/tag names must be ASCII
+                try {
+                    String line;
+                    while ((line = r.readLine()) != null) {
+                        line = line.trim();
+                        if (line.startsWith("#")) {
+                            continue;
+                        }
+                        if (line.startsWith("FROM ")) {
+                            fromImage = line.substring(5);
+                            break;
+                        }
                     }
-                    if (line.startsWith("FROM ")) {
-                        fromImage = line.substring(5);
-                        break;
-                    }
+                } finally {
+                    r.close();
                 }
             } finally {
                 is.close();
