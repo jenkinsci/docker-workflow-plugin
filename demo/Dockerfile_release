@@ -22,13 +22,15 @@
 # THE SOFTWARE.
 ##
 
-FROM jenkinsci/workflow-demo:1.8
+FROM jenkinsci/workflow-demo:1.13
+
+USER root
 
 ###############################################################
 # Docker in Docker https://github.com/jpetazzo/dind 
     
 # Install Docker from Docker Inc. repositories.
-RUN curl -sSL https://get.docker.com/ubuntu/ | sh
+RUN curl -sSL https://get.docker.com/ | sh
 
 # Install the magic wrapper.
 ADD wrapdocker /usr/local/bin/wrapdocker
