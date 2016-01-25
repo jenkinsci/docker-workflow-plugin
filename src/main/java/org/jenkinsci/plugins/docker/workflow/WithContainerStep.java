@@ -43,7 +43,7 @@ import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -134,8 +134,13 @@ public class WithContainerStep extends AbstractStepImpl {
             } else {
                 listener.error("Failed to parse docker version. Please note there is a minimum docker version requirement of v1.3.");
             }
-            
-            container = dockerClient.run(env, step.image, step.args, ws, Collections.singletonMap(ws, ws), envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
+
+            Map volumes = new HashMap();
+            volumes.put(ws, ws);
+            String tmp = System.getProperty("java.io.tmpdir");
+            volumes.put(tmp, tmp);
+
+            container = dockerClient.run(env, step.image, step.args, ws, volumes, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
             ImageAction.add(step.image, run);
             getContext().newBodyInvoker().
