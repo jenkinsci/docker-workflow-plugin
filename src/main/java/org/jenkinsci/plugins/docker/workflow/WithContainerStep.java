@@ -128,18 +128,18 @@ public class WithContainerStep extends AbstractStepImpl {
             // Add a warning if the docker version is less than 1.3
             VersionNumber dockerVersion = dockerClient.version();
             if (dockerVersion != null) {
-                if (dockerVersion.isOlderThan(new VersionNumber("1.3"))) {
-                    throw new AbortException("The docker version is less than v1.3. Workflow functions requiring 'docker exec' will not work e.g. 'docker.inside'.");
+                if (dockerVersion.isOlderThan(new VersionNumber("1.7"))) {
+                    throw new AbortException("The docker version is less than v1.7. Workflow functions requiring 'docker exec' will not work e.g. 'docker.inside'.");
                 }
             } else {
-                listener.error("Failed to parse docker version. Please note there is a minimum docker version requirement of v1.3.");
+                listener.error("Failed to parse docker version. Please note there is a minimum docker version requirement of v1.7.");
             }
             
-            container = dockerClient.run(env, step.image, step.args, ws, Collections.singletonMap(ws, ws), envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
+            container = dockerClient.run(env, step.image, step.args, ws, Collections.singletonMap(ws, ws), envReduced, null, /* expected to hang until killed */ "cat");
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
             ImageAction.add(step.image, run);
             getContext().newBodyInvoker().
-                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost))).
+                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, dockerClient.whoAmI(), envHost))).
                     withCallback(new Callback(container, toolName)).
                     start();
             return false;
@@ -157,17 +157,19 @@ public class WithContainerStep extends AbstractStepImpl {
 
         private static final long serialVersionUID = 1;
         private final String container;
+        private final String userId;
         private final String[] envHost;
 
-        Decorator(String container, EnvVars envHost) {
+        Decorator(String container, String userId, EnvVars envHost) {
             this.container = container;
+            this.userId = userId;
             this.envHost = Util.mapToEnv(envHost);
         }
 
         @Override public Launcher decorate(Launcher launcher, Node node) {
             return new Launcher.DecoratedLauncher(launcher) {
                 @Override public Proc launch(Launcher.ProcStarter starter) throws IOException {
-                    List<String> prefix = new ArrayList<String>(Arrays.asList("docker", "exec", container, "env"));
+                    List<String> prefix = new ArrayList<String>(Arrays.asList("docker", "exec", "--user", userId, container, "env"));
                     Set<String> envReduced = new TreeSet<String>(Arrays.asList(starter.envs()));
                     envReduced.removeAll(Arrays.asList(envHost));
                     prefix.addAll(envReduced);
