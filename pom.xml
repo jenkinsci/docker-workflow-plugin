@@ -21,14 +21,14 @@
     
     <url>http://wiki.jenkins-ci.org/display/JENKINS/CloudBees+Docker+Workflow+Plugin</url>
     <scm>
-        <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
-        <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
-        <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
+      <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
+      <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
+      <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
       <tag>HEAD</tag>
-  </scm>
+    </scm>
 
     <properties>
-        <workflow.version>1.7-alpha-1</workflow.version>
+        <workflow.version>1.7</workflow.version>
         <maven-hpi-plugin.version>1.112</maven-hpi-plugin.version>
     </properties>
     <repositories>
@@ -109,10 +109,9 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>findbugs-maven-plugin</artifactId>
-                <version>3.0.1</version>
+                <version>3.0.2</version>
                 <configuration>
                     <xmlOutput>true</xmlOutput>
-                    <findbugsXmlWithMessages>true</findbugsXmlWithMessages>
                     <failOnError>false</failOnError>
                 </configuration>
             </plugin>
