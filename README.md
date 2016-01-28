@@ -1,7 +1,7 @@
-CloudBees Docker Workflow Plugin
+CloudBees Docker Pipeline Plugin
 =====================================
 
-Jenkins plugin which allows building, testing, and using Docker images from Jenkins Workflow projects.
+Jenkins plugin which allows building, testing, and using Docker images from Jenkins Pipeline projects.
 
 Summary
 ---

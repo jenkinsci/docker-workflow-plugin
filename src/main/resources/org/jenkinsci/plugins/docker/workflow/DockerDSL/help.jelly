@@ -2,7 +2,7 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core">
     <p>
-        The <code>docker</code> variable offers convenient access to Docker-related functions from a Workflow script.
+        The <code>docker</code> variable offers convenient access to Docker-related functions from a Pipeline script.
     </p>
     <p>
         Methods needing a slave will implicitly run a <code>node {…}</code> block if you have not wrapped them in one.

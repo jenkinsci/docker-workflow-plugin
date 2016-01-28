@@ -147,7 +147,7 @@ public class DockerDSLTest {
             @Override public void evaluate() throws Throwable {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
-                    // do withRegistry before withServer until JENKINS-28317 fix in Workflow 1.7:
+                    // do withRegistry before withServer until JENKINS-28317 fix in Pipeline 1.7:
                     "docker.withRegistry('https://docker.my.com/') {\n" +
                     "  docker.withServer('tcp://host:1234') {\n" +
                     "    semaphore 'wait'\n" +

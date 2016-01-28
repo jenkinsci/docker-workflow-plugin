@@ -49,7 +49,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 
 /**
- * Simple docker client for workflow.
+ * Simple docker client for Pipeline.
  * 
  * @author <a href="mailto:tom.fennelly@gmail.com">tom.fennelly@gmail.com</a>
  */
