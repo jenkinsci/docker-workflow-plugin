@@ -129,7 +129,7 @@ public class WithContainerStep extends AbstractStepImpl {
             VersionNumber dockerVersion = dockerClient.version();
             if (dockerVersion != null) {
                 if (dockerVersion.isOlderThan(new VersionNumber("1.3"))) {
-                    throw new AbortException("The docker version is less than v1.3. Workflow functions requiring 'docker exec' will not work e.g. 'docker.inside'.");
+                    throw new AbortException("The docker version is less than v1.3. Pipeline functions requiring 'docker exec' will not work e.g. 'docker.inside'.");
                 }
             } else {
                 listener.error("Failed to parse docker version. Please note there is a minimum docker version requirement of v1.3.");

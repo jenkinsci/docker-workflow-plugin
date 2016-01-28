@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <flow-definition>
   <actions/>
-  <description>Demonstrates Jenkins Workflow integration with Docker based on the CloudBees Docker Workflow Plugin.</description>
+  <description>Demonstrates Jenkins Pipeline integration with Docker based on the CloudBees Docker Pipeline Plugin.</description>
   <keepDependencies>false</keepDependencies>
   <properties/>
   <definition class="org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition">
