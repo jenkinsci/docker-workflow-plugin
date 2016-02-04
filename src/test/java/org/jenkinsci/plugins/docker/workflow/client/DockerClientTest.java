@@ -63,7 +63,7 @@ public class DockerClientTest {
                         dockerClient.whoAmI(), "echo", "hello world");
         Assert.assertEquals(64, containerId.length());
         ContainerRecord containerRecord = dockerClient.getContainerRecord(launchEnv, containerId);
-        Assert.assertEquals("8dbd9e392a964056420e5d58ca5cc376ef18e2de93b5cc90e868a1bbc8318c1c", containerRecord.getImageId());
+        Assert.assertEquals(dockerClient.inspect(launchEnv, "learn/tutorial", ".Id"), containerRecord.getImageId());
         Assert.assertTrue(containerRecord.getContainerName().length() > 0);
         Assert.assertTrue(containerRecord.getHost().length() > 0);
         Assert.assertTrue(containerRecord.getCreated() > 1000000000000L);
