@@ -59,7 +59,7 @@ public class DockerClientTest {
     public void test_run() throws IOException, InterruptedException {
         EnvVars launchEnv = newLaunchEnv();
         String containerId =
-                dockerClient.run(launchEnv, "learn/tutorial", null, null, Collections.<String, String>emptyMap(), new EnvVars(),
+                dockerClient.run(launchEnv, "learn/tutorial", null, null, Collections.<String, String>emptyMap(), Collections.EMPTY_LIST, new EnvVars(),
                         dockerClient.whoAmI(), "echo", "hello world");
         Assert.assertEquals(64, containerId.length());
         ContainerRecord containerRecord = dockerClient.getContainerRecord(launchEnv, containerId);
