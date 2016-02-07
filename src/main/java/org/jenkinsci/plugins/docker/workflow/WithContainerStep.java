@@ -134,14 +134,23 @@ public class WithContainerStep extends AbstractStepImpl {
             Collection<String> volumesFromContainers = new ArrayList<String>();
             Optional<String> containerId = dockerClient.getContainerIdIfContainerized();
             if (containerId.isPresent()) {
-                // TODO check if a volume contains the ws
-                // dockerClient.inspect(envHost, "jenkins", ".Config.Volumes");
-                volumesFromContainers.add(containerId.get());
+                // check if there is any volume which contains the workspace
+                for (String vol : dockerClient.getVolumes(envHost, containerId.get())) {
+                    if (ws.startsWith(vol)) {
+                        volumesFromContainers.add(containerId.get());
+                        break;
+                    }
+                }
+
+                if (volumesFromContainers.isEmpty()) {
+                    // there was no volume which contains the workspace, fall back to --volume mount
+                    volumes.put(ws, ws);
+                }
             } else {
                 // Jenkins is not running inside a container
                 volumes.put(ws, ws);
             }
-            
+
             container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
             ImageAction.add(step.image, run);
