@@ -23,6 +23,7 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
+import com.google.common.base.Optional;
 import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import com.google.inject.Inject;
 import hudson.AbortException;
@@ -41,13 +42,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nonnull;
@@ -134,8 +129,20 @@ public class WithContainerStep extends AbstractStepImpl {
             } else {
                 listener.error("Failed to parse docker version. Please note there is a minimum docker version requirement of v1.3.");
             }
+
+            Map<String, String> volumes = new HashMap<String, String>();
+            Collection<String> volumesFromContainers = new ArrayList<String>();
+            Optional<String> containerId = dockerClient.getContainerIdIfContainerized();
+            if (containerId.isPresent()) {
+                // TODO check if a volume contains the ws
+                // dockerClient.inspect(envHost, "jenkins", ".Config.Volumes");
+                volumesFromContainers.add(containerId.get());
+            } else {
+                // Jenkins is not running inside a container
+                volumes.put(ws, ws);
+            }
             
-            container = dockerClient.run(env, step.image, step.args, ws, Collections.singletonMap(ws, ws), envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
+            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
             ImageAction.add(step.image, run);
             getContext().newBodyInvoker().

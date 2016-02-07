@@ -23,6 +23,7 @@
  */
 package org.jenkinsci.plugins.docker.workflow.client;
 
+import com.google.common.base.Optional;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -38,6 +39,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
@@ -78,12 +80,13 @@ public class DockerClient {
      * @param args Any additional arguments for the {@code docker run} command.
      * @param workdir The working directory in the container, or {@code null} for default.
      * @param volumes Volumes to be bound. Supply an empty list if no volumes are to be bound.
+     * @param volumesFromContainers Mounts all volumes from the given containers.
      * @param containerEnv Environment variables to set in container.
      * @param user The <strong>uid:gid</strong> to execute the container command as. Use {@link #whoAmI()}.
      * @param command The command to execute in the image container being run.
      * @return The container ID.
      */
-    public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull EnvVars containerEnv, @Nonnull String user, @CheckForNull String... command) throws IOException, InterruptedException {
+    public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, @CheckForNull String... command) throws IOException, InterruptedException {
         ArgumentListBuilder argb = new ArgumentListBuilder();
 
         argb.add("run", "-t", "-d", "-u", user);
@@ -96,6 +99,9 @@ public class DockerClient {
         }
         for (Map.Entry<String, String> volume : volumes.entrySet()) {
             argb.add("-v", volume.getKey() + ":" + volume.getValue() + ":rw");
+        }
+        for (String containerId : volumesFromContainers) {
+            argb.add("--volumes-from", containerId);
         }
         for (Map.Entry<String, String> variable : containerEnv.entrySet()) {
             argb.add("-e");
@@ -272,6 +278,24 @@ public class DockerClient {
         final String charsetName = Charset.defaultCharset().name();
         return String.format("%s:%s", userId.toString(charsetName).trim(), groupId.toString(charsetName).trim());
 
+    }
+
+    /**
+     * Checks if this {@link DockerClient} instance is running inside a container and returns the id of the container
+     * if so.
+     *
+     * @return a {@link Optional<String>} containing the <strong>container id</strong>, or <strong>absent</strong> if
+     * it isn't containerized.
+     */
+    public Optional<String> getContainerIdIfContainerized() throws IOException, InterruptedException {
+        ByteArrayOutputStream cgroup = new ByteArrayOutputStream();
+        launcher.launch().cmds("cat", "/proc/self/cgroup").quiet(true).stdout(cgroup).join();
+
+        final Pattern pattern = Pattern.compile("(?m)^\\d+:\\w+:/docker/(?<containerId>\\p{XDigit}{12,})$");
+
+        final String charsetName = Charset.defaultCharset().name();
+        Matcher matcher = pattern.matcher(cgroup.toString(charsetName));
+        return matcher.find() ? Optional.of(matcher.group("containerId")) : Optional.<String>absent();
     }
 
     public ContainerRecord getContainerRecord(@Nonnull EnvVars launchEnv, String containerId) throws IOException, InterruptedException {
