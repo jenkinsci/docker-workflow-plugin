@@ -26,6 +26,7 @@ package org.jenkinsci.plugins.docker.workflow.client;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
+import hudson.Util;
 import hudson.model.Node;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.VersionNumber;
@@ -38,8 +39,12 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -72,7 +77,9 @@ public class DockerClient {
 
     /**
      * Run a docker image.
-     *
+     * Runs the image in detached (-d) mode with a pseudo-tty (-t). Use
+     * {@link #run(hudson.EnvVars, java.lang.String, java.util.Collection, java.lang.String, java.util.Map, hudson.EnvVars, java.lang.String, java.lang.String...)}
+     * to get another behavior.
      * @param launchEnv Docker client launch environment.
      * @param image The image name.
      * @param args Any additional arguments for the {@code docker run} command.
@@ -84,11 +91,42 @@ public class DockerClient {
      * @return The container ID.
      */
     public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull EnvVars containerEnv, @Nonnull String user, @CheckForNull String... command) throws IOException, InterruptedException {
+        final List<String> argb = new LinkedList<String>();
+        if (args != null) {
+            argb.addAll(Arrays.asList(Util.tokenize(args)));
+        }
+        argb.add("-t");
+        argb.add("-d");
+        LaunchResult result = runImage(launchEnv, image, argb, workdir, volumes, containerEnv, user, command);
+        if (result.getStatus() == 0) {
+            return result.getOut();
+        } else {
+            throw new IOException(String.format("Failed to run image '%s'. Error: %s", image, result.getErr()));
+        }
+    }
+    
+    /**
+     * Run a docker image.
+     * @param launchEnv Docker client launch environment.
+     * @param image The image name.
+     * @param args Any additional arguments for the {@code docker run} command.
+     * @param workdir The working directory in the container, or {@code null} for default.
+     * @param volumes Volumes to be bound. Supply an empty list if no volumes are to be bound.
+     * @param containerEnv Environment variables to set in container.
+     * @param user The <strong>uid:gid</strong> to execute the container command as. Use {@link #whoAmI()}.
+     * @param command The command to execute in the image container being run.
+     * @return Execution result
+     * @since TODO
+     */
+    public @Nonnull LaunchResult runImage(@Nonnull EnvVars launchEnv, @Nonnull String image, 
+            @CheckForNull Collection<String> args, @CheckForNull String workdir, 
+            @Nonnull Map<String, String> volumes, @Nonnull EnvVars containerEnv, 
+            @Nonnull String user, @CheckForNull String... command) throws IOException, InterruptedException {    
         ArgumentListBuilder argb = new ArgumentListBuilder();
 
-        argb.add("run", "-t", "-d", "-u", user);
+        argb.add("run", "-u", user);
         if (args != null) {
-            argb.addTokenized(args);
+            argb.add(args.toArray(new String[args.size()]));
         }
         
         if (workdir != null) {
@@ -105,12 +143,7 @@ public class DockerClient {
             argb.add(image).add(command);
         }
 
-        LaunchResult result = launch(launchEnv, false, null, argb);
-        if (result.getStatus() == 0) {
-            return result.getOut();
-        } else {
-            throw new IOException(String.format("Failed to run image '%s'. Error: %s", image, result.getErr()));
-        }
+        return launch(launchEnv, false, null, argb);
     }
 
     /**
