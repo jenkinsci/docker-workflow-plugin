@@ -62,7 +62,7 @@ public class WithContainerStepTest {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
                 DockerTestUtil.assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                     "  withDockerContainer('httpd:2.4.12') {\n" +
@@ -80,7 +80,7 @@ public class WithContainerStepTest {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
                 DockerTestUtil.assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                     "  withDockerContainer('httpd:2.4.12') {\n" +
@@ -100,7 +100,7 @@ public class WithContainerStepTest {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
                 DockerTestUtil.assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                     "  withDockerContainer('httpd:2.4.12') {\n" +
@@ -117,7 +117,7 @@ public class WithContainerStepTest {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
                 DockerTestUtil.assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                     "  withDockerContainer('httpd:2.4.12') {\n" +
@@ -132,7 +132,7 @@ public class WithContainerStepTest {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
                 SemaphoreStep.success("wait/1", null);
-                WorkflowJob p = story.j.jenkins.getItemByFullName("p", WorkflowJob.class);
+                WorkflowJob p = story.j.jenkins.getItemByFullName("prj", WorkflowJob.class);
                 WorkflowRun b = p.getLastBuild();
                 story.j.assertLogContains("Require method GET POST OPTIONS", story.j.assertBuildStatusSuccess(JenkinsRuleExt.waitForCompletion(b)));
             }

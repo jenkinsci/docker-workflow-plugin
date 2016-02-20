@@ -68,7 +68,7 @@ public class DockerDSLTest {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
                 assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition("semaphore 'wait'", true));
                 WorkflowRun b = p.scheduleBuild2(0).waitForStart();
                 SemaphoreStep.waitForStart("wait/1", b);
@@ -76,7 +76,7 @@ public class DockerDSLTest {
         });
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.getItemByFullName("p", WorkflowJob.class);
+                WorkflowJob p = story.j.jenkins.getItemByFullName("prj", WorkflowJob.class);
                 WorkflowRun b = p.getLastBuild();
                 assertEquals(Collections.<String>emptySet(), grep(b.getRootDir(), "org.jenkinsci.plugins.docker.workflow.Docker"));
                 SemaphoreStep.success("wait/1", null);
@@ -110,7 +110,7 @@ public class DockerDSLTest {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
                 assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "def r = docker.image('httpd:2.4.12').inside {\n" +
                     "  semaphore 'wait'\n" +
@@ -124,7 +124,7 @@ public class DockerDSLTest {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
                 SemaphoreStep.success("wait/1", null);
-                WorkflowJob p = story.j.jenkins.getItemByFullName("p", WorkflowJob.class);
+                WorkflowJob p = story.j.jenkins.getItemByFullName("prj", WorkflowJob.class);
                 WorkflowRun b = p.getLastBuild();
                 story.j.assertLogContains("Require method GET POST OPTIONS", story.j.assertBuildStatusSuccess(JenkinsRuleExt.waitForCompletion(b)));
                 story.j.assertLogContains("the answer is 42", b);
@@ -145,11 +145,10 @@ public class DockerDSLTest {
     @Test public void endpoints() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
-                    // do withRegistry before withServer until JENKINS-28317 fix in Pipeline 1.7:
-                    "docker.withRegistry('https://docker.my.com/') {\n" +
-                    "  docker.withServer('tcp://host:1234') {\n" +
+                    "docker.withServer('tcp://host:1234') {\n" +
+                    "  docker.withRegistry('https://docker.my.com/') {\n" +
                     "    semaphore 'wait'\n" +
                     "    sh 'echo would be connecting to $DOCKER_HOST'\n" +
                     "    echo \"image name is ${docker.image('whatever').imageName()}\"\n" +
@@ -162,7 +161,7 @@ public class DockerDSLTest {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
                 SemaphoreStep.success("wait/1", null);
-                WorkflowJob p = story.j.jenkins.getItemByFullName("p", WorkflowJob.class);
+                WorkflowJob p = story.j.jenkins.getItemByFullName("prj", WorkflowJob.class);
                 WorkflowRun b = story.j.assertBuildStatusSuccess(JenkinsRuleExt.waitForCompletion(p.getLastBuild()));
                 story.j.assertLogContains("would be connecting to tcp://host:1234", b);
                 story.j.assertLogContains("image name is docker.my.com/whatever", b);
@@ -174,7 +173,7 @@ public class DockerDSLTest {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
                 assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                     "  def img = docker.image('httpd:2.4.12')\n" +
@@ -194,7 +193,7 @@ public class DockerDSLTest {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
                 assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "def r = docker.image('httpd:2.4.12').withRun {c ->\n" +
                     "  semaphore 'wait'\n" +
@@ -208,7 +207,7 @@ public class DockerDSLTest {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
                 SemaphoreStep.success("wait/1", null);
-                WorkflowJob p = story.j.jenkins.getItemByFullName("p", WorkflowJob.class);
+                WorkflowJob p = story.j.jenkins.getItemByFullName("prj", WorkflowJob.class);
                 WorkflowRun b = p.getLastBuild();
                 story.j.assertLogContains("Require method GET POST OPTIONS", story.j.assertBuildStatusSuccess(JenkinsRuleExt.waitForCompletion(b)));
                 story.j.assertLogContains("the answer is 42", b);
@@ -230,7 +229,7 @@ public class DockerDSLTest {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
                 assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                     "  writeFile file: 'stuff1', text: 'hello'\n" +
@@ -296,7 +295,7 @@ public class DockerDSLTest {
                 assumeDocker();
                 assumeTrue(new File("/usr/bin/docker").canExecute()); // TODO generalize to find docker in $PATH
                 story.j.jenkins.getDescriptorByType(DockerTool.DescriptorImpl.class).setInstallations(new DockerTool("default", "/usr", Collections.<ToolProperty<?>>emptyList()));
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                 "docker.withTool('default') {\n" +
                 "  docker.image('httpd:2.4.12').withRun {}\n" +
@@ -311,7 +310,7 @@ public class DockerDSLTest {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
                 assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                     "     try { sh 'docker rmi busybox:test' } catch (Exception e) {}\n" +
