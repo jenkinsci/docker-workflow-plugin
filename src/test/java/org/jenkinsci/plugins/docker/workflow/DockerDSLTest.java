@@ -317,20 +317,11 @@ public class DockerDSLTest {
                     "     def busybox = docker.image('busybox');\n" +
                     "     busybox.pull();\n" +
                     "     // tag it\n" +
-                    "     busybox.tag('test', false);\n" +
-                    "     // tag it again - should fail because the tag already exists and the --force flag is false\n" +
-                    "     try {\n" +
-                    "         busybox.tag('test', false);\n" +
-                    "     } catch (Exception e) {\n" +
-                    "        sh \"echo 'TAG without force failed as expected'\"\n" +
-                    "     }\n" +
-                    "     // tag it again - should work because the --force flag is true\n" +
-                    "     busybox.tag('test', true);\n" +
-                    "     sh \"echo 'TAG with force succeeded as expected'\"\n" +
+                    "     busybox.tag('test', /* ignored but to test that the argument is accepted */false);\n" +
+                    "     // retag it\n" +
+                    "     busybox.tag('test');\n" +
                     "}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-                story.j.assertLogContains("TAG without force failed as expected", b);
-                story.j.assertLogContains("TAG with force succeeded as expected", b);
             }
         });
     }
