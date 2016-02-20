@@ -244,7 +244,7 @@ public class DockerDSLTest {
                 String ancestorImageId = client.inspect(new EnvVars(), "hello-world", ".Id");
                 String descendantImageId1 = client.inspect(new EnvVars(), "hello-world-stuff", ".Id");
                 story.j.assertLogContains("built hello-world-stuff", b);
-                story.j.assertLogContains(descendantImageId1.substring(0, 12), b);
+                story.j.assertLogContains(descendantImageId1.replaceFirst("^sha256:", "").substring(0, 12), b);
                 Fingerprint f = DockerFingerprints.of(ancestorImageId);
                 assertNotNull(f);
                 DockerDescendantFingerprintFacet descendantFacet = f.getFacet(DockerDescendantFingerprintFacet.class);
@@ -262,7 +262,7 @@ public class DockerDSLTest {
                 b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
                 String descendantImageId2 = client.inspect(new EnvVars(), "hello-world-stuff", ".Id");
                 story.j.assertLogContains("built hello-world-stuff", b);
-                story.j.assertLogContains(descendantImageId2.substring(0, 12), b);
+                story.j.assertLogContains(descendantImageId2.replaceFirst("^sha256:", "").substring(0, 12), b);
                 f = DockerFingerprints.of(ancestorImageId);
                 assertNotNull(f);
                 descendantFacet = f.getFacet(DockerDescendantFingerprintFacet.class);
