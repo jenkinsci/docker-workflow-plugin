@@ -27,8 +27,6 @@ import hudson.model.Result;
 import hudson.tools.ToolProperty;
 import java.util.Collections;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
-import org.jenkinsci.plugins.workflow.BuildWatcher;
-import org.jenkinsci.plugins.workflow.JenkinsRuleExt;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
@@ -37,13 +35,16 @@ import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runners.model.Statement;
+import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
 
 public class WithContainerStepTest {
 
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
     @Rule public RestartableJenkinsRule story = new RestartableJenkinsRule();
+    @Rule public TemporaryFolder tmp = new TemporaryFolder();
     
     @Test public void configRoundTrip() {
         story.addStep(new Statement() {
@@ -88,9 +89,9 @@ public class WithContainerStepTest {
                     "  }\n" +
                     "}", true));
                 WorkflowRun b = p.scheduleBuild2(0).waitForStart();
-                JenkinsRuleExt.waitForMessage("sleeping now", b);
+                story.j.waitForMessage("sleeping now", b);
                 b.doStop();
-                story.j.assertBuildStatus(Result.ABORTED, JenkinsRuleExt.waitForCompletion(b));
+                story.j.assertBuildStatus(Result.ABORTED, story.j.waitForCompletion(b));
                 story.j.assertLogContains("script returned exit code 99", b);
             }
         });
@@ -134,7 +135,7 @@ public class WithContainerStepTest {
                 SemaphoreStep.success("wait/1", null);
                 WorkflowJob p = story.j.jenkins.getItemByFullName("prj", WorkflowJob.class);
                 WorkflowRun b = p.getLastBuild();
-                story.j.assertLogContains("Require method GET POST OPTIONS", story.j.assertBuildStatusSuccess(JenkinsRuleExt.waitForCompletion(b)));
+                story.j.assertLogContains("Require method GET POST OPTIONS", story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
             }
         });
     }
