@@ -295,13 +295,10 @@ public class DockerClient {
      * it isn't containerized.
      */
     public Optional<String> getContainerIdIfContainerized() throws IOException, InterruptedException {
-        ByteArrayOutputStream cgroup = new ByteArrayOutputStream();
-        launcher.launch().cmds("cat", "/proc/self/cgroup").quiet(true).stdout(cgroup).join();
-
         final Pattern pattern = Pattern.compile("(?m)^\\d+:\\w+:/docker/(?<containerId>\\p{XDigit}{12,})$");
 
-        final String charsetName = Charset.defaultCharset().name();
-        Matcher matcher = pattern.matcher(cgroup.toString(charsetName));
+        String cgroup = node.createPath("/proc/self/cgroup").readToString();
+        Matcher matcher = pattern.matcher(cgroup);
         return matcher.find() ? Optional.of(matcher.group("containerId")) : Optional.<String>absent();
     }
 
