@@ -138,7 +138,9 @@ public class WithContainerStep extends AbstractStepImpl {
             
             Map<String,String> volumes = new LinkedHashMap<String,String>();
             volumes.put(ws, ws);
-            String tmp = tempDir(workspace).getRemote();
+            FilePath tempDir = tempDir(workspace);
+            tempDir.mkdirs();
+            String tmp = tempDir.getRemote();
             volumes.put(tmp, tmp);
             container = dockerClient.run(env, step.image, step.args, ws, volumes, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
