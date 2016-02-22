@@ -24,11 +24,6 @@
 package org.jenkinsci.plugins.docker.workflow.client;
 
 import com.google.common.base.Optional;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.reflect.TypeToken;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -49,7 +44,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
-import java.util.Set;
+import java.util.List;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -318,24 +314,17 @@ public class DockerClient {
      * Inspect the volumes of a docker image/container.
      * @param launchEnv Docker client launch environment.
      * @param objectId The image/container ID.
-     * @return a set of volumes of the docker image/container.
+     * @return a list of volumes of the docker image/container.
      * @throws IOException Execution error. Also fails if cannot retrieve the requested field from the request
      * @throws InterruptedException Interrupted
      */
-    public Set<String> getVolumes(@Nonnull EnvVars launchEnv, String objectId) throws IOException, InterruptedException {
-        LaunchResult result = launch(launchEnv, true, "inspect", objectId);
+    public List<String> getVolumes(@Nonnull EnvVars launchEnv, String objectId) throws IOException, InterruptedException {
+        LaunchResult result = launch(launchEnv, true, "inspect", "-f", "{{range $index, $element := .Config.Volumes}}{{$index}}\n{{end}}", objectId);
         if (result.getStatus() != 0) {
-            return Collections.EMPTY_SET;
+            return Collections.EMPTY_LIST;
         }
 
-        JsonParser parser = new JsonParser();
-        JsonElement information = parser.parse(result.getOut());
-        JsonObject volumes = information.getAsJsonArray().get(0).getAsJsonObject().getAsJsonObject("Config").getAsJsonObject("Volumes");
-
-        Gson gson = new Gson();
-        Type volumesMapType = new TypeToken<Map<String, JsonElement>>(){}.getType();
-        Map<String, JsonElement> volumesMap = gson.fromJson(volumes, volumesMapType);
-
-        return volumesMap.keySet();
+        String volumes = result.getOut();
+        return Arrays.asList(volumes.split("\\n"));
     }
 }
