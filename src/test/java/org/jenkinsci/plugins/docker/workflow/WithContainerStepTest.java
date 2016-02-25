@@ -33,6 +33,9 @@ import java.io.File;
 import java.util.Collections;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
+import org.jenkinsci.lib.configprovider.ConfigProvider;
+import org.jenkinsci.lib.configprovider.model.Config;
+import org.jenkinsci.plugins.configfiles.custom.CustomConfig;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 import org.jenkinsci.plugins.plaincredentials.impl.FileCredentialsImpl;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -168,6 +171,36 @@ public class WithContainerStepTest {
                     "    }\n" +
                     "  }\n" +
                     "  withCredentials([[$class: 'FileBinding', credentialsId: 'secretfile', variable: 'FILE']]) {\n" +
+                    "    withDockerContainer('ubuntu') {\n" +
+                    "      sh 'tr \"a-z\" \"A-Z\" < $FILE'\n" +
+                    "    }\n" +
+                    "  }\n" +
+                    "}", true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertLogContains("some-content", b);
+                story.j.assertLogContains("SOME-CONTENT", b);
+            }
+        });
+    }
+
+    @Issue("JENKINS-27152")
+    @Test public void configFile() throws Exception {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                DockerTestUtil.assumeDocker();
+                ConfigProvider configProvider = story.j.jenkins.getExtensionList(ConfigProvider.class).get(CustomConfig.CustomConfigProvider.class);
+                String id = configProvider.getProviderId() + "myfile";
+                Config config = new CustomConfig(id, "My File", "", "some-content");
+                configProvider.save(config);
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                    "  withDockerContainer('ubuntu') {\n" +
+                        "  wrap([$class: 'ConfigFileBuildWrapper', managedFiles: [[fileId: '" + config.id + "', variable: 'FILE']]]) {\n" +
+                        "    sh 'cat $FILE'\n" +
+                        "  }\n" +
+                    "  }\n" +
+                    "  wrap([$class: 'ConfigFileBuildWrapper', managedFiles: [[fileId: '" + config.id + "', variable: 'FILE']]]) {\n" +
                     "    withDockerContainer('ubuntu') {\n" +
                     "      sh 'tr \"a-z\" \"A-Z\" < $FILE'\n" +
                     "    }\n" +
