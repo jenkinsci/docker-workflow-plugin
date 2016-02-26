@@ -152,7 +152,7 @@ public class WithContainerStep extends AbstractStepImpl {
             return false;
         }
 
-        // TODO move to WorkspaceList
+        // TODO use https://github.com/jenkinsci/jenkins/pull/2066
         private static FilePath tempDir(FilePath ws) {
             return ws.sibling(ws.getName() + System.getProperty(WorkspaceList.class.getName(), "@") + "tmp");
         }
