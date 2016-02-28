@@ -76,14 +76,14 @@
                 These commands run in the same working directory (normally a slave workspace), which means that the Docker server must be on localhost.
             </p>
         </dd>
-        <dt><code>Image.tag([tagname[, force]])</code></dt>
+        <dt><code>Image.tag([tagname])</code></dt>
         <dd>
             <p>
                 Runs <code>docker tag</code> to record a tag of this image (defaulting to the tag it already has).
-                By default will rewrite an existing tag; pass <code>false</code> for the second argument to fail instead.
+                Will rewrite an existing tag if one exists.
             </p>
         </dd>
-        <dt><code>Image.push([tagname[, force]])</code></dt>
+        <dt><code>Image.push([tagname])</code></dt>
         <dd>
             <p>
                 Pushes an image to the registry after tagging it as with the <code>tag</code> method.

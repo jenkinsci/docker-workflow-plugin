@@ -42,7 +42,7 @@ VOLUME /var/lib/docker
 #
 ###############################################################
 
-RUN apt-get install -y apparmor apache2-utils
+RUN apt-get update && apt-get install -y apparmor apache2-utils
 
 COPY workflow-reg-proxy.conf /tmp/files/regup/workflow-reg-proxy.conf
 COPY gen-security-data.sh /usr/local/bin/gen-security-data.sh

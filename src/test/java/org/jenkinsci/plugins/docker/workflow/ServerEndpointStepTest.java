@@ -76,7 +76,7 @@ public class ServerEndpointStepTest {
     @Test public void variables() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                     "  withDockerServer(server: [uri: 'tcp://host:1234']) {\n" +
@@ -91,7 +91,7 @@ public class ServerEndpointStepTest {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
                 SemaphoreStep.success("wait/1", null);
-                WorkflowJob p = story.j.jenkins.getItemByFullName("p", WorkflowJob.class);
+                WorkflowJob p = story.j.jenkins.getItemByFullName("prj", WorkflowJob.class);
                 WorkflowRun b = p.getLastBuild();
                 story.j.assertLogContains("would be connecting to tcp://host:1234", story.j.assertBuildStatusSuccess(JenkinsRuleExt.waitForCompletion(b)));
             }
