@@ -69,8 +69,7 @@ abstract class AbstractEndpointStepExecution extends AbstractStepExecutionImpl {
 
     }
 
-    // TODO use BodyExecutionCallback.TailCall from https://github.com/jenkinsci/workflow-plugin/pull/168
-    private static class Callback extends BodyExecutionCallback {
+    private static class Callback extends BodyExecutionCallback.TailCall {
 
         private static final long serialVersionUID = 1;
         private final KeyMaterial material;
@@ -79,22 +78,12 @@ abstract class AbstractEndpointStepExecution extends AbstractStepExecutionImpl {
             this.material = material;
         }
 
-        private void close() {
+        @Override protected void finished(StepContext context) throws Exception {
             try {
                 material.close();
             } catch (IOException x) {
                 Logger.getLogger(AbstractEndpointStepExecution.class.getName()).log(Level.WARNING, null, x);
             }
-        }
-
-        @Override public void onSuccess(StepContext context, Object result) {
-            close();
-            context.onSuccess(result);
-        }
-
-        @Override public void onFailure(StepContext context, Throwable t) {
-            close();
-            context.onFailure(t);
         }
 
     }

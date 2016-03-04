@@ -37,13 +37,13 @@ import hudson.model.Computer;
 import hudson.model.Node;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.slaves.WorkspaceList;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -53,6 +53,7 @@ import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 
 import hudson.util.VersionNumber;
+import java.util.LinkedHashMap;
 import org.jenkinsci.plugins.docker.commons.fingerprint.DockerFingerprints;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepExecutionImpl;
@@ -135,7 +136,13 @@ public class WithContainerStep extends AbstractStepImpl {
                 listener.error("Failed to parse docker version. Please note there is a minimum docker version requirement of v1.3.");
             }
             
-            container = dockerClient.run(env, step.image, step.args, ws, Collections.singletonMap(ws, ws), envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
+            Map<String,String> volumes = new LinkedHashMap<String,String>();
+            volumes.put(ws, ws);
+            FilePath tempDir = tempDir(workspace);
+            tempDir.mkdirs();
+            String tmp = tempDir.getRemote();
+            volumes.put(tmp, tmp);
+            container = dockerClient.run(env, step.image, step.args, ws, volumes, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
             ImageAction.add(step.image, run);
             getContext().newBodyInvoker().
@@ -143,6 +150,11 @@ public class WithContainerStep extends AbstractStepImpl {
                     withCallback(new Callback(container, toolName)).
                     start();
             return false;
+        }
+
+        // TODO use 1.652 use WorkspaceList.tempDir
+        private static FilePath tempDir(FilePath ws) {
+            return ws.sibling(ws.getName() + System.getProperty(WorkspaceList.class.getName(), "@") + "tmp");
         }
 
         @Override public void stop(@Nonnull Throwable cause) throws Exception {

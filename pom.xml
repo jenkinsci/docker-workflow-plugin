@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>1.596.1</version>
+        <version>2.3</version>
     </parent>
     <artifactId>docker-workflow</artifactId>
     <version>1.4-SNAPSHOT</version>
@@ -28,8 +28,9 @@
     </scm>
 
     <properties>
-        <workflow.version>1.7</workflow.version>
-        <maven-hpi-plugin.version>1.112</maven-hpi-plugin.version>
+        <jenkins.version>1.609.3</jenkins.version>
+        <java.level>6</java.level>
+        <workflow.version>1.13</workflow.version>
     </properties>
     <repositories>
         <repository>
@@ -52,7 +53,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>script-security</artifactId>
-            <version>1.14</version>
+            <version>1.17</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
@@ -103,18 +104,17 @@
             <version>${workflow.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>credentials-binding</artifactId>
+            <version>1.7</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>config-file-provider</artifactId>
+            <version>2.10.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>findbugs-maven-plugin</artifactId>
-                <version>3.0.2</version>
-                <configuration>
-                    <xmlOutput>true</xmlOutput>
-                    <failOnError>false</failOnError>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>
