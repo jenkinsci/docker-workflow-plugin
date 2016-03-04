@@ -145,8 +145,9 @@ public class WithContainerStep extends AbstractStepImpl {
             return false;
         }
 
-        @Override public void stop(Throwable cause) throws Exception {
+        @Override public void stop(@Nonnull Throwable cause) throws Exception {
             if (container != null) {
+                LOGGER.log(Level.FINE, "stopping container " + container, cause);
                 destroy(container, launcher, getContext().get(Node.class), env, toolName);
             }
         }
@@ -251,6 +252,7 @@ public class WithContainerStep extends AbstractStepImpl {
         }
 
         @Override public void onFailure(StepContext context, Throwable t) {
+            LOGGER.log(Level.FINE, "execution failure container=" + container, t);
             stopContainer(context);
             context.onFailure(t);
         }
