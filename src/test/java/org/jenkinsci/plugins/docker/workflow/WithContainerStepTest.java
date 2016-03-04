@@ -23,27 +23,41 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.domains.Domain;
+import hudson.model.FileParameterValue;
 import hudson.model.Result;
 import hudson.tools.ToolProperty;
+import java.io.File;
 import java.util.Collections;
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.io.FileUtils;
+import org.jenkinsci.lib.configprovider.ConfigProvider;
+import org.jenkinsci.lib.configprovider.model.Config;
+import org.jenkinsci.plugins.configfiles.custom.CustomConfig;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
-import org.jenkinsci.plugins.workflow.BuildWatcher;
-import org.jenkinsci.plugins.workflow.JenkinsRuleExt;
+import org.jenkinsci.plugins.plaincredentials.impl.FileCredentialsImpl;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.steps.StepConfigTester;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runners.model.Statement;
+import org.jvnet.hudson.test.BuildWatcher;
+import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
 
 public class WithContainerStepTest {
 
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
     @Rule public RestartableJenkinsRule story = new RestartableJenkinsRule();
+    @Rule public TemporaryFolder tmp = new TemporaryFolder();
     
     @Test public void configRoundTrip() {
         story.addStep(new Statement() {
@@ -88,9 +102,9 @@ public class WithContainerStepTest {
                     "  }\n" +
                     "}", true));
                 WorkflowRun b = p.scheduleBuild2(0).waitForStart();
-                JenkinsRuleExt.waitForMessage("sleeping now", b);
+                story.j.waitForMessage("sleeping now", b);
                 b.doStop();
-                story.j.assertBuildStatus(Result.ABORTED, JenkinsRuleExt.waitForCompletion(b));
+                story.j.assertBuildStatus(Result.ABORTED, story.j.waitForCompletion(b));
                 story.j.assertLogContains("script returned exit code 99", b);
             }
         });
@@ -134,7 +148,69 @@ public class WithContainerStepTest {
                 SemaphoreStep.success("wait/1", null);
                 WorkflowJob p = story.j.jenkins.getItemByFullName("prj", WorkflowJob.class);
                 WorkflowRun b = p.getLastBuild();
-                story.j.assertLogContains("Require method GET POST OPTIONS", story.j.assertBuildStatusSuccess(JenkinsRuleExt.waitForCompletion(b)));
+                story.j.assertLogContains("Require method GET POST OPTIONS", story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
+            }
+        });
+    }
+
+    @Issue("JENKINS-32943")
+    @Test public void fileCredentials() throws Exception {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                DockerTestUtil.assumeDocker();
+                File f = tmp.newFile("some-file");
+                FileUtils.write(f, "some-content");
+                FileItem fi = new FileParameterValue.FileItemImpl(f);
+                FileCredentialsImpl fc = new FileCredentialsImpl(CredentialsScope.GLOBAL, "secretfile", "", fi, fi.getName(), null);
+                CredentialsProvider.lookupStores(story.j.jenkins).iterator().next().addCredentials(Domain.global(), fc);
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                    "  withDockerContainer('ubuntu') {\n" +
+                    "    withCredentials([[$class: 'FileBinding', credentialsId: 'secretfile', variable: 'FILE']]) {\n" +
+                    "      sh 'cat $FILE'\n" +
+                    "    }\n" +
+                    "  }\n" +
+                    "  withCredentials([[$class: 'FileBinding', credentialsId: 'secretfile', variable: 'FILE']]) {\n" +
+                    "    withDockerContainer('ubuntu') {\n" +
+                    "      sh 'tr \"a-z\" \"A-Z\" < $FILE'\n" +
+                    "    }\n" +
+                    "  }\n" +
+                    "}", true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertLogContains("some-content", b);
+                story.j.assertLogContains("SOME-CONTENT", b);
+            }
+        });
+    }
+
+    @Ignore("TODO needs 2.10.1 release")
+    @Issue("JENKINS-27152")
+    @Test public void configFile() throws Exception {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                DockerTestUtil.assumeDocker();
+                ConfigProvider configProvider = story.j.jenkins.getExtensionList(ConfigProvider.class).get(CustomConfig.CustomConfigProvider.class);
+                String id = configProvider.getProviderId() + "myfile";
+                Config config = new CustomConfig(id, "My File", "", "some-content");
+                configProvider.save(config);
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                    "  withDockerContainer('ubuntu') {\n" +
+                        "  wrap([$class: 'ConfigFileBuildWrapper', managedFiles: [[fileId: '" + config.id + "', variable: 'FILE']]]) {\n" +
+                        "    sh 'cat $FILE'\n" +
+                        "  }\n" +
+                    "  }\n" +
+                    "  wrap([$class: 'ConfigFileBuildWrapper', managedFiles: [[fileId: '" + config.id + "', variable: 'FILE']]]) {\n" +
+                    "    withDockerContainer('ubuntu') {\n" +
+                    "      sh 'tr \"a-z\" \"A-Z\" < $FILE'\n" +
+                    "    }\n" +
+                    "  }\n" +
+                    "}", true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertLogContains("some-content", b);
+                story.j.assertLogContains("SOME-CONTENT", b);
             }
         });
     }

@@ -45,8 +45,6 @@ import org.jenkinsci.plugins.docker.commons.fingerprint.DockerAncestorFingerprin
 import org.jenkinsci.plugins.docker.commons.fingerprint.DockerDescendantFingerprintFacet;
 import org.jenkinsci.plugins.docker.commons.fingerprint.DockerFingerprints;
 import org.jenkinsci.plugins.docker.commons.fingerprint.DockerRunFingerprintFacet;
-import org.jenkinsci.plugins.workflow.BuildWatcher;
-import org.jenkinsci.plugins.workflow.JenkinsRuleExt;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
@@ -57,6 +55,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.model.Statement;
+import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
 
 public class DockerDSLTest {
@@ -80,7 +79,7 @@ public class DockerDSLTest {
                 WorkflowRun b = p.getLastBuild();
                 assertEquals(Collections.<String>emptySet(), grep(b.getRootDir(), "org.jenkinsci.plugins.docker.workflow.Docker"));
                 SemaphoreStep.success("wait/1", null);
-                story.j.assertBuildStatusSuccess(JenkinsRuleExt.waitForCompletion(b));
+                story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b));
             }
         });
     }
@@ -126,7 +125,7 @@ public class DockerDSLTest {
                 SemaphoreStep.success("wait/1", null);
                 WorkflowJob p = story.j.jenkins.getItemByFullName("prj", WorkflowJob.class);
                 WorkflowRun b = p.getLastBuild();
-                story.j.assertLogContains("Require method GET POST OPTIONS", story.j.assertBuildStatusSuccess(JenkinsRuleExt.waitForCompletion(b)));
+                story.j.assertLogContains("Require method GET POST OPTIONS", story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
                 story.j.assertLogContains("the answer is 42", b);
                 DockerClient client = new DockerClient(new Launcher.LocalLauncher(StreamTaskListener.NULL), null, null);
                 String httpdIID = client.inspect(new EnvVars(), "httpd:2.4.12", ".Id");
@@ -162,7 +161,7 @@ public class DockerDSLTest {
             @Override public void evaluate() throws Throwable {
                 SemaphoreStep.success("wait/1", null);
                 WorkflowJob p = story.j.jenkins.getItemByFullName("prj", WorkflowJob.class);
-                WorkflowRun b = story.j.assertBuildStatusSuccess(JenkinsRuleExt.waitForCompletion(p.getLastBuild()));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(story.j.waitForCompletion(p.getLastBuild()));
                 story.j.assertLogContains("would be connecting to tcp://host:1234", b);
                 story.j.assertLogContains("image name is docker.my.com/whatever", b);
             }
@@ -209,7 +208,7 @@ public class DockerDSLTest {
                 SemaphoreStep.success("wait/1", null);
                 WorkflowJob p = story.j.jenkins.getItemByFullName("prj", WorkflowJob.class);
                 WorkflowRun b = p.getLastBuild();
-                story.j.assertLogContains("Require method GET POST OPTIONS", story.j.assertBuildStatusSuccess(JenkinsRuleExt.waitForCompletion(b)));
+                story.j.assertLogContains("Require method GET POST OPTIONS", story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
                 story.j.assertLogContains("the answer is 42", b);
                 DockerClient client = new DockerClient(new Launcher.LocalLauncher(StreamTaskListener.NULL), null, null);
                 String httpdIID = client.inspect(new EnvVars(), "httpd:2.4.12", ".Id");

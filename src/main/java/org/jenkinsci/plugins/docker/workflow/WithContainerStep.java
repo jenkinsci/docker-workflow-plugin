@@ -38,6 +38,7 @@ import hudson.model.Computer;
 import hudson.model.Node;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.slaves.WorkspaceList;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
@@ -48,6 +49,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Level;
@@ -137,25 +140,35 @@ public class WithContainerStep extends AbstractStepImpl {
                 listener.error("Failed to parse docker version. Please note there is a minimum docker version requirement of v1.3.");
             }
 
-            Map<String, String> volumes = new HashMap<String, String>();
-            Collection<String> volumesFromContainers = new ArrayList<String>();
+            FilePath tempDir = tempDir(workspace);
+            tempDir.mkdirs();
+            String tmp = tempDir.getRemote();
+
+            Map<String, String> volumes = new LinkedHashMap<String, String>();
+            Collection<String> volumesFromContainers = new LinkedHashSet<String>();
             Optional<String> containerId = dockerClient.getContainerIdIfContainerized();
             if (containerId.isPresent()) {
-                // check if there is any volume which contains the workspace
-                for (String vol : dockerClient.getVolumes(envHost, containerId.get())) {
-                    if (ws.startsWith(vol)) {
-                        volumesFromContainers.add(containerId.get());
-                        break;
+                final Collection<String> mountedVolumes = dockerClient.getVolumes(envHost, containerId.get());
+                final String[] dirs = {ws, tmp};
+                for (String dir : dirs) {
+                    // check if there is any volume which contains the directory
+                    boolean found = false;
+                    for (String vol : mountedVolumes) {
+                        if (dir.startsWith(vol)) {
+                            volumesFromContainers.add(containerId.get());
+                            found = true;
+                            break;
+                        }
                     }
-                }
-
-                if (volumesFromContainers.isEmpty()) {
-                    // there was no volume which contains the workspace, fall back to --volume mount
-                    volumes.put(ws, ws);
+                    if (!found) {
+                        // there was no volume which contains the directory, fall back to --volume mount
+                        volumes.put(dir, dir);
+                    }
                 }
             } else {
                 // Jenkins is not running inside a container
                 volumes.put(ws, ws);
+                volumes.put(tmp, tmp);
             }
 
             container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
@@ -168,8 +181,14 @@ public class WithContainerStep extends AbstractStepImpl {
             return false;
         }
 
-        @Override public void stop(Throwable cause) throws Exception {
+        // TODO use 1.652 use WorkspaceList.tempDir
+        private static FilePath tempDir(FilePath ws) {
+            return ws.sibling(ws.getName() + System.getProperty(WorkspaceList.class.getName(), "@") + "tmp");
+        }
+
+        @Override public void stop(@Nonnull Throwable cause) throws Exception {
             if (container != null) {
+                LOGGER.log(Level.FINE, "stopping container " + container, cause);
                 destroy(container, launcher, getContext().get(Node.class), env, toolName);
             }
         }
@@ -274,6 +293,7 @@ public class WithContainerStep extends AbstractStepImpl {
         }
 
         @Override public void onFailure(StepContext context, Throwable t) {
+            LOGGER.log(Level.FINE, "execution failure container=" + container, t);
             stopContainer(context);
             context.onFailure(t);
         }

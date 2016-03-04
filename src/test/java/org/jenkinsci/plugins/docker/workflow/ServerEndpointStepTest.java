@@ -32,8 +32,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerServerCredentials;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerServerEndpoint;
-import org.jenkinsci.plugins.workflow.BuildWatcher;
-import org.jenkinsci.plugins.workflow.JenkinsRuleExt;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
@@ -45,6 +43,7 @@ import static org.junit.Assert.*;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.runners.model.Statement;
+import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
 
 public class ServerEndpointStepTest {
@@ -93,7 +92,7 @@ public class ServerEndpointStepTest {
                 SemaphoreStep.success("wait/1", null);
                 WorkflowJob p = story.j.jenkins.getItemByFullName("prj", WorkflowJob.class);
                 WorkflowRun b = p.getLastBuild();
-                story.j.assertLogContains("would be connecting to tcp://host:1234", story.j.assertBuildStatusSuccess(JenkinsRuleExt.waitForCompletion(b)));
+                story.j.assertLogContains("would be connecting to tcp://host:1234", story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
             }
         });
     }
