@@ -44,6 +44,7 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.steps.StepConfigTester;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
@@ -183,6 +184,7 @@ public class WithContainerStepTest {
         });
     }
 
+    @Ignore("TODO needs 2.10.1 release")
     @Issue("JENKINS-27152")
     @Test public void configFile() throws Exception {
         story.addStep(new Statement() {

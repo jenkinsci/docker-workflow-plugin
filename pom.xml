@@ -107,13 +107,13 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>credentials-binding</artifactId>
-            <version>1.7-SNAPSHOT</version>
+            <version>1.7</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
+            <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>config-file-provider</artifactId>
-            <version>2.10.1-SNAPSHOT</version>
+            <version>2.10.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
