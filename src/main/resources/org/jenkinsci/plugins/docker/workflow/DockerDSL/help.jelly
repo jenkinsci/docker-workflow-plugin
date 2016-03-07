@@ -41,10 +41,10 @@
                 Creates an <code>Image</code> object with a specified name or ID. See below.
             </p>
         </dd>
-        <dt><code>build(image[, dir])</code></dt>
+        <dt><code>build(image[, dir, dockerFile])</code></dt>
         <dd>
             <p>
-                Runs <code>docker build</code> to create and tag the specified image from a <code>Dockerfile</code> in the current directory (or <code>dir</code>).
+                Runs <code>docker build</code> to create and tag the specified image from a <code>Dockerfile</code> (or <code>dockerFile</code>) in the current directory (or <code>dir</code>).
                 Returns the resulting <code>Image</code> object.
                 Records a <code>FROM</code> fingerprint in the build.
             </p>
