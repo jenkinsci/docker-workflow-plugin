@@ -286,7 +286,7 @@ public class DockerClient {
      * Checks if this {@link DockerClient} instance is running inside a container and returns the id of the container
      * if so.
      *
-     * @return a {@link Optional<String>} containing the <strong>container id</strong>, or <strong>absent</strong> if
+     * @return an optional string containing the <strong>container id</strong>, or <strong>absent</strong> if
      * it isn't containerized.
      */
     public Optional<String> getContainerIdIfContainerized() throws IOException, InterruptedException {
