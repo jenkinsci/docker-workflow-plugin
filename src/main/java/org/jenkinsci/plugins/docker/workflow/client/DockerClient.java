@@ -294,7 +294,7 @@ public class DockerClient {
 
         String cgroup = node.createPath("/proc/self/cgroup").readToString();
         Matcher matcher = pattern.matcher(cgroup);
-        return matcher.find() ? Optional.of(matcher.group("containerId")) : Optional.<String>absent();
+        return matcher.find() ? Optional.of(matcher.group(1)) : Optional.<String>absent();
     }
 
     public ContainerRecord getContainerRecord(@Nonnull EnvVars launchEnv, String containerId) throws IOException, InterruptedException {
