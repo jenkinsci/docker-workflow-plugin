@@ -146,7 +146,7 @@ public class WithContainerStep extends AbstractStepImpl {
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
             ImageAction.add(step.image, run);
             getContext().newBodyInvoker().
-                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost))).
+                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws))).
                     withCallback(new Callback(container, toolName)).
                     start();
             return false;
@@ -171,16 +171,27 @@ public class WithContainerStep extends AbstractStepImpl {
         private static final long serialVersionUID = 1;
         private final String container;
         private final String[] envHost;
+        private final String ws;
 
-        Decorator(String container, EnvVars envHost) {
+        Decorator(String container, EnvVars envHost, String ws) {
             this.container = container;
             this.envHost = Util.mapToEnv(envHost);
+            this.ws = ws;
         }
 
-        @Override public Launcher decorate(Launcher launcher, Node node) {
+        @Override public Launcher decorate(final Launcher launcher, Node node) {
             return new Launcher.DecoratedLauncher(launcher) {
                 @Override public Proc launch(Launcher.ProcStarter starter) throws IOException {
                     List<String> prefix = new ArrayList<String>(Arrays.asList("docker", "exec", container, "env"));
+                    if (ws != null) {
+                        FilePath cwd = starter.pwd();
+                        if (cwd != null) {
+                            String path = cwd.getRemote();
+                            if (!path.equals(ws)) {
+                                launcher.getListener().getLogger().println("JENKINS-33510: working directory will be " + ws + " not " + path);
+                            }
+                        }
+                    } // otherwise we are loading an old serialized Decorator
                     Set<String> envReduced = new TreeSet<String>(Arrays.asList(starter.envs()));
                     envReduced.removeAll(Arrays.asList(envHost));
                     prefix.addAll(envReduced);
