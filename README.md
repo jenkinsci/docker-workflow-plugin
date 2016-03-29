@@ -6,7 +6,7 @@ Jenkins plugin which allows building, testing, and using Docker images from Jenk
 Summary
 ---
 
-A full description is available in the plugin’s [documentation](http://jenkins-enterprise.cloudbees.com/docs/user-guide-docs/docker-workflow.html).
+A full description is available in the plugin’s [documentation](https://documentation.cloudbees.com/docs/cje-user-guide/docker-workflow.html).
 
 Demo
 ---

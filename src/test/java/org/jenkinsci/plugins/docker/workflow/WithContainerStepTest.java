@@ -215,4 +215,26 @@ public class WithContainerStepTest {
         });
     }
 
+    @Ignore("TODO no fix yet")
+    @Issue("JENKINS-33510")
+    @Test public void cd() throws Exception {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                DockerTestUtil.assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                    "  withDockerContainer('ubuntu') {\n" +
+                    "    sh 'mkdir subdir && echo somecontent > subdir/file'\n" +
+                    "    dir('subdir') {\n" +
+                    "      sh 'pwd; tr \"a-z\" \"A-Z\" < file'\n" +
+                    "    }\n" +
+                    "  }\n" +
+                    "}", true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertLogContains("SOMECONTENT", b);
+            }
+        });
+    }
+
 }
