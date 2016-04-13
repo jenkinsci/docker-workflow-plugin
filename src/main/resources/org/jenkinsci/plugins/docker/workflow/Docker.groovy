@@ -175,6 +175,13 @@ class Docker implements Serializable {
             docker.script.sh "docker stop ${id} && docker rm -f ${id}"
         }
 
+        public String ports() {
+            docker.script.sh "docker port ${id}"
+        }
+
+        public String port(int port) {
+            docker.script.sh "docker port ${id} ${port}"
+        }
     }
 
 }
