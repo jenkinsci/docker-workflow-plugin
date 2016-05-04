@@ -55,11 +55,12 @@
                 The image name with optional tag (<code>mycorp/myapp</code>, <code>mycorp/myapp:latest</code>) or ID (hexadecimal hash).
             </p>
         </dd>
-        <dt><code>Image.run([args])</code></dt>
+        <dt><code>Image.run([args, command])</code></dt>
         <dd>
             <p>
                 Uses <code>docker run</code> to run the image, and returns a <code>Container</code> which you could <code>stop</code> later.
                 Additional <code>args</code> may be added, such as <code>'-p 8080:8080 --memory-swap=-1'</code>.
+                Optional <code>command</code> is equivalent to Docker command specified after the image.
                 Records a run fingerprint in the build.
             </p>
         </dd>

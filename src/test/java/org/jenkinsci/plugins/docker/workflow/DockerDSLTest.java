@@ -324,4 +324,20 @@ public class DockerDSLTest {
             }
         });
     }
+
+    @Test public void run() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                        "node {\n" +
+                                "     def busybox = docker.image('busybox');\n" +
+                                "     busybox.run('--rm', 'echo \"Hello\"');\n" +
+                                "}", true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertLogContains("Hello", b);
+            }
+        });
+    }
 }
