@@ -74,9 +74,10 @@ class Docker implements Serializable {
 
     public Image build(String image, String dir = '.') {
         node {
-            script.sh "docker build -t ${image} ${dir}"
-            script.dockerFingerprintFrom dockerfile: "${dir}/Dockerfile", image: image, toolName: script.env.DOCKER_TOOL_NAME
-            this.image(image)
+            def Image = this.image(image);
+            script.sh "docker build -t ${Image.imageName()} ${dir}"
+            script.dockerFingerprintFrom dockerfile: "${dir}/Dockerfile", image: Image.imageName(), toolName: script.env.DOCKER_TOOL_NAME
+            Image
         }
     }
 
@@ -103,13 +104,13 @@ class Docker implements Serializable {
         public <V> V inside(String args = '', Closure<V> body) {
             docker.node {
                 try {
-                    docker.script.sh "docker inspect -f . ${id}"
+                    docker.script.sh "docker inspect -f . ${imageName()}"
                     // OK, already pulled
                 } catch (hudson.AbortException e) {
                     // withDockerContainer requires the image to be available locally, since its start phase is not a durable task.
                     pull()
                 }
-                docker.script.withDockerContainer(image: id, args: args, toolName: docker.script.env.DOCKER_TOOL_NAME) {
+                docker.script.withDockerContainer(image: imageName(), args: args, toolName: docker.script.env.DOCKER_TOOL_NAME) {
                     body()
                 }
             }
@@ -143,9 +144,10 @@ class Docker implements Serializable {
 
         public void tag(String tagName = parsedId.tag, boolean force = true) {
             docker.node {
+                def oldImageName = imageName()
                 def taggedImageName = toQualifiedImageName(parsedId.userAndRepo + ':' + tagName)
                 // TODO as of 1.10.0 --force is deprecated; for 1.12+ do not try it even once
-                docker.script.sh "docker tag --force=${force} ${id} ${taggedImageName} || docker tag ${id} ${taggedImageName}"
+                docker.script.sh "docker tag --force=${force} ${oldImageName} ${taggedImageName} || docker tag ${oldImageName} ${taggedImageName}"
                 return taggedImageName;
             }
         }
