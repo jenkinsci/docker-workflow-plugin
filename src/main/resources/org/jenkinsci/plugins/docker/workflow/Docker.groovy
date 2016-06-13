@@ -72,10 +72,20 @@ class Docker implements Serializable {
         new Image(this, id)
     }
 
-    public Image build(String image, String dir = '.') {
+    public Image build(String image, String dir = '.', String args = '') {
         node {
-            script.sh "docker build -t ${image} ${dir}"
-            script.dockerFingerprintFrom dockerfile: "${dir}/Dockerfile", image: image, toolName: script.env.DOCKER_TOOL_NAME
+            // Detect custom Dockerfile:
+            def dockerfile = "${dir}/Dockerfile"
+            def parsedArgs = args.split(/ (?=([^"']*["'][^"']*["'])*[^"']*$)/)
+            for (int i=0; i<parsedArgs.length; i++) {
+                if (parsedArgs[i] == '-f' && i < (parsedArgs.length - 1)) {
+                    dockerfile = parsedArgs[i+1]
+                    break
+                }
+            }
+
+            script.sh "docker build -t ${image} ${args} ${dir}"
+            script.dockerFingerprintFrom dockerfile: dockerfile, image: image, toolName: script.env.DOCKER_TOOL_NAME
             this.image(image)
         }
     }
