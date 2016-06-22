@@ -343,16 +343,13 @@ public class DockerDSLTest {
 
     @Test public void port(){
         story.addStep(new Statement() {
-            @Override
-            public void evaluate() throws Throwable {
+            @Override public void evaluate() throws Throwable {
                 assumeDocker();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                         "  def img = docker.image('httpd:2.4.12')\n" +
-                        "  def container = img.run('-p 12345:80')\n" +
-                        "  def port = container.port(80)\n" +
-                        "  container.stop()\n" +
+                        "  def port = img.withRun('-p 12345:80') { c -> c.port(80) }\n" +
                         "  echo \"container running on ${port}\"" +
                     "}", true));
                 WorkflowRun r = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
