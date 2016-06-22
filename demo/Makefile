@@ -43,27 +43,13 @@ build-snapshot:
 #	
 # If using boot2docker, you need to tell your remote debugger to use the boot2docker VM ip (ala boot2docker ip).
 
-DOCKER_RUN=docker run --rm -p 8080:8080 -p 8081:8081 -p 8022:22 -p 18080:18080 --add-host=docker.example.com:127.0.0.1 -ti --privileged
+DOCKER_RUN=docker run --rm -p 8080:8080 -v /var/run/docker.sock:/var/run/docker.sock
 
 run:	build
 	$(DOCKER_RUN) $(IMAGE):$(TAG)
 
 run-snapshot:	build-snapshot
 	$(DOCKER_RUN) $(IMAGE):SNAPSHOT
-
-CACHE=$(shell pwd)/.cache
-DOCKER_RUN_CACHED=$(DOCKER_RUN) -v $(CACHE)/docker:/var/lib/docker -v $(CACHE)/maven:/m2repo
-
-prep-cache:
-	mkdir -p $(CACHE)/docker
-	sudo rm -rf $(CACHE)/docker/containers $(CACHE)/docker/linkgraph.db
-	mkdir -p $(CACHE)/maven
-
-run-cached:	build prep-cache
-	$(DOCKER_RUN_CACHED) $(IMAGE):$(TAG)
-
-run-snapshot-cached:	build-snapshot prep-cache
-	$(DOCKER_RUN_CACHED) $(IMAGE):SNAPSHOT
 
 clean:
 	rm -rf snapshot-plugins

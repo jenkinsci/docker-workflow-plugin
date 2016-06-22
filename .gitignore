@@ -1,6 +1,5 @@
 target
 work
-demo/.cache/
 demo/snapshot-plugins/
 .idea
 *.iml

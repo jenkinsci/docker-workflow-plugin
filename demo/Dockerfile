@@ -26,24 +26,14 @@ FROM jenkinsci/workflow-demo:2.2
 
 USER root
 
-###############################################################
-# Docker in Docker https://github.com/jpetazzo/dind 
-    
-# Install Docker from Docker Inc. repositories.
-RUN curl -sSL https://get.docker.com/ | sh
+RUN apt-get update
+RUN apt-get install -y sudo apache2-utils
+RUN adduser jenkins sudo
+RUN echo 'Defaults !authenticate' >> /etc/sudoers
 
-# Define additional metadata for our image.
-VOLUME /var/lib/docker
-
-#
-###############################################################
-
-RUN apt-get update && apt-get install -y apparmor apache2-utils
-
-# Install the magic wrapper, tweaked to run our demo.
-ADD https://raw.githubusercontent.com/jpetazzo/dind/b6c7f1ffdac20de54cb03033418d4708a9cb44ce/wrapdocker /usr/local/bin/
-RUN perl -p -i -e 's!\texec bash --login!\texec bash --login -c /usr/local/bin/run-demo.sh!' /usr/local/bin/wrapdocker
-RUN chmod +x /usr/local/bin/wrapdocker
+# Minimum for docker-workflow. Docker server does not accept a client newer than itself (older is OK).
+RUN wget -O /usr/bin/docker --no-check-certificate https://get.docker.com/builds/Linux/x86_64/docker-1.3.0
+RUN chmod a+x /usr/bin/docker
 
 COPY workflow-reg-proxy.conf /tmp/files/regup/workflow-reg-proxy.conf
 COPY gen-security-data.sh /usr/local/bin/gen-security-data.sh
@@ -58,5 +48,6 @@ ADD JENKINS_HOME /usr/share/jenkins/ref
 ADD repo /tmp/repo
 RUN git config --global user.email "demo@jenkins-ci.org" && git config --global user.name "Docker Workflow Demo" && cd /tmp/repo && git init && git add . && git commit -m 'demo'
 
-# wrapdocker has been modified to launch Jenkins via the installed run.sh script
-CMD ["wrapdocker"]
+# TODO populate local Maven cache from app & test
+
+CMD /usr/local/bin/run-demo.sh
