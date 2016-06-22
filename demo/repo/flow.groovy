@@ -1,7 +1,7 @@
 node {
   git '/tmp/repo'
 
-  def maven = docker.image('maven:3.3.3-jdk-8'); // https://registry.hub.docker.com/_/maven/
+  def maven = docker.image('maven:3.3.9-jdk-8'); // https://registry.hub.docker.com/_/maven/
 
   stage 'Mirror'
   // First make sure the slave has this image.

@@ -22,7 +22,7 @@
 # THE SOFTWARE.
 ##
 
-FROM jenkinsci/workflow-demo:SNAPSHOT
+FROM jenkinsci/workflow-demo:2.2
 
 USER root
 
@@ -32,10 +32,6 @@ USER root
 # Install Docker from Docker Inc. repositories.
 RUN curl -sSL https://get.docker.com/ | sh
 
-# Install the magic wrapper.
-ADD wrapdocker /usr/local/bin/wrapdocker
-RUN chmod +x /usr/local/bin/wrapdocker
-
 # Define additional metadata for our image.
 VOLUME /var/lib/docker
 
@@ -44,16 +40,18 @@ VOLUME /var/lib/docker
 
 RUN apt-get update && apt-get install -y apparmor apache2-utils
 
+# Install the magic wrapper, tweaked to run our demo.
+ADD https://raw.githubusercontent.com/jpetazzo/dind/b6c7f1ffdac20de54cb03033418d4708a9cb44ce/wrapdocker /usr/local/bin/
+RUN perl -p -i -e 's!\texec bash --login!\texec bash --login -c /usr/local/bin/run-demo.sh!' /usr/local/bin/wrapdocker
+RUN chmod +x /usr/local/bin/wrapdocker
+
 COPY workflow-reg-proxy.conf /tmp/files/regup/workflow-reg-proxy.conf
 COPY gen-security-data.sh /usr/local/bin/gen-security-data.sh
 RUN /usr/local/bin/gen-security-data.sh /tmp/files/regup/sec
 COPY run-demo.sh /usr/local/bin/run-demo.sh
 
 COPY plugins.txt /tmp/files/
-RUN sed -i "s/docker-workflow:@VERSION@//g" /tmp/files/plugins.txt
 RUN /usr/local/bin/plugins.sh /tmp/files/plugins.txt
-RUN touch /usr/share/jenkins/ref/plugins/credentials.jpi.pinned
-ADD snapshot-plugins /usr/share/jenkins/ref/plugins
 
 ADD JENKINS_HOME /usr/share/jenkins/ref
 

@@ -22,33 +22,30 @@
 # THE SOFTWARE.
 ##
 
-TAG=$(shell cat docker-workflow-version.txt)
+TAG=$(shell perl -n -e 'if (/docker-workflow:(.+)/) {print $$1}' plugins.txt)
 IMAGE=jenkinsci/docker-workflow-demo
 
 # Builds a demo based on a released version of the plugin.
 build:
-	docker build -t $(IMAGE):$(TAG) -f Dockerfile_release .
+	docker build -t $(IMAGE):$(TAG) .
 
 # Builds a demo based on the current local snapshot build of the plugin.
 build-snapshot:
-	[ -f ../target/docker-workflow.hpi ] || mvn -f .. -DskipTests clean install
+	docker build -t $(IMAGE):RELEASE .
 	mkdir -p snapshot-plugins
-	cp -v ../target/docker-workflow.hpi snapshot-plugins/docker-workflow.jpi
-	echo 'You will need to first: make -C …/jenkinsci/workflow-plugin/demo build-snapshot'
-	docker build -t $(IMAGE):SNAPSHOT -f Dockerfile_snapshot .
+	for p in $$(cat plugins.txt|perl -pe s/:.+//g); do echo looking for snapshot builds of $$p; for g in org/jenkins-ci/plugins; do if [ -f ~/.m2/repository/$$g/$$p/maven-metadata-local.xml ]; then cp -v $$(ls -1 ~/.m2/repository/$$g/$$p/*-SNAPSHOT/*.hpi | tail -1) snapshot-plugins/$$p.jpi; fi; done; done
+	docker build -f Dockerfile-snapshot -t $(IMAGE):SNAPSHOT .
 
-#	
 # To connect a Java debugger to the Jenkins instance running in the docker container, simply add the following
 # options to the "docker run" command (just after the port mappings):
 #
 #       -p 5500:5500 -e JAVA_OPTS=-Xrunjdwp:transport=dt_socket,server=y,address=5500,suspend=n
 #	
 # If using boot2docker, you need to tell your remote debugger to use the boot2docker VM ip (ala boot2docker ip).
-#
 
 DOCKER_RUN=docker run --rm -p 8080:8080 -p 8081:8081 -p 8022:22 -p 18080:18080 --add-host=docker.example.com:127.0.0.1 -ti --privileged
 
-run:
+run:	build
 	$(DOCKER_RUN) $(IMAGE):$(TAG)
 
 run-snapshot:	build-snapshot
@@ -62,7 +59,7 @@ prep-cache:
 	sudo rm -rf $(CACHE)/docker/containers $(CACHE)/docker/linkgraph.db
 	mkdir -p $(CACHE)/maven
 
-run-cached:	prep-cache
+run-cached:	build prep-cache
 	$(DOCKER_RUN_CACHED) $(IMAGE):$(TAG)
 
 run-snapshot-cached:	build-snapshot prep-cache
