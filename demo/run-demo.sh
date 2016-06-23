@@ -33,17 +33,16 @@ sudo chmod a+rw /var/run/docker.sock
 echo '*************** Installing a local Docker Registry Service for the demo ***************'
 echo '***************            Please sit tight for a minute                ***************'
 
-REG_SETUP_PATH=/tmp/files/regup
-
-# TODO we need to kill these containers when run.sh exits
-# TODO these are not properly linked
+# TODO we need to kill these containers when run.sh exits; would be natural to switch to Compose
 docker run -d --name registry --restart=always registry:0.9.1
-docker run -d -p 443:443 --name wf-registry-proxy -v $REG_SETUP_PATH:/etc/nginx/conf.d/ -v $REG_SETUP_PATH/sec:/var/registry/certs --link registry:registry nginx:1.9.0
+docker run -d -p 443:443 --name wf-registry-proxy --link registry:registry nginx:docker-workflow-demo
+# Note that this https://github.com/docker/docker/issues/23177 workaround is useless since the Docker CLI does not do the hostname resolution, the server does:
+# echo $(docker inspect -f '{{.NetworkSettings.Gateway}}' $HOSTNAME) docker.example.com >> /etc/hosts
 
 echo '***************         Docker Registry Service running now             ***************'
 
 # In case some tagged images were left over from a previous run using a cache:
-(docker images -q examplecorp/spring-petclinic; docker images -q docker.example.com/examplecorp/spring-petclinic) | xargs docker rmi --no-prune=true --force
+(docker images -q examplecorp/spring-petclinic; docker images -q localhost/examplecorp/spring-petclinic) | xargs docker rmi --no-prune=true --force
 
 #
 # Remove the base workflow-demo "cd" job

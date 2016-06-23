@@ -23,7 +23,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 ##
-rm -rf $1
+
+set -e
+
+rm -rfv $1
 mkdir -p $1
 
 pushd $1
@@ -33,12 +36,12 @@ htpasswd -bmc docker-registry.htpasswd workflowuser 123123123
 # Create the CA Key and Certificate for signing Certs
 openssl genrsa -des3 -passout pass:x -out ca.key 4096
 openssl rsa -passin pass:x -in ca.key -out ca.key # remove password!
-openssl req -new -x509 -days 365 -key ca.key -out ca.crt -subj "/C=US/ST=California/L=San Jose/O=Jenkins CI/OU=Workflow Dept/CN=docker.example.com"
+openssl req -new -x509 -days 365 -key ca.key -out ca.crt -subj "/C=US/ST=California/L=San Jose/O=Jenkins CI/OU=Workflow Dept/CN=localhost"
  
 # Create the Server Key, CSR, and Certificate
 openssl genrsa -des3 -passout pass:x -out key.pem 1024
 openssl rsa -passin pass:x -in key.pem -out key.pem # remove password!
-openssl req -new -key key.pem -out server.csr -subj "/C=US/ST=California/L=San Jose/O=Jenkins CI/OU=Workflow Dept/CN=docker.example.com"
+openssl req -new -key key.pem -out server.csr -subj "/C=US/ST=California/L=San Jose/O=Jenkins CI/OU=Workflow Dept/CN=localhost"
  
 # Self sign the server cert.
 openssl x509 -req -days 365 -in server.csr -CA ca.crt -CAkey ca.key -set_serial 01 -out cert.pem

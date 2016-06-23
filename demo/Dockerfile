@@ -27,7 +27,7 @@ FROM jenkinsci/workflow-demo:2.2
 USER root
 
 RUN apt-get update
-RUN apt-get install -y sudo apache2-utils
+RUN apt-get install -y sudo
 RUN adduser jenkins sudo
 RUN echo 'Defaults !authenticate' >> /etc/sudoers
 
@@ -35,9 +35,6 @@ RUN echo 'Defaults !authenticate' >> /etc/sudoers
 RUN wget -O /usr/bin/docker --no-check-certificate https://get.docker.com/builds/Linux/x86_64/docker-1.3.0
 RUN chmod a+x /usr/bin/docker
 
-COPY workflow-reg-proxy.conf /tmp/files/regup/workflow-reg-proxy.conf
-COPY gen-security-data.sh /usr/local/bin/gen-security-data.sh
-RUN /usr/local/bin/gen-security-data.sh /tmp/files/regup/sec
 COPY run-demo.sh /usr/local/bin/run-demo.sh
 
 COPY plugins.txt /tmp/files/
