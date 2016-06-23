@@ -17,7 +17,7 @@ node {
     // Spin up a Maven container to build the petclinic app from source.
     // First set up a shared Maven repo so we don't need to download all dependencies on every build.
     maven.inside {
-      sh "mvn -Dmaven.repo.local=${pwd tmp: true}/m2repo -f app -B -DskipTests clean package"
+      sh "mvn -o -Dmaven.repo.local=${pwd tmp: true}/m2repo -f app -B -DskipTests clean package"
       // The app .war and Dockerfile are now available in the workspace. See below.
     }
     
@@ -43,7 +43,7 @@ node {
       testImg.inside("--link=${petclinic.id}:petclinic") {
         // https://github.com/jenkinsci/workflow-plugin/blob/master/basic-steps/CORE-STEPS.md#build-wrappers
         wrap([$class: 'Xvnc', takeScreenshot: true, useXauthority: true]) {
-          sh "mvn -Dmaven.repo.local=${pwd tmp: true}/m2repo -f test -B clean test"
+          sh "mvn -o -Dmaven.repo.local=${pwd tmp: true}/m2repo -f test -B clean test"
         }
       }
     }
