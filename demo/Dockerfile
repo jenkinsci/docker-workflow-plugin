@@ -45,6 +45,6 @@ ADD JENKINS_HOME /usr/share/jenkins/ref
 ADD repo /tmp/repo
 RUN git config --global user.email "demo@jenkins-ci.org" && git config --global user.name "Docker Workflow Demo" && cd /tmp/repo && git init && git add . && git commit -m 'demo'
 
-# TODO populate local Maven cache from app & test
+# TODO prepopulate /var/jenkins_home/jobs/docker-workflow/workspace@tmp/m2repo from app & test
 
 CMD /usr/local/bin/run-demo.sh
