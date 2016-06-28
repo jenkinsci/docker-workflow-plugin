@@ -39,8 +39,9 @@ ADD repo /tmp/repo
 RUN git config --global user.email "demo@jenkins-ci.org" && git config --global user.name "Docker Workflow Demo" && cd /tmp/repo && git init && git add . && git commit -m 'demo'
 
 # Run commands identical to those in Pipeline script to warm up the cache:
-RUN /usr/local/maven/bin/mvn -Dmaven.repo.local=/usr/share/jenkins/ref/jobs/docker-workflow/workspace@tmp/m2repo -f /tmp/repo/app -B -DskipTests clean package && \
-    /usr/local/maven/bin/mvn -Dmaven.repo.local=/usr/share/jenkins/ref/jobs/docker-workflow/workspace@tmp/m2repo -f /tmp/repo/test -B -Dmaven.test.failure.ignore clean test
+RUN echo '<settings><mirrors><mirror><id>central</id><url>http://repo.jenkins-ci.org/simple/repo1-cache/</url><mirrorOf>central</mirrorOf></mirror></mirrors></settings>' > settings.xml
+RUN /usr/local/maven/bin/mvn -s settings.xml -Dmaven.repo.local=/usr/share/jenkins/ref/jobs/docker-workflow/workspace@tmp/m2repo -f /tmp/repo/app -B -DskipTests clean package && \
+    /usr/local/maven/bin/mvn -s settings.xml -Dmaven.repo.local=/usr/share/jenkins/ref/jobs/docker-workflow/workspace@tmp/m2repo -f /tmp/repo/test -B -Dmaven.test.failure.ignore clean test
 
 COPY plugins.txt /tmp/files/
 RUN /usr/local/bin/plugins.sh /tmp/files/plugins.txt
