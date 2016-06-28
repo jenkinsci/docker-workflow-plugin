@@ -32,7 +32,7 @@ RUN adduser jenkins sudo
 RUN echo 'Defaults !authenticate' >> /etc/sudoers
 
 # Minimum for docker-workflow. Docker server does not accept a client newer than itself (older is OK).
-RUN wget -O /usr/bin/docker --no-check-certificate https://get.docker.com/builds/Linux/x86_64/docker-1.3.0
+RUN wget -O /usr/bin/docker --no-check-certificate https://get.docker.com/builds/Linux/x86_64/docker-1.4.0
 RUN chmod a+x /usr/bin/docker
 
 ADD repo /tmp/repo

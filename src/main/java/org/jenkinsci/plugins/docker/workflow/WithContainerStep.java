@@ -130,14 +130,14 @@ public class WithContainerStep extends AbstractStepImpl {
             toolName = step.toolName;
             DockerClient dockerClient = new DockerClient(launcher, node, toolName);
 
-            // Add a warning if the docker version is less than 1.3
+            // Add a warning if the docker version is less than 1.4
             VersionNumber dockerVersion = dockerClient.version();
             if (dockerVersion != null) {
-                if (dockerVersion.isOlderThan(new VersionNumber("1.3"))) {
-                    throw new AbortException("The docker version is less than v1.3. Pipeline functions requiring 'docker exec' will not work e.g. 'docker.inside'.");
+                if (dockerVersion.isOlderThan(new VersionNumber("1.4"))) {
+                    throw new AbortException("The docker version is less than v1.4. Pipeline functions requiring 'docker exec' will not work e.g. 'docker.inside'.");
                 }
             } else {
-                listener.error("Failed to parse docker version. Please note there is a minimum docker version requirement of v1.3.");
+                listener.error("Failed to parse docker version. Please note there is a minimum docker version requirement of v1.4.");
             }
 
             FilePath tempDir = tempDir(workspace);
