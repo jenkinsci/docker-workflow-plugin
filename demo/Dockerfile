@@ -35,18 +35,18 @@ RUN echo 'Defaults !authenticate' >> /etc/sudoers
 RUN wget -O /usr/bin/docker --no-check-certificate https://get.docker.com/builds/Linux/x86_64/docker-1.3.0
 RUN chmod a+x /usr/bin/docker
 
-COPY run-demo.sh /usr/local/bin/run-demo.sh
-
-COPY plugins.txt /tmp/files/
-RUN /usr/local/bin/plugins.sh /tmp/files/plugins.txt
-
-ADD JENKINS_HOME /usr/share/jenkins/ref
-
 ADD repo /tmp/repo
 RUN git config --global user.email "demo@jenkins-ci.org" && git config --global user.name "Docker Workflow Demo" && cd /tmp/repo && git init && git add . && git commit -m 'demo'
 
 # Run commands identical to those in Pipeline script to warm up the cache:
 RUN /usr/local/maven/bin/mvn -Dmaven.repo.local=/usr/share/jenkins/ref/jobs/docker-workflow/workspace@tmp/m2repo -f /tmp/repo/app -B -DskipTests clean package && \
     /usr/local/maven/bin/mvn -Dmaven.repo.local=/usr/share/jenkins/ref/jobs/docker-workflow/workspace@tmp/m2repo -f /tmp/repo/test -B -Dmaven.test.failure.ignore clean test
+
+COPY plugins.txt /tmp/files/
+RUN /usr/local/bin/plugins.sh /tmp/files/plugins.txt
+
+ADD JENKINS_HOME /usr/share/jenkins/ref
+
+COPY run-demo.sh /usr/local/bin/run-demo.sh
 
 CMD /usr/local/bin/run-demo.sh
