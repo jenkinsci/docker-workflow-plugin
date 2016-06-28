@@ -59,7 +59,7 @@ public class DockerClientTest {
     public void test_run() throws IOException, InterruptedException {
         EnvVars launchEnv = newLaunchEnv();
         String containerId =
-                dockerClient.run(launchEnv, "learn/tutorial", null, null, Collections.<String, String>emptyMap(), new EnvVars(),
+                dockerClient.run(launchEnv, "learn/tutorial", null, null, Collections.<String, String>emptyMap(), Collections.EMPTY_LIST, new EnvVars(),
                         dockerClient.whoAmI(), "echo", "hello world");
         Assert.assertEquals(64, containerId.length());
         ContainerRecord containerRecord = dockerClient.getContainerRecord(launchEnv, containerId);
@@ -67,6 +67,7 @@ public class DockerClientTest {
         Assert.assertTrue(containerRecord.getContainerName().length() > 0);
         Assert.assertTrue(containerRecord.getHost().length() > 0);
         Assert.assertTrue(containerRecord.getCreated() > 1000000000000L);
+        Assert.assertEquals(Collections.EMPTY_SET, dockerClient.getVolumes(launchEnv, containerId));
 
         // Also test that the stop works and cleans up after itself
         Assert.assertNotNull(dockerClient.inspect(launchEnv, containerId, ".Name"));

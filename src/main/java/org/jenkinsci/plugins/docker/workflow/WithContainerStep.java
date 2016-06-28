@@ -23,6 +23,7 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
+import com.google.common.base.Optional;
 import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import com.google.inject.Inject;
 import hudson.AbortException;
@@ -44,8 +45,12 @@ import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Level;
@@ -53,7 +58,6 @@ import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 
 import hudson.util.VersionNumber;
-import java.util.LinkedHashMap;
 import org.jenkinsci.plugins.docker.commons.fingerprint.DockerFingerprints;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepExecutionImpl;
@@ -135,14 +139,39 @@ public class WithContainerStep extends AbstractStepImpl {
             } else {
                 listener.error("Failed to parse docker version. Please note there is a minimum docker version requirement of v1.3.");
             }
-            
-            Map<String,String> volumes = new LinkedHashMap<String,String>();
-            volumes.put(ws, ws);
+
             FilePath tempDir = tempDir(workspace);
             tempDir.mkdirs();
             String tmp = tempDir.getRemote();
-            volumes.put(tmp, tmp);
-            container = dockerClient.run(env, step.image, step.args, ws, volumes, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
+
+            Map<String, String> volumes = new LinkedHashMap<String, String>();
+            Collection<String> volumesFromContainers = new LinkedHashSet<String>();
+            Optional<String> containerId = dockerClient.getContainerIdIfContainerized();
+            if (containerId.isPresent()) {
+                final Collection<String> mountedVolumes = dockerClient.getVolumes(envHost, containerId.get());
+                final String[] dirs = {ws, tmp};
+                for (String dir : dirs) {
+                    // check if there is any volume which contains the directory
+                    boolean found = false;
+                    for (String vol : mountedVolumes) {
+                        if (dir.startsWith(vol)) {
+                            volumesFromContainers.add(containerId.get());
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        // there was no volume which contains the directory, fall back to --volume mount
+                        volumes.put(dir, dir);
+                    }
+                }
+            } else {
+                // Jenkins is not running inside a container
+                volumes.put(ws, ws);
+                volumes.put(tmp, tmp);
+            }
+
+            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
             ImageAction.add(step.image, run);
             getContext().newBodyInvoker().
