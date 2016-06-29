@@ -48,7 +48,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -267,8 +266,7 @@ public class WithContainerStep extends AbstractStepImpl {
 
     }
 
-    // TODO use BodyExecutionCallback.TailCall from https://github.com/jenkinsci/workflow-plugin/pull/168
-    private static class Callback extends BodyExecutionCallback {
+    private static class Callback extends BodyExecutionCallback.TailCall {
 
         private static final long serialVersionUID = 1;
         private final String container;
@@ -279,34 +277,8 @@ public class WithContainerStep extends AbstractStepImpl {
             this.toolName = toolName;
         }
 
-        private void stopContainer(StepContext context) {
-            Launcher launcher;
-            TaskListener listener;
-            try {
-                launcher = context.get(Launcher.class);
-                listener = context.get(TaskListener.class);
-            } catch (Exception x2) {
-                LOGGER.log(Level.WARNING, null, x2);
-                return;
-            }
-            try {
-                EnvVars launcherEnv = context.get(EnvVars.class);
-                Node node = context.get(Node.class);
-                destroy(container, launcher, node, launcherEnv, toolName);
-            } catch (Exception x) {
-                x.printStackTrace(listener.error("Could not kill container " + container));
-            }
-        }
-
-        @Override public void onSuccess(StepContext context, Object result) {
-            stopContainer(context);
-            context.onSuccess(result);
-        }
-
-        @Override public void onFailure(StepContext context, Throwable t) {
-            LOGGER.log(Level.FINE, "execution failure container=" + container, t);
-            stopContainer(context);
-            context.onFailure(t);
+        @Override protected void finished(StepContext context) throws Exception {
+            destroy(container, context.get(Launcher.class), context.get(Node.class), context.get(EnvVars.class), toolName);
         }
 
     }

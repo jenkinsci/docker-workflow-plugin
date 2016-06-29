@@ -176,7 +176,7 @@ public class DockerClient {
      * @return The inspected field value. May be an empty string
      * @throws IOException Execution error. Also fails if cannot retrieve the requested field from the request
      * @throws InterruptedException Interrupted
-     * @since TODO
+     * @since 1.1
      */
     public @Nonnull String inspectRequiredField(@Nonnull EnvVars launchEnv, @Nonnull String objectId, 
             @Nonnull String fieldPath) throws IOException, InterruptedException {
