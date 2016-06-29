@@ -123,8 +123,9 @@ class Docker implements Serializable {
 
         public Container run(String args = '', String command = "") {
             docker.node {
-                docker.script.sh "docker run -d${args != '' ? ' ' + args : ''} ${id}${command != '' ? ' ' + command : ''} > .container"
-                def container = docker.script.readFile('.container').trim()
+                def tmp = docker.script.pwd tmp: true
+                docker.script.sh "mkdir -p '${tmp}' && docker run -d${args != '' ? ' ' + args : ''} ${id}${command != '' ? ' ' + command : ''} > '${tmp}/.container'"
+                def container = docker.script.readFile("${tmp}/.container").trim()
                 docker.script.dockerFingerprintRun containerId: container, toolName: docker.script.env.DOCKER_TOOL_NAME
                 new Container(docker, container)
             }
