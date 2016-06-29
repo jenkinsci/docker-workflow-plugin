@@ -340,4 +340,21 @@ public class DockerDSLTest {
             }
         });
     }
+
+    @Test public void port(){
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                        "  def img = docker.image('httpd:2.4.12')\n" +
+                        "  def port = img.withRun('-p 12345:80') { c -> c.port(80) }\n" +
+                        "  echo \"container running on ${port}\"" +
+                    "}", true));
+                WorkflowRun r = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertLogContains("container running on 0.0.0.0:12345", r);
+            }
+        });
+    }
 }

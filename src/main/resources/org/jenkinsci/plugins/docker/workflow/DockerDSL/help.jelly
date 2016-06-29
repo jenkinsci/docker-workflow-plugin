@@ -117,5 +117,11 @@
                 Runs <code>docker stop</code> and <code>docker rm</code> to shut down a container and remove its storage.
             </p>
         </dd>
+        <dt><code>Container.port(port)</code></dt>
+        <dd>
+            <p>
+                Runs <code>docker port</code> on the container to reveal how the port <code>port</code> is mapped on the host.
+            </p>
+        </dd>
     </dl>
 </j:jelly>
