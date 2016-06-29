@@ -1,7 +1,7 @@
 node {
   git '/tmp/repo'
 
-  def maven = docker.image('maven:3.3.3-jdk-8'); // https://registry.hub.docker.com/_/maven/
+  def maven = docker.image('maven:3.3.9-jdk-8'); // https://registry.hub.docker.com/_/maven/
 
   stage 'Mirror'
   // First make sure the slave has this image.
@@ -11,15 +11,13 @@ node {
   // We are pushing to a private secure Docker registry in this demo.
   // 'docker-registry-login' is the username/password credentials ID as defined in Jenkins Credentials.
   // This is used to authenticate the Docker client to the registry.
-  docker.withRegistry('https://docker.example.com/', 'docker-registry-login') {
+  docker.withRegistry('https://localhost/', 'docker-registry-login') {
 
     stage 'Build'
     // Spin up a Maven container to build the petclinic app from source.
     // First set up a shared Maven repo so we don't need to download all dependencies on every build.
-    // (we are only using -v here to share the Maven local repository across demo runs;
-    // otherwise would set -Dmaven.repo.local=${pwd()}/m2repo)
-    maven.inside('-v /m2repo:/m2repo') {
-      sh 'mvn -Dmaven.repo.local=/m2repo -f app -B -DskipTests clean package'
+    maven.inside {
+      sh "mvn -o -Dmaven.repo.local=${pwd tmp: true}/m2repo -f app -B -DskipTests clean package"
       // The app .war and Dockerfile are now available in the workspace. See below.
     }
     
@@ -42,10 +40,10 @@ node {
     def testImg = docker.build('examplecorp/spring-petclinic-tests:snapshot', 'test')
     // Run the petclinic app in its own Docker container.
     pcImg.withRun {petclinic ->
-      testImg.inside("-v /m2repo:/m2repo --link=${petclinic.id}:petclinic") {
+      testImg.inside("--link=${petclinic.id}:petclinic") {
         // https://github.com/jenkinsci/workflow-plugin/blob/master/basic-steps/CORE-STEPS.md#build-wrappers
         wrap([$class: 'Xvnc', takeScreenshot: true, useXauthority: true]) {
-          sh 'mvn -Dmaven.repo.local=/m2repo -f test -B clean test'
+          sh "mvn -o -Dmaven.repo.local=${pwd tmp: true}/m2repo -f test -B clean test"
         }
       }
     }

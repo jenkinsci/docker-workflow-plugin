@@ -23,6 +23,7 @@
  */
 package org.jenkinsci.plugins.docker.workflow.client;
 
+import com.google.common.base.Optional;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -38,9 +39,12 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
+import java.util.List;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -78,12 +82,13 @@ public class DockerClient {
      * @param args Any additional arguments for the {@code docker run} command.
      * @param workdir The working directory in the container, or {@code null} for default.
      * @param volumes Volumes to be bound. Supply an empty list if no volumes are to be bound.
+     * @param volumesFromContainers Mounts all volumes from the given containers.
      * @param containerEnv Environment variables to set in container.
      * @param user The <strong>uid:gid</strong> to execute the container command as. Use {@link #whoAmI()}.
      * @param command The command to execute in the image container being run.
      * @return The container ID.
      */
-    public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull EnvVars containerEnv, @Nonnull String user, @CheckForNull String... command) throws IOException, InterruptedException {
+    public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, @CheckForNull String... command) throws IOException, InterruptedException {
         ArgumentListBuilder argb = new ArgumentListBuilder();
 
         argb.add("run", "-t", "-d", "-u", user);
@@ -96,6 +101,9 @@ public class DockerClient {
         }
         for (Map.Entry<String, String> volume : volumes.entrySet()) {
             argb.add("-v", volume.getKey() + ":" + volume.getValue() + ":rw");
+        }
+        for (String containerId : volumesFromContainers) {
+            argb.add("--volumes-from", containerId);
         }
         for (Map.Entry<String, String> variable : containerEnv.entrySet()) {
             argb.add("-e");
@@ -274,6 +282,21 @@ public class DockerClient {
 
     }
 
+    /**
+     * Checks if this {@link DockerClient} instance is running inside a container and returns the id of the container
+     * if so.
+     *
+     * @return an optional string containing the <strong>container id</strong>, or <strong>absent</strong> if
+     * it isn't containerized.
+     */
+    public Optional<String> getContainerIdIfContainerized() throws IOException, InterruptedException {
+        final Pattern pattern = Pattern.compile("(?m)^\\d+:\\w+:/docker/(?<containerId>\\p{XDigit}{12,})$");
+
+        String cgroup = node.createPath("/proc/self/cgroup").readToString();
+        Matcher matcher = pattern.matcher(cgroup);
+        return matcher.find() ? Optional.of(matcher.group(1)) : Optional.<String>absent();
+    }
+
     public ContainerRecord getContainerRecord(@Nonnull EnvVars launchEnv, String containerId) throws IOException, InterruptedException {
         String host = inspectRequiredField(launchEnv, containerId, ".Config.Hostname");
         String containerName = inspectRequiredField(launchEnv, containerId, ".Name");
@@ -284,5 +307,23 @@ public class DockerClient {
         return new ContainerRecord(host, containerId, image, containerName,
                 (created != null ? created.getTime() : 0L), 
                 Collections.<String,String>emptyMap());
+    }
+
+    /**
+     * Inspect the volumes of a docker image/container.
+     * @param launchEnv Docker client launch environment.
+     * @param objectId The image/container ID.
+     * @return a list of volumes of the docker image/container.
+     * @throws IOException Execution error. Also fails if cannot retrieve the requested field from the request
+     * @throws InterruptedException Interrupted
+     */
+    public List<String> getVolumes(@Nonnull EnvVars launchEnv, String objectId) throws IOException, InterruptedException {
+        LaunchResult result = launch(launchEnv, true, "inspect", "-f", "{{range $index, $element := .Config.Volumes}}{{$index}}\n{{end}}", objectId);
+        if (result.getStatus() != 0) {
+            return Collections.EMPTY_LIST;
+        }
+
+        String volumes = result.getOut();
+        return Arrays.asList(volumes.split("\\n"));
     }
 }

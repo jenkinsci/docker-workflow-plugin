@@ -4,7 +4,7 @@ This image contains a "Docker Pipeline" Job that demonstrates Jenkins Pipeline i
 with Docker via [CloudBees Docker Pipeline](https://wiki.jenkins-ci.org/display/JENKINS/CloudBees+Docker+Pipeline+Plugin) plugin.
 
 ```
-docker run --rm -p 8080:8080 -p 8081:8081 -p 8022:22 --add-host=docker.example.com:127.0.0.1 -ti --privileged jenkinsci/docker-workflow-demo
+docker run --rm -p 8080:8080 -v /var/run/docker.sock:/var/run/docker.sock jenkinsci/docker-workflow-demo
 ```
 
 The "Docker Pipeline" Job simply does the following:
@@ -29,3 +29,5 @@ The `docker` DSL supports some additional capabilities not shown in the "Docker 
   * `docker.withServer(<serverUri>, <serverCredentialsId>)` 
 1. Use the `Image.pull` to pull Docker image layers into the Docker host cache.
 1. Use the `Image.push` to push a Docker image to the associated Docker Registry. See `docker.withRegistry` above. 
+
+The image needs to run Docker commands, so it assumes that your Docker daemon is listening to `/var/run/docker.sock` ([discussion](https://github.com/docker/docker/issues/1143)). This is not “Docker-in-Docker”; the container only runs the CLI and connects back to the host to start sister containers. The `run` target also makes reference to file paths on the Docker host, assuming they are where you are running that command, so this target *cannot work* on boot2docker. There may be some way to run this demo using boot2docker; if so, please contribute it.
