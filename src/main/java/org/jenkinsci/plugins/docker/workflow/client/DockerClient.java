@@ -49,7 +49,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 
 /**
@@ -320,10 +319,13 @@ public class DockerClient {
     public List<String> getVolumes(@Nonnull EnvVars launchEnv, String objectId) throws IOException, InterruptedException {
         LaunchResult result = launch(launchEnv, true, "inspect", "-f", "{{range $index, $element := .Config.Volumes}}{{$index}}\n{{end}}", objectId);
         if (result.getStatus() != 0) {
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
         }
 
         String volumes = result.getOut();
+        if (volumes.isEmpty()) {
+            return Collections.emptyList();
+        }
         return Arrays.asList(volumes.split("\\n"));
     }
 }
