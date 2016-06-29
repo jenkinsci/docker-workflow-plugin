@@ -121,6 +121,18 @@ class Docker implements Serializable {
             }
         }
 
+        public void cp(String from = '', String to = "") {
+            docker.node {
+                docker.script.sh "docker create ${id} > .container"
+                def container = docker.script.readFile('.container').trim()
+                try {
+                    docker.script.sh "docker cp ${container}:${from} ${to}"
+                } finally {
+                    docker.script.sh "docker rm -v ${container}"
+                }
+            }
+        }
+
         public Container run(String args = '', String command = "") {
             docker.node {
                 docker.script.sh "docker run -d${args != '' ? ' ' + args : ''} ${id}${command != '' ? ' ' + command : ''} > .container"
