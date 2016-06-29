@@ -290,8 +290,14 @@ public class DockerClient {
      */
     public Optional<String> getContainerIdIfContainerized() throws IOException, InterruptedException {
         final Pattern pattern = Pattern.compile("(?m)^\\d+:\\w+:/docker/(?<containerId>\\p{XDigit}{12,})$");
-
-        String cgroup = node.createPath("/proc/self/cgroup").readToString();
+        if (node == null) {
+            return Optional.absent();
+        }
+        FilePath cgroupFile = node.createPath("/proc/self/cgroup");
+        if (cgroupFile == null) {
+            return Optional.absent();
+        }
+        String cgroup = cgroupFile.readToString();
         Matcher matcher = pattern.matcher(cgroup);
         return matcher.find() ? Optional.of(matcher.group(1)) : Optional.<String>absent();
     }
