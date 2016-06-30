@@ -41,11 +41,11 @@
                 Creates an <code>Image</code> object with a specified name or ID. See below.
             </p>
         </dd>
-        <dt><code>build(image[, dir, args])</code></dt>
+        <dt><code>build(image[, args])</code></dt>
         <dd>
             <p>
-                Runs <code>docker build</code> to create and tag the specified image from a <code>Dockerfile</code> in the current directory (or <code>dir</code>).
-                Additional <code>args</code> may be added, such as <code>'-f Dockerfile.other --pull --build-arg http_proxy=http://192.168.1.1:3128'</code>.
+                Runs <code>docker build</code> to create and tag the specified image from a <code>Dockerfile</code> in the current directory.
+                Additional <code>args</code> may be added, such as <code>'-f Dockerfile.other --pull --build-arg http_proxy=http://192.168.1.1:3128 .'</code>. Like <code>docker build</code>, <code>args</code> must end with the build context.
                 Returns the resulting <code>Image</code> object.
                 Records a <code>FROM</code> fingerprint in the build.
             </p>

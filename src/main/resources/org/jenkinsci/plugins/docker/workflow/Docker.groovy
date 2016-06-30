@@ -72,11 +72,13 @@ class Docker implements Serializable {
         new Image(this, id)
     }
 
-    public Image build(String image, String dir = '.', String args = '') {
+    public Image build(String image, String args = '.') {
         node {
+            def parsedArgs = args.split(/ (?=([^"']*["'][^"']*["'])*[^"']*$)/)
+            def dir = parsedArgs[-1] ?: '.'
+
             // Detect custom Dockerfile:
             def dockerfile = "${dir}/Dockerfile"
-            def parsedArgs = args.split(/ (?=([^"']*["'][^"']*["'])*[^"']*$)/)
             for (int i=0; i<parsedArgs.length; i++) {
                 if (parsedArgs[i] == '-f' && i < (parsedArgs.length - 1)) {
                     dockerfile = parsedArgs[i+1]
@@ -84,7 +86,7 @@ class Docker implements Serializable {
                 }
             }
 
-            script.sh "docker build -t ${image} ${args} ${dir}"
+            script.sh "docker build -t ${image} ${args}"
             script.dockerFingerprintFrom dockerfile: dockerfile, image: image, toolName: script.env.DOCKER_TOOL_NAME
             this.image(image)
         }

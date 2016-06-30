@@ -300,7 +300,7 @@ public class DockerDSLTest {
                         "  writeFile file: 'child/stuff2', text: 'world'\n" +
                         "  writeFile file: 'child/stuff3', text: env.BUILD_NUMBER\n" +
                         "  writeFile file: 'child/Dockerfile.other', text: '# This is a test.\\n\\nFROM hello-world\\nARG stuff4=4\\nARG stuff5=5\\nCOPY stuff1 /\\nCOPY stuff2 /\\nCOPY stuff3 /\\n'\n" +
-                        "  def built = docker.build 'hello-world-stuff-arguments', 'child', '-f child/Dockerfile.other --pull --build-arg stuff4=build4 --build-arg stuff5=build5'\n" +
+                        "  def built = docker.build 'hello-world-stuff-arguments', '-f child/Dockerfile.other --pull --build-arg stuff4=build4 --build-arg stuff5=build5 child'\n" +
                         "  echo \"built ${built.id}\"\n" +
                         "}", true));
 
