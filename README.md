@@ -12,6 +12,16 @@ Demo
 ---
 The plugin has a Docker-based demo. See the [demo README](demo/README.md) page for setup and launch guidelines.
 
+Releasing
+---
+
+Prior to release, run:
+
+    mvn -DskipTests clean install
+    make -C demo clean run-snapshot
+
+and verify that the demo works.
+
 License
 ---
 [MIT License](http://opensource.org/licenses/MIT)
