@@ -22,6 +22,14 @@ Prior to release, run:
 
 and verify that the demo works.
 
+After the release makes it to the update center, update the `docker-workflow` version in `demo/plugins.txt` and run
+
+    make -C demo run
+    
+to sanity check, then
+
+    make -C demo push-latest
+
 License
 ---
 [MIT License](http://opensource.org/licenses/MIT)
