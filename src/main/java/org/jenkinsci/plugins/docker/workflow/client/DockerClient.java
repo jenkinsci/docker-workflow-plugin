@@ -294,7 +294,7 @@ public class DockerClient {
             return Optional.absent();
         }
         FilePath cgroupFile = node.createPath("/proc/self/cgroup");
-        if (cgroupFile == null) {
+        if (cgroupFile == null || !cgroupFile.exists()) {
             return Optional.absent();
         }
         String cgroup = cgroupFile.readToString();
