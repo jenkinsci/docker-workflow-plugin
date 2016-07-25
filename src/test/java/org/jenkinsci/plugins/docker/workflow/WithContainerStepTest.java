@@ -184,7 +184,6 @@ public class WithContainerStepTest {
         });
     }
 
-    @Ignore("TODO needs 2.10.1 release")
     @Issue("JENKINS-27152")
     @Test public void configFile() throws Exception {
         story.addStep(new Statement() {
