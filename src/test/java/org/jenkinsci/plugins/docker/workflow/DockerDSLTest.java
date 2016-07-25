@@ -288,6 +288,35 @@ public class DockerDSLTest {
         });
     }
 
+    @Test public void buildArguments() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                        "node {\n" +
+                        "  sh 'mkdir -p child'\n" +
+                        "  writeFile file: 'child/stuff1', text: 'hello'\n" +
+                        "  writeFile file: 'child/stuff2', text: 'world'\n" +
+                        "  writeFile file: 'child/stuff3', text: env.BUILD_NUMBER\n" +
+                        "  writeFile file: 'child/Dockerfile.other', text: '# This is a test.\\n\\nFROM hello-world\\nARG stuff4=4\\nARG stuff5=5\\nCOPY stuff1 /\\nCOPY stuff2 /\\nCOPY stuff3 /\\n'\n" +
+                        "  def built = docker.build 'hello-world-stuff-arguments', '-f child/Dockerfile.other --pull --build-arg stuff4=build4 --build-arg stuff5=build5 child'\n" +
+                        "  echo \"built ${built.id}\"\n" +
+                        "}", true));
+
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                DockerClient client = new DockerClient(new Launcher.LocalLauncher(StreamTaskListener.NULL), null, null);
+                String descendantImageId1 = client.inspect(new EnvVars(), "hello-world-stuff-arguments", ".Id");
+                story.j.assertLogContains("built hello-world-stuff-arguments", b);
+                story.j.assertLogContains(" --pull ", b);
+                story.j.assertLogNotContains(" --no-cache ", b);
+                story.j.assertLogContains(descendantImageId1.replaceFirst("^sha256:", "").substring(0, 12), b);
+                story.j.assertLogContains(" --build-arg stuff4=build4 ", b);
+                story.j.assertLogContains(" --build-arg stuff5=build5 ", b);
+            }
+        });
+    }
+
     @Test public void withTool() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
