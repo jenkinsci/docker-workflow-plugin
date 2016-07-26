@@ -58,7 +58,7 @@ class Docker implements Serializable {
     }
 
     private <V> V node(Closure<V> body) {
-        if (script.env.HOME != null) { // http://unix.stackexchange.com/a/123859/26736
+        if (script.env.NODE_NAME != null) {
             // Already inside a node block.
             body()
         } else {
