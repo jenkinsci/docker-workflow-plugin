@@ -4,7 +4,7 @@ This image contains a "Docker Pipeline" Job that demonstrates Jenkins Pipeline i
 with Docker via [CloudBees Docker Pipeline](https://wiki.jenkins-ci.org/display/JENKINS/CloudBees+Docker+Pipeline+Plugin) plugin.
 
 ```
-docker run --rm -p 8080:8080 -v /var/run/docker.sock:/var/run/docker.sock jenkinsci/docker-workflow-demo
+docker-compose up
 ```
 
 The "Docker Pipeline" Job simply does the following:
