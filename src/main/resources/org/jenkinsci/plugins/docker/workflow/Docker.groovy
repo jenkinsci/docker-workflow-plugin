@@ -114,10 +114,8 @@ class Docker implements Serializable {
         
         public <V> V inside(String args = '', Closure<V> body) {
             docker.node {
-                try {
-                    docker.script.sh "docker inspect -f . ${id}"
-                    // OK, already pulled
-                } catch (hudson.AbortException e) {
+                if (docker.script.sh(script: "docker inspect -f . ${id} >&- 2>&-", returnStatus: true) != 0) {
+                    // Not yet present locally.
                     // withDockerContainer requires the image to be available locally, since its start phase is not a durable task.
                     pull()
                 }
