@@ -62,5 +62,5 @@ push:
 	echo "consider also: make push-latest"
 
 push-latest: push
-	docker tag -f $(IMAGE):$(TAG) $(IMAGE):latest
+	docker tag $(IMAGE):$(TAG) $(IMAGE):latest
 	docker push $(IMAGE):latest
