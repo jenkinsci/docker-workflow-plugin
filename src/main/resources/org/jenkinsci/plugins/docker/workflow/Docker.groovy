@@ -114,10 +114,8 @@ class Docker implements Serializable {
         
         public <V> V inside(String args = '', Closure<V> body) {
             docker.node {
-                try {
-                    docker.script.sh "docker inspect -f . ${id}"
-                    // OK, already pulled
-                } catch (hudson.AbortException e) {
+                if (docker.script.sh(script: "docker inspect -f . ${id} >&- 2>&-", returnStatus: true) != 0) {
+                    // Not yet present locally.
                     // withDockerContainer requires the image to be available locally, since its start phase is not a durable task.
                     pull()
                 }
@@ -135,9 +133,7 @@ class Docker implements Serializable {
 
         public Container run(String args = '', String command = "") {
             docker.node {
-                def tmp = docker.script.pwd tmp: true
-                docker.script.sh "mkdir -p '${tmp}' && docker run -d${args != '' ? ' ' + args : ''} ${id}${command != '' ? ' ' + command : ''} > '${tmp}/.container'"
-                def container = docker.script.readFile("${tmp}/.container").trim()
+                def container = docker.script.sh(script: "docker run -d${args != '' ? ' ' + args : ''} ${id}${command != '' ? ' ' + command : ''}", returnStdout: true).trim()
                 docker.script.dockerFingerprintRun containerId: container, toolName: docker.script.env.DOCKER_TOOL_NAME
                 new Container(docker, container)
             }
