@@ -33,7 +33,6 @@ import org.jenkinsci.plugins.docker.commons.fingerprint.ContainerRecord;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.jvnet.hudson.test.For;
 
 import java.io.IOException;
 import java.util.Collections;
