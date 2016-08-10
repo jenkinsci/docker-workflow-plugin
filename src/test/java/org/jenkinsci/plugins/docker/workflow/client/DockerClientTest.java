@@ -33,9 +33,12 @@ import org.jenkinsci.plugins.docker.commons.fingerprint.ContainerRecord;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.jvnet.hudson.test.For;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author <a href="mailto:tom.fennelly@gmail.com">tom.fennelly@gmail.com</a>
@@ -86,6 +89,23 @@ public class DockerClientTest {
     @Test
     public void test_invalid_version() {
         Assert.assertNull(DockerClient.parseVersionNumber("xxx"));
+    }
+    
+    @Test
+    public void test_cgroup_string_matching() {
+    	
+    	final String[] possibleCgroupStrings = new String[] {
+    		"2:cpu:/docker/3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b",
+    		"4:cpuset:/system.slice/docker-3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b.scope"
+    	};
+    	
+    	for (final String possibleCgroupString : possibleCgroupStrings) {
+    		final Pattern pattern = Pattern.compile(DockerClient.CGROUP_MATCHER_PATTERN);
+    		Matcher matcher = pattern.matcher(possibleCgroupString);
+    		Assert.assertTrue(matcher.find());
+    		Assert.assertEquals("3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b", matcher.group(1));
+		}
+    	
     }
     
     private EnvVars newLaunchEnv() {

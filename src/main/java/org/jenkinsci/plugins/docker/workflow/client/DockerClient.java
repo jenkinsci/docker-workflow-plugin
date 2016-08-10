@@ -62,6 +62,14 @@ public class DockerClient {
 
     // e.g. 2015-04-09T13:40:21.981801679Z
     public static final String DOCKER_DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
+    
+    /**
+     * Known cgroup formats
+     * 
+     * 4:cpuset:/system.slice/docker-3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b.scope
+     * 2:cpu:/docker/3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b
+     */
+    public static final String CGROUP_MATCHER_PATTERN = "(?m)^\\d+:\\w+:(?:/[\\w\\.]+)?/docker[-/](?<containerId>\\p{XDigit}{12,})(?:\\.scope)?$";
 
     private Launcher launcher;
     private final @CheckForNull Node node;
@@ -289,7 +297,7 @@ public class DockerClient {
      * it isn't containerized.
      */
     public Optional<String> getContainerIdIfContainerized() throws IOException, InterruptedException {
-        final Pattern pattern = Pattern.compile("(?m)^\\d+:\\w+:/docker/(?<containerId>\\p{XDigit}{12,})$");
+        final Pattern pattern = Pattern.compile(CGROUP_MATCHER_PATTERN);
         if (node == null) {
             return Optional.absent();
         }
