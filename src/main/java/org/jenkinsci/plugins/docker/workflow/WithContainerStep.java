@@ -69,7 +69,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 public class WithContainerStep extends AbstractStepImpl {
-    
+
     private static final Logger LOGGER = Logger.getLogger(WithContainerStep.class.getName());
     private final @Nonnull String image;
     private String args;
@@ -78,7 +78,7 @@ public class WithContainerStep extends AbstractStepImpl {
     @DataBoundConstructor public WithContainerStep(@Nonnull String image) {
         this.image = image;
     }
-    
+
     public String getImage() {
         return image;
     }
@@ -132,11 +132,11 @@ public class WithContainerStep extends AbstractStepImpl {
             // Add a warning if the docker version is less than 1.4
             VersionNumber dockerVersion = dockerClient.version();
             if (dockerVersion != null) {
-                if (dockerVersion.isOlderThan(new VersionNumber("1.4"))) {
-                    throw new AbortException("The docker version is less than v1.4. Pipeline functions requiring 'docker exec' will not work e.g. 'docker.inside'.");
-                }
+              if (dockerVersion.isOlderThan(new VersionNumber("1.7"))) {
+                  throw new AbortException("The docker version is less than v1.7. Workflow functions requiring 'docker exec' will not work e.g. 'docker.inside'.");
+              }
             } else {
-                listener.error("Failed to parse docker version. Please note there is a minimum docker version requirement of v1.4.");
+                listener.error("Failed to parse docker version. Please note there is a minimum docker version requirement of v1.7.");
             }
 
             FilePath tempDir = tempDir(workspace);
@@ -170,7 +170,7 @@ public class WithContainerStep extends AbstractStepImpl {
                 volumes.put(tmp, tmp);
             }
 
-            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
+            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, null, /* expected to hang until killed */ "cat");
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
             ImageAction.add(step.image, run);
             getContext().newBodyInvoker().
@@ -220,6 +220,7 @@ public class WithContainerStep extends AbstractStepImpl {
                             }
                         }
                     } // otherwise we are loading an old serialized Decorator
+
                     Set<String> envReduced = new TreeSet<String>(Arrays.asList(starter.envs()));
                     envReduced.removeAll(Arrays.asList(envHost));
                     prefix.addAll(envReduced);
