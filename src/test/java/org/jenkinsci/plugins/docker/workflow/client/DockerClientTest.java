@@ -78,6 +78,26 @@ public class DockerClientTest {
     }
 
     @Test
+    public void test_run_without_user() throws IOException, InterruptedException {
+        EnvVars launchEnv = newLaunchEnv();
+        String containerId =
+                dockerClient.run(launchEnv, "learn/tutorial", null, null, Collections.<String, String>emptyMap(), Collections.<String>emptyList(), new EnvVars(),
+                        null, "echo", "hello world");
+        Assert.assertEquals(64, containerId.length());
+        ContainerRecord containerRecord = dockerClient.getContainerRecord(launchEnv, containerId);
+        Assert.assertEquals(dockerClient.inspect(launchEnv, "learn/tutorial", ".Id"), containerRecord.getImageId());
+        Assert.assertTrue(containerRecord.getContainerName().length() > 0);
+        Assert.assertTrue(containerRecord.getHost().length() > 0);
+        Assert.assertTrue(containerRecord.getCreated() > 1000000000000L);
+        Assert.assertEquals(Collections.<String>emptyList(), dockerClient.getVolumes(launchEnv, containerId));
+
+        // Also test that the stop works and cleans up after itself
+        Assert.assertNotNull(dockerClient.inspect(launchEnv, containerId, ".Name"));
+        dockerClient.stop(launchEnv, containerId);
+        Assert.assertNull(dockerClient.inspect(launchEnv, containerId, ".Name"));
+    }
+
+    @Test
     public void test_valid_version() {
         VersionNumber dockerVersion = DockerClient.parseVersionNumber("Docker version 1.5.0, build a8a31ef");
         Assert.assertFalse(dockerVersion.isOlderThan(new VersionNumber("1.1")));
