@@ -224,6 +224,41 @@ public class DockerDSLTest {
         });
     }
 
+    @Test public void withRunCommand() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                        "  semaphore 'wait'\n" +
+                        " docker.image('maven:3.3.9-jdk-8').withRun(\"--entrypoint mvn\", \"-version\") {c ->\n" +
+                                "  sh \"docker logs ${c.id}\"" +
+                                "}", true));
+                WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+                SemaphoreStep.waitForStart("wait/1", b);
+            }
+        });
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                SemaphoreStep.success("wait/1", null);
+                WorkflowJob p = story.j.jenkins.getItemByFullName("prj", WorkflowJob.class);
+                WorkflowRun b = p.getLastBuild();
+                story.j.assertLogContains("Maven home: /usr/share/maven", story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
+                story.j.assertLogContains("Java home: /usr/lib/jvm/java-8-openjdk-amd64/jre", b);
+                DockerClient client = new DockerClient(new Launcher.LocalLauncher(StreamTaskListener.NULL), null, null);
+                String httpdIID = client.inspect(new EnvVars(), "maven:3.3.9-jdk-8", ".Id");
+                Fingerprint f = DockerFingerprints.of(httpdIID);
+                assertNotNull(f);
+                DockerRunFingerprintFacet facet = f.getFacet(DockerRunFingerprintFacet.class);
+                assertNotNull(facet);
+                assertEquals(1, facet.records.size());
+                assertNotNull(facet.records.get(0).getContainerName());
+                assertEquals(Fingerprint.RangeSet.fromString("1", false), facet.getRangeSet(p));
+                assertEquals(Collections.singleton("maven"), DockerImageExtractor.getDockerImagesUsedByJobFromAll(p));
+            }
+        });
+    }
+
     @Test public void build() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
