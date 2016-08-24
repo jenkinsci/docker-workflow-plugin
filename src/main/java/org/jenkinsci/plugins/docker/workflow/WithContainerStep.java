@@ -174,7 +174,7 @@ public class WithContainerStep extends AbstractStepImpl {
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
             ImageAction.add(step.image, run);
             getContext().newBodyInvoker().
-                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws))).
+                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws, dockerClient.whoAmI()))).
                     withCallback(new Callback(container, toolName)).
                     start();
             return false;
@@ -200,17 +200,24 @@ public class WithContainerStep extends AbstractStepImpl {
         private final String container;
         private final String[] envHost;
         private final String ws;
+        private final String userId;
 
-        Decorator(String container, EnvVars envHost, String ws) {
+        Decorator(String container, EnvVars envHost, String ws, String userId) {
             this.container = container;
             this.envHost = Util.mapToEnv(envHost);
             this.ws = ws;
+            this.userId = userId;
         }
 
         @Override public Launcher decorate(final Launcher launcher, Node node) {
             return new Launcher.DecoratedLauncher(launcher) {
                 @Override public Proc launch(Launcher.ProcStarter starter) throws IOException {
-                    List<String> prefix = new ArrayList<String>(Arrays.asList("docker", "exec", container, "env"));
+                    List<String> prefix;
+                    if (userId == null) {
+                        prefix = new ArrayList<String>(Arrays.asList("docker", "exec", container, "env"));
+                    } else {
+                        prefix = new ArrayList<String>(Arrays.asList("docker", "exec", "--user", userId, container, "env"));
+                    }
                     if (ws != null) {
                         FilePath cwd = starter.pwd();
                         if (cwd != null) {
