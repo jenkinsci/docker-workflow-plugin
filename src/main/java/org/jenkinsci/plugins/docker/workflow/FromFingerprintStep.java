@@ -23,7 +23,6 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
-import org.apache.commons.io.IOUtils;
 import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import com.google.inject.Inject;
 import hudson.AbortException;
@@ -41,7 +40,7 @@ import java.io.InputStreamReader;
 import org.jenkinsci.plugins.docker.commons.fingerprint.DockerFingerprints;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
-import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
+import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -73,7 +72,7 @@ public class FromFingerprintStep extends AbstractStepImpl {
         this.toolName = Util.fixEmpty(toolName);
     }
 
-    public static class Execution extends AbstractSynchronousStepExecution<Void> {
+    public static class Execution extends AbstractSynchronousNonBlockingStepExecution<Void> {
         
         private static final long serialVersionUID = 1L;
 
