@@ -185,10 +185,7 @@ class Docker implements Serializable {
         }
 
         public String port(int port) {
-            docker.script.sh "docker port ${id} ${port} > .containerPort"
-            def val = docker.script.readFile('.containerPort').trim()
-            docker.script.sh "rm .containerPort"
-            return val;
+            docker.script.sh(script: "docker port ${id} ${port}", returnStdout: true).trim()
         }
     }
 
