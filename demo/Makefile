@@ -42,7 +42,8 @@ build-snapshot:
 DOCKER_RUN=docker run --rm -p 8080:8080 -v /var/run/docker.sock:/var/run/docker.sock
 
 run:
-	docker-compose up
+# http://stackoverflow.com/a/39300788/12916
+	bash -c "trap 'docker-compose down' EXIT; docker-compose up --build"
 
 run-snapshot:	build-snapshot
 	$(DOCKER_RUN) $(IMAGE):SNAPSHOT
