@@ -56,6 +56,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.BuildWatcher;
+import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
 
 public class DockerDSLTest {
@@ -137,6 +138,22 @@ public class DockerDSLTest {
                 assertNotNull(facet.records.get(0).getContainerName());
                 assertEquals(Fingerprint.RangeSet.fromString("1", false), facet.getRangeSet(p));
                 assertEquals(Collections.singleton("httpd"), DockerImageExtractor.getDockerImagesUsedByJobFromAll(p));
+            }
+        });
+    }
+
+    @Issue("JENKINS-37987")
+    @Test public void entrypoint() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition(
+                        "docker.image('maven:latest').inside {\n" +
+                        "  sh 'mvn -version'\n" +
+                        "}", true));
+
+                story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
             }
         });
     }
