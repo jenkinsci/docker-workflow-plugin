@@ -118,7 +118,7 @@ public class WithContainerStepTest {
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                     "  withDockerContainer('httpd:2.4.12') {\n" +
-                    "    sh 'sleep 5; kill -9 `cat .*/pid`'\n" +
+                    "    sh \"sleep 5; kill -9 `cat ${pwd tmp: true}/*/pid`\"\n" +
                     "  }\n" +
                     "}", true));
                 WorkflowRun b = story.j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
