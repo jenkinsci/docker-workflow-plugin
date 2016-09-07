@@ -139,9 +139,9 @@ class Docker implements Serializable {
             }
         }
 
-        public <V> V withRun(String args = '', Closure<V> body) {
+        public <V> V withRun(String args = '', String command = "", Closure<V> body) {
             docker.node {
-                Container c = run(args)
+                Container c = run(args, command)
                 try {
                     body.call(c)
                 } finally {

@@ -65,7 +65,7 @@
                 Records a run fingerprint in the build.
             </p>
         </dd>
-        <dt><code>Image.withRun[(args)] {…}</code></dt>
+        <dt><code>Image.withRun[(args[, command])] {…}</code></dt>
         <dd>
             <p>
                 Like <code>run</code> but stops the container as soon as its body exits, so you do not need a <code>try</code>-<code>finally</code> block.

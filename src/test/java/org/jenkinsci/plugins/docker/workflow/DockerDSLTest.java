@@ -224,6 +224,26 @@ public class DockerDSLTest {
         });
     }
 
+    @Test public void withRunCommand() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                        " docker.image('maven:3.3.9-jdk-8').withRun(\"--entrypoint mvn\", \"-version\") {c ->\n" +
+                                "  sh \"docker logs ${c.id}\"" +
+                                "}", true));
+                story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                DockerClient client = new DockerClient(new Launcher.LocalLauncher(StreamTaskListener.NULL), null, null);
+                String mavenIID = client.inspect(new EnvVars(), "maven:3.3.9-jdk-8", ".Id");
+                Fingerprint f = DockerFingerprints.of(mavenIID);
+                assertNotNull(f);
+                DockerRunFingerprintFacet facet = f.getFacet(DockerRunFingerprintFacet.class);
+                assertNotNull(facet);
+            }
+        });
+    }
+
     @Test public void build() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
