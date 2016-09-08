@@ -25,15 +25,8 @@
 TAG=$(shell perl -n -e 'if (/docker-workflow:(.+)/) {print $$1}' plugins.txt)
 IMAGE=jenkinsci/docker-workflow-demo
 
-build-proxy:
-	docker build -t nginx:docker-workflow-demo -f Dockerfile-proxy .
-
-# Builds a demo based on a released version of the plugin.
-build:	build-proxy
-	docker build -t $(IMAGE):$(TAG) .
-
 # Builds a demo based on the current local snapshot build of the plugin.
-build-snapshot:	build-proxy
+build-snapshot:
 	docker build -t $(IMAGE):RELEASE .
 	mkdir -p snapshot-plugins
 	for p in $$(cat plugins.txt|perl -pe s/:.+//g); do echo looking for snapshot builds of $$p; for g in org/jenkins-ci/plugins; do if [ -f ~/.m2/repository/$$g/$$p/maven-metadata-local.xml ]; then cp -v $$(ls -1 ~/.m2/repository/$$g/$$p/*-SNAPSHOT/*.hpi | tail -1) snapshot-plugins/$$p.jpi; fi; done; done
@@ -48,13 +41,15 @@ build-snapshot:	build-proxy
 
 DOCKER_RUN=docker run --rm -p 8080:8080 -v /var/run/docker.sock:/var/run/docker.sock
 
-run:	build
-	$(DOCKER_RUN) $(IMAGE):$(TAG)
+run:
+# http://stackoverflow.com/a/39300788/12916
+	bash -c "trap 'docker-compose down' EXIT; docker-compose up --build"
 
 run-snapshot:	build-snapshot
 	$(DOCKER_RUN) $(IMAGE):SNAPSHOT
 
 clean:
+	docker-compose down
 	rm -rf snapshot-plugins
 
 push:

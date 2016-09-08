@@ -1,0 +1,20 @@
+version: '2'
+
+services:
+
+  registry:
+    image: registry:0.9.1
+
+  wf-registry-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile-proxy
+    ports:
+      - "443:443"
+
+  jenkins:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
