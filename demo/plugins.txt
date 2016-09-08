@@ -1,5 +1,5 @@
-docker-workflow:1.5
+docker-workflow:1.8
 docker-commons:1.4.0
 authentication-tokens:1.3
-credentials:2.1.3
-xvnc:1.23
+credentials:2.1.4
+xvnc:1.24
