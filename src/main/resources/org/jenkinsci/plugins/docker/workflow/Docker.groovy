@@ -164,7 +164,7 @@ class Docker implements Serializable {
                 // The image may have already been tagged, so the tagging may be a no-op.
                 // That's ok since tagging is cheap.
                 def taggedImageName = tag(tagName, force)
-                docker.script.sh "docker push ${taggedImageName}"
+                docker.script.sh (script:  "docker push ${taggedImageName}", returnStdout: true).trim()
             }
         }
 
