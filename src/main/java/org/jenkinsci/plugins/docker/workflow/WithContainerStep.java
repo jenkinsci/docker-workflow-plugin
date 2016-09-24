@@ -170,11 +170,14 @@ public class WithContainerStep extends AbstractStepImpl {
                 volumes.put(tmp, tmp);
             }
 
+            // run command before starting container in case of exception
+            // Designed to prevent a situation where we cannot cleanup any files that have been created.
+            String user = dockerClient.whoAmI();
             container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, null, /* expected to hang until killed */ "cat");
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
             ImageAction.add(step.image, run);
             getContext().newBodyInvoker().
-                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws, dockerClient.whoAmI()))).
+                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws, user))).
                     withCallback(new Callback(container, toolName)).
                     start();
             return false;
