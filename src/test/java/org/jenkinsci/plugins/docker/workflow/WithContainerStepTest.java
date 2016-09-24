@@ -244,7 +244,7 @@ public class WithContainerStepTest {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {" +
-                    "  withDockerContainer(args: '-v /sys/fs/cgroup:/sys/fs/cgroup:ro --privileged', image: 'centos/systemd') {" +
+                    "  withDockerContainer(args: '--entrypoint /usr/sbin/init -v /sys/fs/cgroup:/sys/fs/cgroup:ro --privileged', image: 'centos/systemd') {" +
                     "    sh 'systemctl status'" +
                     "  }" +
                     "}", true));
@@ -269,7 +269,7 @@ public class WithContainerStepTest {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
-                    "  withDockerContainer(args: '--user 1234:1234 -v /sys/fs/cgroup:/sys/fs/cgroup:ro --privileged', image: 'centos/systemd') {\n" +
+                    "  withDockerContainer(args: '--entrypoint /usr/sbin/init --user 1234:1234 -v /sys/fs/cgroup:/sys/fs/cgroup:ro --privileged', image: 'centos/systemd') {\n" +
                     "    sh 'systemctl status'\n" +
                     "  }\n" +
                     "}\n", true));
