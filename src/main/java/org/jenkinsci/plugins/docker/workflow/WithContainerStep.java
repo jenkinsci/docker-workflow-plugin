@@ -69,7 +69,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 public class WithContainerStep extends AbstractStepImpl {
-    
+
     private static final Logger LOGGER = Logger.getLogger(WithContainerStep.class.getName());
     private final @Nonnull String image;
     private String args;
@@ -78,7 +78,7 @@ public class WithContainerStep extends AbstractStepImpl {
     @DataBoundConstructor public WithContainerStep(@Nonnull String image) {
         this.image = image;
     }
-    
+
     public String getImage() {
         return image;
     }
@@ -132,11 +132,11 @@ public class WithContainerStep extends AbstractStepImpl {
             // Add a warning if the docker version is less than 1.4
             VersionNumber dockerVersion = dockerClient.version();
             if (dockerVersion != null) {
-                if (dockerVersion.isOlderThan(new VersionNumber("1.4"))) {
-                    throw new AbortException("The docker version is less than v1.4. Pipeline functions requiring 'docker exec' will not work e.g. 'docker.inside'.");
-                }
+              if (dockerVersion.isOlderThan(new VersionNumber("1.7"))) {
+                  throw new AbortException("The docker version is less than v1.7. Workflow functions requiring 'docker exec' will not work e.g. 'docker.inside'.");
+              }
             } else {
-                listener.error("Failed to parse docker version. Please note there is a minimum docker version requirement of v1.4.");
+                listener.error("Failed to parse docker version. Please note there is a minimum docker version requirement of v1.7.");
             }
 
             FilePath tempDir = tempDir(workspace);
@@ -170,11 +170,14 @@ public class WithContainerStep extends AbstractStepImpl {
                 volumes.put(tmp, tmp);
             }
 
-            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
+            // run command before starting container in case of exception
+            // Designed to prevent a situation where we cannot cleanup any files that have been created.
+            String user = dockerClient.whoAmI();
+            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, null, /* expected to hang until killed */ "cat");
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
             ImageAction.add(step.image, run);
             getContext().newBodyInvoker().
-                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws))).
+                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws, user))).
                     withCallback(new Callback(container, toolName)).
                     start();
             return false;
@@ -200,17 +203,24 @@ public class WithContainerStep extends AbstractStepImpl {
         private final String container;
         private final String[] envHost;
         private final String ws;
+        private final String userId;
 
-        Decorator(String container, EnvVars envHost, String ws) {
+        Decorator(String container, EnvVars envHost, String ws, String userId) {
             this.container = container;
             this.envHost = Util.mapToEnv(envHost);
             this.ws = ws;
+            this.userId = userId;
         }
 
         @Override public Launcher decorate(final Launcher launcher, Node node) {
             return new Launcher.DecoratedLauncher(launcher) {
                 @Override public Proc launch(Launcher.ProcStarter starter) throws IOException {
-                    List<String> prefix = new ArrayList<String>(Arrays.asList("docker", "exec", container, "env"));
+                    List<String> prefix;
+                    if (userId == null) {
+                        prefix = new ArrayList<String>(Arrays.asList("docker", "exec", container, "env"));
+                    } else {
+                        prefix = new ArrayList<String>(Arrays.asList("docker", "exec", "--user", userId, container, "env"));
+                    }
                     if (ws != null) {
                         FilePath cwd = starter.pwd();
                         if (cwd != null) {
@@ -220,6 +230,7 @@ public class WithContainerStep extends AbstractStepImpl {
                             }
                         }
                     } // otherwise we are loading an old serialized Decorator
+
                     Set<String> envReduced = new TreeSet<String>(Arrays.asList(starter.envs()));
                     envReduced.removeAll(Arrays.asList(envHost));
                     prefix.addAll(envReduced);

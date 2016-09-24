@@ -236,4 +236,47 @@ public class WithContainerStepTest {
         });
     }
 
+    @Test public void withExecAsUser() throws Exception {
+        story.addStep(new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                DockerTestUtil.assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {" +
+                    "  withDockerContainer(args: '--entrypoint /usr/sbin/init -v /sys/fs/cgroup:/sys/fs/cgroup:ro --privileged', image: 'centos/systemd') {" +
+                    "    sh 'systemctl status'" +
+                    "  }" +
+                    "}", true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertLogContains("State: running", b);
+            }
+        });
+    }
+
+    /**
+     * When running systemd not as root, systemd will fail to start.  This will cause any systemctl commands
+     * to throw an error about it failing to get a D-Bus connection.
+     *
+     * This test simulates the (previous) behavior of the plugin due to the actual tests running as root.
+     * @throws Exception
+     */
+    @Test public void withUserInRunFails() throws Exception {
+        story.addStep(new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                DockerTestUtil.assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                    "  withDockerContainer(args: '--entrypoint /usr/sbin/init --user 1234:1234 -v /sys/fs/cgroup:/sys/fs/cgroup:ro --privileged', image: 'centos/systemd') {\n" +
+                    "    sh 'systemctl status'\n" +
+                    "  }\n" +
+                    "}\n", true));
+                WorkflowRun b = story.j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
+                story.j.assertLogContains("Failed to get D-Bus connection: Operation not permitted", b);
+            }
+        });
+    }
+
 }

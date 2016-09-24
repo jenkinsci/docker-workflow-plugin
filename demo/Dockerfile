@@ -26,14 +26,14 @@ FROM jenkinsci/workflow-demo:2.3
 
 USER root
 
-RUN apt-get update
-RUN apt-get install -y sudo
-RUN adduser jenkins sudo
-RUN echo 'Defaults !authenticate' >> /etc/sudoers
+RUN apt-get update && \
+    apt-get install -y sudo
+RUN adduser jenkins sudo && \
+    echo 'Defaults !authenticate' >> /etc/sudoers
 
 # Minimum for docker-workflow. Docker server does not accept a client newer than itself (older is OK).
-RUN wget -O /usr/bin/docker --no-check-certificate https://get.docker.com/builds/Linux/x86_64/docker-1.4.0
-RUN chmod a+x /usr/bin/docker
+RUN wget --no-verbose -O /usr/bin/docker --no-check-certificate https://get.docker.com/builds/Linux/x86_64/docker-1.7.0 && \
+    chmod a+x /usr/bin/docker
 
 ADD repo /tmp/repo
 RUN git config --global user.email "demo@jenkins-ci.org" && git config --global user.name "Docker Workflow Demo" && cd /tmp/repo && git init && git add . && git commit -m 'demo'
