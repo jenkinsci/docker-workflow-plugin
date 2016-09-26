@@ -99,10 +99,6 @@ public class DockerClient {
         ArgumentListBuilder argb = new ArgumentListBuilder();
 
         argb.add("run", "-t", "-d", "-u", user);
-        if (args != null) {
-            argb.addTokenized(args);
-        }
-        
         if (workdir != null) {
             argb.add("-w", workdir);
         }
@@ -116,7 +112,11 @@ public class DockerClient {
             argb.add("-e");
             argb.addMasked(variable.getKey()+"="+variable.getValue());
         }
-        argb.add("--entrypoint").add(entrypoint).add(image);
+        argb.add("--entrypoint").add(entrypoint);
+        if (args != null) {
+            argb.addTokenized(args);
+        }
+        argb.add(image);
 
         LaunchResult result = launch(launchEnv, false, null, argb);
         if (result.getStatus() == 0) {

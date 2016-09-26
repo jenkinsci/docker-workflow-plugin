@@ -236,4 +236,38 @@ public class WithContainerStepTest {
         });
     }
 
+    @Test public void defaultEntrypoint() throws Exception {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                DockerTestUtil.assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                        "node {\n" +
+                        "  withDockerContainer('ubuntu') {\n" +
+                        "    sh 'cat /proc/1/cmdline'\n" +
+                        "  }\n" +
+                        "}", true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertLogContains("cat", b);
+            }
+        });
+    }
+
+    @Test public void allowRunOverrides() throws Exception {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                DockerTestUtil.assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                        "node {\n" +
+                        "  withDockerContainer(args: '--entrypoint top', image: 'ubuntu') {\n" +
+                        "    sh 'cat /proc/1/cmdline'\n" +
+                        "  }\n" +
+                        "}", true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertLogContains("top", b);
+            }
+        });
+    }
+
 }
