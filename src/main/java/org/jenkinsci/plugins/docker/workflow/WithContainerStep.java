@@ -57,7 +57,9 @@ import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 
 import hudson.util.VersionNumber;
+import javax.annotation.CheckForNull;
 import org.jenkinsci.plugins.docker.commons.fingerprint.DockerFingerprints;
+import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepExecutionImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
@@ -174,7 +176,7 @@ public class WithContainerStep extends AbstractStepImpl {
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
             ImageAction.add(step.image, run);
             getContext().newBodyInvoker().
-                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws))).
+                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws, toolName))).
                     withCallback(new Callback(container, toolName)).
                     start();
             return false;
@@ -200,17 +202,25 @@ public class WithContainerStep extends AbstractStepImpl {
         private final String container;
         private final String[] envHost;
         private final String ws;
+        private final @CheckForNull String toolName;
 
-        Decorator(String container, EnvVars envHost, String ws) {
+        Decorator(String container, EnvVars envHost, String ws, String toolName) {
             this.container = container;
             this.envHost = Util.mapToEnv(envHost);
             this.ws = ws;
+            this.toolName = toolName;
         }
 
-        @Override public Launcher decorate(final Launcher launcher, Node node) {
+        @Override public Launcher decorate(final Launcher launcher, final Node node) {
             return new Launcher.DecoratedLauncher(launcher) {
                 @Override public Proc launch(Launcher.ProcStarter starter) throws IOException {
-                    List<String> prefix = new ArrayList<String>(Arrays.asList("docker", "exec", container, "env"));
+                    String executable;
+                    try {
+                        executable = getExecutable();
+                    } catch (InterruptedException x) {
+                        throw new IOException(x);
+                    }
+                    List<String> prefix = new ArrayList<>(Arrays.asList(executable, "exec", container, "env"));
                     if (ws != null) {
                         FilePath cwd = starter.pwd();
                         if (cwd != null) {
@@ -234,7 +244,8 @@ public class WithContainerStep extends AbstractStepImpl {
                 }
                 @Override public void kill(Map<String,String> modelEnvVars) throws IOException, InterruptedException {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    if (getInner().launch().cmds("docker", "exec", container, "ps", "-A", "-o", "pid,command", "e").stdout(baos).quiet(true).join() != 0) {
+                    String executable = getExecutable();
+                    if (getInner().launch().cmds(executable, "exec", container, "ps", "-A", "-o", "pid,command", "e").stdout(baos).quiet(true).join() != 0) {
                         throw new IOException("failed to run ps");
                     }
                     List<String> pids = new ArrayList<String>();
@@ -254,12 +265,19 @@ public class WithContainerStep extends AbstractStepImpl {
                     }
                     LOGGER.log(Level.FINE, "killing {0}", pids);
                     if (!pids.isEmpty()) {
-                        List<String> cmds = new ArrayList<String>(Arrays.asList("docker", "exec", container, "kill"));
+                        List<String> cmds = new ArrayList<>(Arrays.asList(executable, "exec", container, "kill"));
                         cmds.addAll(pids);
                         if (getInner().launch().cmds(cmds).quiet(true).join() != 0) {
                             throw new IOException("failed to run kill");
                         }
                     }
+                }
+                private String getExecutable() throws IOException, InterruptedException {
+                    EnvVars env = new EnvVars();
+                    for (String pair : envHost) {
+                        env.addLine(pair);
+                    }
+                    return DockerTool.getExecutable(toolName, node, getListener(), env);
                 }
             };
         }
