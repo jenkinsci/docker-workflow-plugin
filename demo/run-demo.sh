@@ -24,8 +24,6 @@
 # THE SOFTWARE.
 ##
 
-sudo chmod a+rw /var/run/docker.sock
-
 #
 # Install a private registry that can be used by the demo to push images to.
 #
