@@ -22,18 +22,9 @@
 # THE SOFTWARE.
 ##
 
-FROM jenkinsci/workflow-demo:2.3
+FROM jenkinsci/workflow-demo:2.4
 
 USER root
-
-RUN apt-get update
-RUN apt-get install -y sudo
-RUN adduser jenkins sudo
-RUN echo 'Defaults !authenticate' >> /etc/sudoers
-
-# Minimum for docker-workflow. Docker server does not accept a client newer than itself (older is OK).
-RUN wget -O /usr/bin/docker --no-check-certificate https://get.docker.com/builds/Linux/x86_64/docker-1.4.0
-RUN chmod a+x /usr/bin/docker
 
 ADD repo /tmp/repo
 RUN git config --global user.email "demo@jenkins-ci.org" && git config --global user.name "Docker Workflow Demo" && cd /tmp/repo && git init && git add . && git commit -m 'demo'
@@ -49,5 +40,6 @@ RUN /usr/local/bin/plugins.sh /tmp/files/plugins.txt
 ADD JENKINS_HOME /usr/share/jenkins/ref
 
 COPY run-demo.sh /usr/local/bin/run-demo.sh
+ENV JAVA_OPTS -Djenkins.install.state=INITIAL_SECURITY_SETUP
 
 CMD /usr/local/bin/run-demo.sh
