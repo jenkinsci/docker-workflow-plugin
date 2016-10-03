@@ -26,7 +26,9 @@ package org.jenkinsci.plugins.docker.workflow;
 import com.google.inject.Inject;
 import hudson.Extension;
 import hudson.FilePath;
+import hudson.Launcher;
 import hudson.model.Job;
+import hudson.model.TaskListener;
 import java.io.IOException;
 import javax.annotation.Nonnull;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
@@ -56,9 +58,11 @@ public class RegistryEndpointStep extends AbstractStepImpl {
         @Inject(optional=true) private transient RegistryEndpointStep step;
         @StepContextParameter private transient Job<?,?> job;
         @StepContextParameter private transient FilePath workspace;
+        @StepContextParameter private transient Launcher launcher;
+        @StepContextParameter private transient TaskListener listener;
 
         @Override protected KeyMaterialFactory newKeyMaterialFactory() throws IOException, InterruptedException {
-            return step.registry.newKeyMaterialFactory(job, workspace.getChannel());
+            return step.registry.newKeyMaterialFactory(job, workspace.getChannel(), launcher, listener);
         }
 
     }
