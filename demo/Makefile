@@ -25,11 +25,12 @@
 TAG=$(shell perl -n -e 'if (/docker-workflow:(.+)/) {print $$1}' plugins.txt)
 IMAGE=jenkinsci/docker-workflow-demo
 
-build-proxy:
-	docker build -t nginx:docker-workflow-demo -f Dockerfile-proxy .
+build-registry:
+	./gen-security-data.sh certs
+	docker build -t registry:docker-workflow-demo -f Dockerfile-registry .
 
 # Builds a demo based on a released version of the plugin.
-build:	build-proxy
+build:	build-registry
 	docker build -t $(IMAGE):$(TAG) .
 
 # Builds a demo based on the current local snapshot build of the plugin.
@@ -55,7 +56,7 @@ run-snapshot:	build-snapshot
 	$(DOCKER_RUN) $(IMAGE):SNAPSHOT
 
 clean:
-	rm -rf snapshot-plugins
+	rm -rf certs snapshot-plugins
 
 push:
 	docker push $(IMAGE):$(TAG)
