@@ -31,10 +31,9 @@
 echo '*************** Installing a local Docker Registry Service for the demo ***************'
 echo '***************            Please sit tight for a minute                ***************'
 
-cont1=$(docker run -d --name registry --restart=always registry:0.9.1)
-cont2=$(docker run -d -p 443:443 --name wf-registry-proxy --link registry:registry nginx:docker-workflow-demo)
+cont1=$(docker run -d -p 443:5000 --name registry --restart=always registry:docker-workflow-demo)
 # TODO would be natural to switch to Compose
-trap "docker rm -f $cont1 $cont2" EXIT
+trap "docker rm -f $cont1" EXIT
 
 # Note that this https://github.com/docker/docker/issues/23177 workaround is useless since the Docker CLI does not do the hostname resolution, the server does:
 # echo $(docker inspect -f '{{.NetworkSettings.Gateway}}' $HOSTNAME) docker.example.com >> /etc/hosts
@@ -43,11 +42,6 @@ echo '***************         Docker Registry Service running now             **
 
 # In case some tagged images were left over from a previous run using a cache:
 (docker images -q examplecorp/spring-petclinic; docker images -q localhost/examplecorp/spring-petclinic) | xargs docker rmi --no-prune=true --force
-
-#
-# Remove the base workflow-demo "cd" job
-#
-rm -rf /usr/share/jenkins/ref/jobs/cd /var/jenkins_home/jobs/cd
 
 #
 # Now run Jenkins.

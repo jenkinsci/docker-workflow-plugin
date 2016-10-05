@@ -37,6 +37,9 @@ RUN /usr/local/maven/bin/mvn -s settings.xml -Dmaven.repo.local=/usr/share/jenki
 COPY plugins.txt /tmp/files/
 RUN /usr/local/bin/plugins.sh /tmp/files/plugins.txt
 
+# Remove the base workflow-demo "cd" job
+RUN rm -rf /usr/share/jenkins/ref/jobs/cd
+
 ADD JENKINS_HOME /usr/share/jenkins/ref
 
 COPY run-demo.sh /usr/local/bin/run-demo.sh

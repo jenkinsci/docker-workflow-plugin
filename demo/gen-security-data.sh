@@ -31,26 +31,9 @@ mkdir -p $1
 
 pushd $1
 
-htpasswd -bmc docker-registry.htpasswd workflowuser 123123123
+docker run --entrypoint htpasswd registry:2.5.1 -Bbn pipelineuser 123123123 > docker-registry.htpasswd 
 
 # Create the CA Key and Certificate for signing Certs
 openssl genrsa -des3 -passout pass:x -out ca.key 4096
 openssl rsa -passin pass:x -in ca.key -out ca.key # remove password!
-openssl req -new -x509 -days 365 -key ca.key -out ca.crt -subj "/C=US/ST=California/L=San Jose/O=Jenkins CI/OU=Workflow Dept/CN=localhost"
- 
-# Create the Server Key, CSR, and Certificate
-openssl genrsa -des3 -passout pass:x -out key.pem 1024
-openssl rsa -passin pass:x -in key.pem -out key.pem # remove password!
-openssl req -new -key key.pem -out server.csr -subj "/C=US/ST=California/L=San Jose/O=Jenkins CI/OU=Workflow Dept/CN=localhost"
- 
-# Self sign the server cert.
-openssl x509 -req -days 365 -in server.csr -CA ca.crt -CAkey ca.key -set_serial 01 -out cert.pem
-
-# cat the ca cert onto the server cert
-cat ca.crt >> cert.pem
-
-# White-list the CA cert (because it is self-signed), otherwise docker client will not be able to authenticate
-cp ca.crt /usr/local/share/ca-certificates
-update-ca-certificates
-
-popd
+openssl req -new -x509 -days 365 -key ca.key -out ca.crt -subj "/C=US/ST=California/L=San Jose/O=Jenkins CI/OU=Pipeline Dept/CN=localhost"
