@@ -293,6 +293,7 @@ public class DockerClient {
      *
      * @return an optional string containing the <strong>container id</strong>, or <strong>absent</strong> if
      * it isn't containerized.
+     * @see <a href="http://stackoverflow.com/a/25729598/12916">Discussion</a>
      */
     public Optional<String> getContainerIdIfContainerized() throws IOException, InterruptedException {
         final Pattern pattern = Pattern.compile(CGROUP_MATCHER_PATTERN);
@@ -321,15 +322,16 @@ public class DockerClient {
     }
 
     /**
-     * Inspect the volumes of a docker image/container.
+     * Inspect the mounts of a container.
+     * These might have been declared {@code VOLUME}s, or mounts defined via {@code --volume}.
      * @param launchEnv Docker client launch environment.
-     * @param objectId The image/container ID.
-     * @return a list of volumes of the docker image/container.
+     * @param containerID The container ID.
+     * @return a list of filesystem paths inside the container
      * @throws IOException Execution error. Also fails if cannot retrieve the requested field from the request
      * @throws InterruptedException Interrupted
      */
-    public List<String> getVolumes(@Nonnull EnvVars launchEnv, String objectId) throws IOException, InterruptedException {
-        LaunchResult result = launch(launchEnv, true, "inspect", "-f", "{{range $index, $element := .Config.Volumes}}{{$index}}\n{{end}}", objectId);
+    public List<String> getVolumes(@Nonnull EnvVars launchEnv, String containerID) throws IOException, InterruptedException {
+        LaunchResult result = launch(launchEnv, true, "inspect", "-f", "{{range .Mounts}}{{.Destination}}\n{{end}}", containerID);
         if (result.getStatus() != 0) {
             return Collections.emptyList();
         }
