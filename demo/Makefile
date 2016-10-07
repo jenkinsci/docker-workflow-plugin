@@ -29,16 +29,24 @@ build-registry:
 	./gen-security-data.sh certs
 	docker build -t registry:docker-workflow-demo -f Dockerfile-registry .
 
-# Builds a demo based on a released version of the plugin.
-build:	build-registry
-	docker build -t $(IMAGE):$(TAG) .
+copy-plugins:
+	set -e; \
+	rm -rf plugins; \
+	mkdir plugins; \
+	for gav in `cat plugins.txt`; do \
+	  g=`echo $$gav | cut -f1 -d: | perl -pe 's{[.]}{/}g'`; \
+	  a=`echo $$gav | cut -f2 -d:`; \
+	  v=`echo $$gav | cut -f3 -d:`; \
+	  hpi=$$HOME/.m2/repository/$$g/$$a/$$v/$$a-$$v.hpi; \
+	  if [ \! -f $$hpi ]; then \
+	    mvn -U org.apache.maven.plugins:maven-dependency-plugin:2.5.1:get -Dartifact=$$gav:hpi -Dtransitive=false ||\
+	      (locate $$a-$$v.hpi | fgrep .m2/repository/; false); \
+	  fi; \
+	  cp -v $$hpi plugins/$$a.jpi; \
+	done
 
-# Builds a demo based on the current local snapshot build of the plugin.
-build-snapshot:	build-proxy
-	docker build -t $(IMAGE):RELEASE .
-	mkdir -p snapshot-plugins
-	for p in $$(cat plugins.txt|perl -pe s/:.+//g); do echo looking for snapshot builds of $$p; for g in org/jenkins-ci/plugins; do if [ -f ~/.m2/repository/$$g/$$p/maven-metadata-local.xml ]; then cp -v $$(ls -1 ~/.m2/repository/$$g/$$p/*-SNAPSHOT/*.hpi | tail -1) snapshot-plugins/$$p.jpi; fi; done; done
-	docker build -f Dockerfile-snapshot -t $(IMAGE):SNAPSHOT .
+build:	copy-plugins build-registry
+	docker build -t $(IMAGE):$(TAG) .
 
 # To connect a Java debugger to the Jenkins instance running in the docker container, simply add the following
 # options to the "docker run" command (just after the port mappings):
@@ -52,11 +60,8 @@ DOCKER_RUN=docker run --rm -p 127.0.0.1:8080:8080 -v $(shell which docker):/usr/
 run:	build
 	$(DOCKER_RUN) $(IMAGE):$(TAG)
 
-run-snapshot:	build-snapshot
-	$(DOCKER_RUN) $(IMAGE):SNAPSHOT
-
 clean:
-	rm -rf certs snapshot-plugins
+	rm -rf certs plugins
 
 push:
 	docker push $(IMAGE):$(TAG)

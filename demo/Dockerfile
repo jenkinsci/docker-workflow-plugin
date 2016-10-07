@@ -33,9 +33,9 @@ RUN git config --global user.email "demo@jenkins-ci.org" && git config --global 
 RUN echo '<settings><mirrors><mirror><id>central</id><url>http://repo.jenkins-ci.org/simple/repo1-cache/</url><mirrorOf>central</mirrorOf></mirror></mirrors></settings>' > settings.xml
 RUN /usr/local/maven/bin/mvn -s settings.xml -Dmaven.repo.local=/usr/share/jenkins/ref/jobs/docker-workflow/workspace@tmp/m2repo -f /tmp/repo/app -B -DskipTests clean package && \
     /usr/local/maven/bin/mvn -s settings.xml -Dmaven.repo.local=/usr/share/jenkins/ref/jobs/docker-workflow/workspace@tmp/m2repo -f /tmp/repo/test -B -Dmaven.test.failure.ignore clean test
+# TODO switch to a persistent volume as in parallel-test-executor-demo, after making sure run-demo.sh starts by deleting snapshots from it
 
-COPY plugins.txt /tmp/files/
-RUN /usr/local/bin/plugins.sh /tmp/files/plugins.txt
+COPY plugins /usr/share/jenkins/ref/plugins
 
 # Remove the base workflow-demo "cd" job
 RUN rm -rf /usr/share/jenkins/ref/jobs/cd
