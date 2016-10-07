@@ -55,7 +55,9 @@ build:	copy-plugins build-registry
 #	
 # If using boot2docker, you need to tell your remote debugger to use the boot2docker VM ip (ala boot2docker ip).
 
-DOCKER_RUN=docker run --rm -p 127.0.0.1:8080:8080 -v $(shell which docker):/usr/bin/docker -v /var/run/docker.sock:/var/run/docker.sock --group-add=$(shell stat -c %g /var/run/docker.sock)
+STAT=$(firstword $(shell which gstat) $(shell which stat))
+
+DOCKER_RUN=docker run --rm -p 127.0.0.1:8080:8080 -v /var/run/docker.sock:/var/run/docker.sock --group-add=$(shell $(STAT) -c %g /var/run/docker.sock)
 
 run:	build
 	$(DOCKER_RUN) $(IMAGE):$(TAG)
