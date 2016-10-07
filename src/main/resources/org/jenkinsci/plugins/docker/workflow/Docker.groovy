@@ -115,7 +115,7 @@ class Docker implements Serializable {
         }
 
         public String imageName() {
-            return toQualifiedImageName(id)
+            return toQualifiedImageName(parsedId.userAndRepo + ":" + parsedId.tag)
         }
 
         public <V> V inside(String args = '', Closure<V> body) {
