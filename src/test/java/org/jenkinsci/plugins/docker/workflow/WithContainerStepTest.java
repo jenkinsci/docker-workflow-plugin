@@ -244,11 +244,10 @@ public class WithContainerStepTest {
                 p.setDefinition(new CpsFlowDefinition(
                         "node {\n" +
                         "  withDockerContainer('ubuntu') {\n" +
-                        "    sh 'cat /proc/1/cmdline'\n" +
+                        "    sh 'grep cat /proc/1/cmdline'\n" +
                         "  }\n" +
                         "}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-                story.j.assertLogContains("cat", b);
             }
         });
     }
@@ -260,12 +259,11 @@ public class WithContainerStepTest {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                         "node {\n" +
-                        "  withDockerContainer(args: '--entrypoint top', image: 'ubuntu') {\n" +
-                        "    sh 'cat /proc/1/cmdline'\n" +
+                        "  withDockerContainer(args: '--entrypoint /sbin/init', image: 'ubuntu') {\n" +
+                        "    sh 'grep /sbin/init /proc/1/cmdline'\n" +
                         "  }\n" +
                         "}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-                story.j.assertLogContains("top", b);
             }
         });
     }
