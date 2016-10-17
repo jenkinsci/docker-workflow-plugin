@@ -25,9 +25,6 @@ package org.jenkinsci.plugins.docker.workflow;
 
 import groovy.lang.Binding;
 import hudson.Extension;
-import java.io.IOException;
-import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.ProxyWhitelist;
-import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.StaticWhitelist;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jenkinsci.plugins.workflow.cps.GlobalVariable;
 
@@ -48,15 +45,6 @@ import org.jenkinsci.plugins.workflow.cps.GlobalVariable;
             binding.setVariable(getName(), docker);
         }
         return docker;
-    }
-
-    @Extension public static class MiscWhitelist extends ProxyWhitelist {
-        public MiscWhitelist() throws IOException {
-            super(new StaticWhitelist(
-                    // TODO should docker-commons just get a script-security dependency and mark these things @Whitelisted?
-                    "new org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint java.lang.String java.lang.String",
-                    "method org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint imageName java.lang.String"));
-        }
     }
 
 }
