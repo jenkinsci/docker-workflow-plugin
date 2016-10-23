@@ -196,7 +196,7 @@ public class WithContainerStep extends AbstractStepImpl {
 
     }
 
-    private static class Decorator extends LauncherDecorator implements Serializable {
+    static class Decorator extends LauncherDecorator implements Serializable {
 
         private static final long serialVersionUID = 1;
         private final String container;

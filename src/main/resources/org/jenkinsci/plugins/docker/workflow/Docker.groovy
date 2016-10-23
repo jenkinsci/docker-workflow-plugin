@@ -23,6 +23,15 @@
  */
 package org.jenkinsci.plugins.docker.workflow
 
+import hudson.Util
+
+import java.text.SimpleDateFormat
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.util.logging.ConsoleHandler
+import java.util.logging.LogManager
+import java.util.stream.Collectors
+
 class Docker implements Serializable {
 
     private org.jenkinsci.plugins.workflow.cps.CpsScript script
@@ -68,6 +77,22 @@ class Docker implements Serializable {
         }
     }
 
+    public Images images() {
+        node {
+            String imagesXml = script.sh(script: listImagesCommandString(), returnStdout: true).trim()
+            new Images(this, imagesXml)
+        }
+    }
+
+    private String listImagesCommandString() {
+        return "echo '<images>' &&" +
+                "docker images --format " +
+                "'<image><id>{{html .ID}}</id>" +
+                "<repository>{{html .Repository}}</repository>" +
+                "<tag>{{html .Tag}}</tag></image>' &&" +
+                "echo '</images>'"
+    }
+
     public Image image(String id) {
         new Image(this, id)
     }
@@ -92,6 +117,34 @@ class Docker implements Serializable {
         }
     }
 
+    public static class Images implements Serializable {
+
+        private final List<Image> images;
+
+        private Images(Docker docker, String imagesXml) {
+            def imagesList = []
+            def images = new XmlSlurper().parseText(imagesXml)
+            images.image.each {image ->
+                 String id = image.id.text()
+                 String repository = image.repository.text()
+                 String tag = image.tag.text()
+                 def result = new Image(docker, id, repository, tag)
+                 imagesList.add(result)
+            }
+            this.images = new ArrayList<>(imagesList);
+        }
+
+        public Image findFirst(Closure<Image> predicate) {
+            for (Image img : this.images) {
+                if (predicate.call(img)) {
+                    return img;
+                }
+            }
+            return null
+        }
+
+    }
+
     public static class Image implements Serializable {
 
         private final Docker docker;
@@ -104,6 +157,12 @@ class Docker implements Serializable {
             this.parsedId = new ImageNameTokens(id)
         }
 
+        private Image(Docker docker, String id, String repository, String tag) {
+            this.docker = docker;
+            this.id = id;
+            this.parsedId = new ImageNameTokens(repository, tag)
+        }
+
         private String toQualifiedImageName(String imageName) {
             return new org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint(docker.script.env.DOCKER_REGISTRY_URL, null).imageName(imageName)
         }
@@ -111,7 +170,15 @@ class Docker implements Serializable {
         public String imageName() {
             return toQualifiedImageName(id)
         }
-        
+
+        public String getUserAndRepo() {
+            parsedId.userAndRepo
+        }
+
+        public getTag() {
+            parsedId.tag
+        }
+
         public <V> V inside(String args = '', Closure<V> body) {
             docker.node {
                 if (docker.script.sh(script: "docker inspect -f . ${id}", returnStatus: true) != 0) {
@@ -135,6 +202,17 @@ class Docker implements Serializable {
             docker.node {
                 def container = docker.script.sh(script: "docker run -d${args != '' ? ' ' + args : ''} ${id}${command != '' ? ' ' + command : ''}", returnStdout: true).trim()
                 docker.script.dockerFingerprintRun containerId: container, toolName: docker.script.env.DOCKER_TOOL_NAME
+                new Container(docker, container)
+            }
+        }
+
+        public Container runForInsideJob(String args = '', String command = "") {
+            docker.node {
+                def container = docker.script.runDockerContainer(
+                        image: id,
+                        args: args,
+                        command: command,
+                        toolName: docker.script.env .DOCKER_TOOL_NAME)
                 new Container(docker, container)
             }
         }
@@ -178,6 +256,20 @@ class Docker implements Serializable {
         private Container(Docker docker, String id) {
             this.docker = docker
             this.id = id
+        }
+
+        public <V> V inside(Closure<V> body) {
+            docker.node {
+                docker.script.insideDockerContainer(containerId: id, toolName: docker.script.env.DOCKER_TOOL_NAME) {
+                    body()
+                }
+            }
+        }
+
+        public Image commit(String name, String params = "") {
+            String extras = (params == null) ? "" : params.trim();
+            def imageId = docker.script.sh(script: "docker commit $extras $id $name", returnStdout: true).trim();
+            docker.image(imageId)
         }
 
         public void stop() {

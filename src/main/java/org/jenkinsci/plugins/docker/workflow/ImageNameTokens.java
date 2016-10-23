@@ -62,4 +62,11 @@ public class ImageNameTokens implements Serializable {
             this.tag = "latest";
         }
     }
+
+    @Whitelisted
+    public ImageNameTokens(@Nonnull String userAndRepo, String tag) {
+        this.userAndRepo = userAndRepo;
+        this.tag = tag;
+    }
+
 }
