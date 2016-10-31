@@ -23,8 +23,6 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
-import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
-
 import javax.annotation.Nonnull;
 import java.io.Serializable;
 
@@ -42,12 +40,9 @@ public class ImageNameTokens implements Serializable {
     
     private static final long serialVersionUID = 1L;
     
-    @Whitelisted
     public final String userAndRepo;
-    @Whitelisted
     public final String tag;
 
-    @Whitelisted
     public ImageNameTokens(@Nonnull String name) {
         int tagIdx = name.lastIndexOf(':');
         if (tagIdx != -1) {
