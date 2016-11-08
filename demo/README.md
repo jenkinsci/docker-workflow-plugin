@@ -1,7 +1,7 @@
 Docker image for Docker Pipeline demo
 =====================================
 This image contains a "Docker Pipeline" Job that demonstrates Jenkins Pipeline integration
-with Docker via [CloudBees Docker Pipeline](https://wiki.jenkins-ci.org/display/JENKINS/CloudBees+Docker+Pipeline+Plugin) plugin.
+with Docker via [Docker Pipeline](https://wiki.jenkins-ci.org/display/JENKINS/Docker+Pipeline+Plugin) plugin.
 
 ```
 docker run --rm -p 127.0.0.1:8080:8080 -v $(which docker):/usr/bin/docker -v /var/run/docker.sock:/var/run/docker.sock --group-add=$(stat -c %g /var/run/docker.sock) jenkinsci/docker-workflow-demo
