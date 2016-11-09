@@ -8,7 +8,7 @@
     </parent>
     <artifactId>docker-workflow</artifactId>
     <version>1.9.1-SNAPSHOT</version>
-    <name>CloudBees Docker Pipeline</name>
+    <name>Docker Pipeline</name>
     <description>Build and use Docker containers from pipelines</description>
     <packaging>hpi</packaging>
     
@@ -19,7 +19,7 @@
       </license>
     </licenses>
     
-    <url>http://wiki.jenkins-ci.org/display/JENKINS/CloudBees+Docker+Pipeline+Plugin</url>
+    <url>http://wiki.jenkins-ci.org/display/JENKINS/Docker+Pipeline+Plugin</url>
     <scm>
       <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
       <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
