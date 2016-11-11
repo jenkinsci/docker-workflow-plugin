@@ -423,4 +423,54 @@ public class DockerDSLTest {
             }
         });
     }
+
+    @Issue("JENKINS-37987")
+    @Test public void image_exec() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "build");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                    "  writeFile file: 'Dockerfile', text: '# This is a test.\\n\\nFROM alpine\\nRUN chmod u+s /bin/busybox \\nENTRYPOINT [\\\"/bin/ping\\\" ] \\nCMD [\\\"localhost\\\"] \\n'\n" +
+                    "  def built = docker.build 'alpine-entrypoint-test'\n" +
+                    "  echo \"built ${built.id}\"\n" +
+                    "}", true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+            }
+        });
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                    "def r = docker.image('alpine-entrypoint-test').exec {\n" +
+                    "  semaphore 'wait'\n" +
+                    "  sh 'cat /etc/hosts'\n" +
+                    "  42\n" +
+                    "}; echo \"the answer is ${r}\"", true));
+                WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+                SemaphoreStep.waitForStart("wait/1", b);
+            }
+        });
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                SemaphoreStep.success("wait/1", null);
+                WorkflowJob p = story.j.jenkins.getItemByFullName("prj", WorkflowJob.class);
+                WorkflowRun b = p.getLastBuild();
+                story.j.assertLogContains("ip6-localhost", story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
+                story.j.assertLogContains("the answer is 42", b);
+                DockerClient client = new DockerClient(new Launcher.LocalLauncher(StreamTaskListener.NULL), null, null);
+                String aetIID = client.inspect(new EnvVars(), "alpine-entrypoint-test", ".Id");
+                Fingerprint f = DockerFingerprints.of(aetIID);
+                assertNotNull(f);
+                DockerRunFingerprintFacet facet = f.getFacet(DockerRunFingerprintFacet.class);
+                assertNotNull(facet);
+                assertEquals(1, facet.records.size());
+                assertNotNull(facet.records.get(0).getContainerName());
+                assertEquals(Fingerprint.RangeSet.fromString("1", false), facet.getRangeSet(p));
+                assertEquals(Collections.singleton("alpine-entrypoint-test"), DockerImageExtractor.getDockerImagesUsedByJobFromAll(p));
+            }
+        });
+    }
 }

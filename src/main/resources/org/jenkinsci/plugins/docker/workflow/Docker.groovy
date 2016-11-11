@@ -125,6 +125,17 @@ class Docker implements Serializable {
             }
         }
 
+        public <V> V exec(String args = '', Closure<V> body) {
+            docker.node {
+                if (docker.script.sh(script: "docker inspect -f . ${id}", returnStatus: true) != 0) {
+                pull()
+                }
+                docker.script.withDockerContainer(image: id, args: args, toolName: docker.script.env.DOCKER_TOOL_NAME, /* don't override entrypoint */ entrypoint: "--") {
+                    body()
+                }
+            }
+        }
+
         public void pull() {
             docker.node {
                 docker.script.sh "docker pull ${imageName()}"
