@@ -7,7 +7,7 @@
         <version>2.11</version>
     </parent>
     <artifactId>docker-workflow</artifactId>
-    <version>1.10-SNAPSHOT</version>
+    <version>1.9.1-SNAPSHOT</version>
     <name>CloudBees Docker Pipeline</name>
     <description>Build and use Docker containers from pipelines</description>
     <packaging>hpi</packaging>
