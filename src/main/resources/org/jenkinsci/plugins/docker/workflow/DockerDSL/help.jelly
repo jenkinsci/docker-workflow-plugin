@@ -112,6 +112,13 @@
                 Hexadecimal ID of a running container.
             </p>
         </dd>
+        <dt><code>Container.exec([args, command])</code></dt>
+        <dd>
+            <p>
+            Execute <code>command</code> with the <code>args</code> to pass to docker exec within the running Container.
+            This returns the stdout of the command executed
+            </p>
+        </dd>
         <dt><code>Container.stop</code></dt>
         <dd>
             <p>
