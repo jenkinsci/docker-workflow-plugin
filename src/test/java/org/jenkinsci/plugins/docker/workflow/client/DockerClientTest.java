@@ -95,14 +95,15 @@ public class DockerClientTest {
     	
     	final String[] possibleCgroupStrings = new String[] {
     		"2:cpu:/docker/3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b",
-    		"4:cpuset:/system.slice/docker-3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b.scope"
+    		"4:cpuset:/system.slice/docker-3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b.scope",
+    		"10:cpu,cpuacct:/docker/a9f3c3932cd81c4a74cc7e0a18c3300255159512f1d000545c42895adaf68932/docker/3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b"
     	};
     	
     	for (final String possibleCgroupString : possibleCgroupStrings) {
     		final Pattern pattern = Pattern.compile(DockerClient.CGROUP_MATCHER_PATTERN);
     		Matcher matcher = pattern.matcher(possibleCgroupString);
     		Assert.assertTrue(matcher.find());
-    		Assert.assertEquals("3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b", matcher.group(1));
+    		Assert.assertEquals("3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b", matcher.group(matcher.groupCount()));
 		}
     	
     }

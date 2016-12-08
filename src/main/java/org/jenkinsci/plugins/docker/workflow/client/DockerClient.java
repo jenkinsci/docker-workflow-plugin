@@ -68,8 +68,9 @@ public class DockerClient {
      * 
      * 4:cpuset:/system.slice/docker-3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b.scope
      * 2:cpu:/docker/3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b
+     * 10:cpu,cpuacct:/docker/a9f3c3932cd81c4a74cc7e0a18c3300255159512f1d000545c42895adaf68932/docker/3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b
      */
-    public static final String CGROUP_MATCHER_PATTERN = "(?m)^\\d+:\\w+:(?:/[\\w\\.]+)?/docker[-/](?<containerId>\\p{XDigit}{12,})(?:\\.scope)?$";
+    public static final String CGROUP_MATCHER_PATTERN = "(?m)^\\d+:[\\w,?]+:(?:/[\\w.]+)?(/docker[-/](?<containerId>\\p{XDigit}{12,}))+(?:\\.scope)?$";
 
     private Launcher launcher;
     private final @CheckForNull Node node;
@@ -306,7 +307,7 @@ public class DockerClient {
         }
         String cgroup = cgroupFile.readToString();
         Matcher matcher = pattern.matcher(cgroup);
-        return matcher.find() ? Optional.of(matcher.group(1)) : Optional.<String>absent();
+        return matcher.find() ? Optional.of(matcher.group(matcher.groupCount())) : Optional.<String>absent();
     }
 
     public ContainerRecord getContainerRecord(@Nonnull EnvVars launchEnv, String containerId) throws IOException, InterruptedException {
