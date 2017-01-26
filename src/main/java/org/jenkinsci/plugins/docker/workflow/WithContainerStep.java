@@ -76,6 +76,7 @@ public class WithContainerStep extends AbstractStepImpl {
     private final @Nonnull String image;
     private String args;
     private String toolName;
+    private boolean overrideEntrypoint;
 
     @DataBoundConstructor public WithContainerStep(@Nonnull String image) {
         this.image = image;
@@ -92,6 +93,15 @@ public class WithContainerStep extends AbstractStepImpl {
 
     public String getArgs() {
         return args;
+    }
+
+    @DataBoundSetter
+    public void setOverrideEntrypoint(boolean overrideEntrypoint) {
+        this.overrideEntrypoint = overrideEntrypoint;
+    }
+
+    public boolean isOverrideEntrypoint() {
+        return overrideEntrypoint;
     }
 
     public String getToolName() {
@@ -174,7 +184,11 @@ public class WithContainerStep extends AbstractStepImpl {
                 volumes.put(tmp, tmp);
             }
 
-            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
+            if (step.isOverrideEntrypoint()) {
+                container = dockerClient.runWithEntrypoint(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
+            } else {
+                container = dockerClient.runWithCommand(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
+            }
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
             ImageAction.add(step.image, run);
             getContext().newBodyInvoker().

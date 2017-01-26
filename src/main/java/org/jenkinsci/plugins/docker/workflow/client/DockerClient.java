@@ -83,7 +83,7 @@ public class DockerClient {
     }
 
     /**
-     * Run a docker image.
+     * Run a docker image, overriding the ENTRYPOINT.
      *
      * @param launchEnv Docker client launch environment.
      * @param image The image name.
@@ -96,27 +96,8 @@ public class DockerClient {
      * @param entrypoint The command to execute in the image container being run.
      * @return The container ID.
      */
-    public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, @Nonnull String entrypoint) throws IOException, InterruptedException {
-        ArgumentListBuilder argb = new ArgumentListBuilder();
-
-        argb.add("run", "-t", "-d", "-u", user);
-        if (args != null) {
-            argb.addTokenized(args);
-        }
-        
-        if (workdir != null) {
-            argb.add("-w", workdir);
-        }
-        for (Map.Entry<String, String> volume : volumes.entrySet()) {
-            argb.add("-v", volume.getKey() + ":" + volume.getValue() + ":rw");
-        }
-        for (String containerId : volumesFromContainers) {
-            argb.add("--volumes-from", containerId);
-        }
-        for (Map.Entry<String, String> variable : containerEnv.entrySet()) {
-            argb.add("-e");
-            argb.addMasked(variable.getKey()+"="+variable.getValue());
-        }
+    public String runWithEntrypoint(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, @Nonnull String entrypoint) throws IOException, InterruptedException {
+        ArgumentListBuilder argb = constructArgs(args, workdir, volumes, volumesFromContainers, containerEnv, user);
         argb.add("--entrypoint").add(entrypoint).add(image);
 
         LaunchResult result = launch(launchEnv, false, null, argb);
@@ -128,11 +109,77 @@ public class DockerClient {
     }
 
     /**
+     * Run a docker image, passing an arbitrary command.
+     *
+     * @param launchEnv Docker client launch environment.
+     * @param image The image name.
+     * @param args Any additional arguments for the {@code docker run} command.
+     * @param workdir The working directory in the container, or {@code null} for default.
+     * @param volumes Volumes to be bound. Supply an empty list if no volumes are to be bound.
+     * @param volumesFromContainers Mounts all volumes from the given containers.
+     * @param containerEnv Environment variables to set in container.
+     * @param user The <strong>uid:gid</strong> to execute the container command as. Use {@link #whoAmI()}.
+     * @param command The command to execute in the image container being run.
+     * @return The container ID.
+     */
+    public String runWithCommand(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, @CheckForNull String... command) throws IOException, InterruptedException {
+        ArgumentListBuilder argb = constructArgs(args, workdir, volumes, volumesFromContainers, containerEnv, user);
+
+        if (command != null) {
+            argb.add(image).add(command);
+        }
+
+        LaunchResult result = launch(launchEnv, false, null, argb);
+        if (result.getStatus() == 0) {
+            return result.getOut();
+        } else {
+            throw new IOException(String.format("Failed to run image '%s'. Error: %s", image, result.getErr()));
+        }
+    }
+
+    /**
+     * Construct the arguments for running a Docker container.
+     *
+     * @param args Any additional arguments for the {@code docker run} command.
+     * @param workdir The working directory in the container, or {@code null} for default.
+     * @param volumes Volumes to be bound. Supply an empty list if no volumes are to be bound.
+     * @param volumesFromContainers Mounts all volumes from the given containers.
+     * @param containerEnv Environment variables to set in container.
+     * @param user The <strong>uid:gid</strong> to execute the container command as. Use {@link #whoAmI()}.
+     * @return The container ID.
+     */
+    private ArgumentListBuilder constructArgs(@CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user) throws IOException, InterruptedException {
+        ArgumentListBuilder argb = new ArgumentListBuilder();
+
+        argb.add("run", "-t", "-d", "-u", user);
+        if (args != null) {
+            argb.addTokenized(args);
+        }
+
+        if (workdir != null) {
+            argb.add("-w", workdir);
+        }
+        for (Map.Entry<String, String> volume : volumes.entrySet()) {
+            argb.add("-v", volume.getKey() + ":" + volume.getValue() + ":rw");
+        }
+        for (String containerId : volumesFromContainers) {
+            argb.add("--volumes-from", containerId);
+        }
+        for (Map.Entry<String, String> variable : containerEnv.entrySet()) {
+            argb.add("-e");
+            argb.addMasked(variable.getKey() + "=" + variable.getValue());
+        }
+
+        return argb;
+    }
+
+
+    /**
      * Stop a container.
-     * 
-     * <p>                              
+     *
+     * <p>
      * Also removes ({@link #rm(EnvVars, String)}) the container.
-     * 
+     *
      * @param launchEnv Docker client launch environment.
      * @param containerId The container ID.
      */
