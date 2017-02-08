@@ -108,7 +108,7 @@ public class DockerClient {
             argb.add("-w", workdir);
         }
         for (Map.Entry<String, String> volume : volumes.entrySet()) {
-            argb.add("-v", volume.getKey() + ":" + volume.getValue() + ":rw");
+            argb.add("-v", volume.getKey() + ":" + volume.getValue() + ":rw,z");
         }
         for (String containerId : volumesFromContainers) {
             argb.add("--volumes-from", containerId);
