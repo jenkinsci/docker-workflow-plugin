@@ -30,6 +30,7 @@ import hudson.util.VersionNumber;
 import org.junit.Assume;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.Matchers.is;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
@@ -42,12 +43,14 @@ public class DockerTestUtil {
     public static void assumeDocker() throws Exception {
         Launcher.LocalLauncher localLauncher = new Launcher.LocalLauncher(StreamTaskListener.NULL);
         try {
-            Assume.assumeThat("Docker working", localLauncher.launch().cmds(DockerTool.getExecutable(null, null, null, null), "ps").join(), is(0));
+            Assume.assumeThat("Docker working", localLauncher.launch().cmds(DockerTool.getExecutable(null, null, null, null), "ps").start().joinWithTimeout(10, TimeUnit.SECONDS, localLauncher.getListener()), is(0));
         } catch (IOException x) {
             Assume.assumeNoException("have Docker installed", x);
         }
         DockerClient dockerClient = new DockerClient(localLauncher, null, null);
         Assume.assumeFalse("Docker version not < 1.3", dockerClient.version().isOlderThan(new VersionNumber("1.3")));
     }
+
+    private DockerTestUtil() {}
     
 }

@@ -45,6 +45,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.List;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -264,7 +265,7 @@ public class DockerClient {
         LaunchResult result = new LaunchResult();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
-        result.setStatus(procStarter.quiet(quiet).cmds(args).envs(launchEnv).stdout(out).stderr(err).join());
+        result.setStatus(procStarter.quiet(quiet).cmds(args).envs(launchEnv).stdout(out).stderr(err).start().joinWithTimeout(10, TimeUnit.SECONDS, launcher.getListener()));
         final String charsetName = Charset.defaultCharset().name();
         result.setOut(out.toString(charsetName));
         result.setErr(err.toString(charsetName));
@@ -278,10 +279,10 @@ public class DockerClient {
      */
     public String whoAmI() throws IOException, InterruptedException {
         ByteArrayOutputStream userId = new ByteArrayOutputStream();
-        launcher.launch().cmds("id", "-u").quiet(true).stdout(userId).join();
+        launcher.launch().cmds("id", "-u").quiet(true).stdout(userId).start().joinWithTimeout(10, TimeUnit.SECONDS, launcher.getListener());
 
         ByteArrayOutputStream groupId = new ByteArrayOutputStream();
-        launcher.launch().cmds("id", "-g").quiet(true).stdout(groupId).join();
+        launcher.launch().cmds("id", "-g").quiet(true).stdout(groupId).start().joinWithTimeout(10, TimeUnit.SECONDS, launcher.getListener());
 
         final String charsetName = Charset.defaultCharset().name();
         return String.format("%s:%s", userId.toString(charsetName).trim(), groupId.toString(charsetName).trim());

@@ -31,8 +31,10 @@ import hudson.model.Result;
 import hudson.tools.ToolProperty;
 import java.io.File;
 import java.util.Collections;
+import java.util.logging.Level;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
+import org.hamcrest.Matchers;
 import org.jenkinsci.lib.configprovider.ConfigProvider;
 import org.jenkinsci.lib.configprovider.model.Config;
 import org.jenkinsci.plugins.configfiles.custom.CustomConfig;
@@ -43,6 +45,7 @@ import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.steps.StepConfigTester;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
+import org.junit.Assume;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -51,6 +54,7 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
+import org.jvnet.hudson.test.LoggerRule;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
 
 public class WithContainerStepTest {
@@ -58,6 +62,7 @@ public class WithContainerStepTest {
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
     @Rule public RestartableJenkinsRule story = new RestartableJenkinsRule();
     @Rule public TemporaryFolder tmp = new TemporaryFolder();
+    @Rule public LoggerRule logging = new LoggerRule();
     
     @Test public void configRoundTrip() {
         story.addStep(new Statement() {
@@ -86,6 +91,34 @@ public class WithContainerStepTest {
                     "}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
                 story.j.assertLogContains("Require method GET POST OPTIONS", b);
+            }
+        });
+    }
+
+    @Issue("JENKINS-37719")
+    @Test public void hungDaemon() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                DockerTestUtil.assumeDocker();
+                Assume.assumeThat("we are in an interactive environment and can pause dockerd", new ProcessBuilder("sudo", "pgrep", "dockerd").inheritIO().start().waitFor(), Matchers.is(0));
+                logging.record("org.jenkinsci.plugins.workflow.support.concurrent.Timeout", Level.FINE); // TODO use Timeout.class when workflow-support 2.13+
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                    "  timeout(time: 20, unit: 'SECONDS') {\n" +
+                    "    withDockerContainer('httpd:2.4.12') {\n" +
+                    "      sh 'sleep infinity'\n" +
+                    "    }\n" +
+                    "  }\n" +
+                    "}", true));
+                WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+                story.j.waitForMessage("+ sleep infinity", b);
+                Assume.assumeThat(new ProcessBuilder("sudo", "killall", "-STOP", "dockerd").inheritIO().start().waitFor(), Matchers.is(0));
+                try {
+                    story.j.assertBuildStatus(Result.ABORTED, story.j.waitForCompletion(b));
+                } finally {
+                    Assume.assumeThat(new ProcessBuilder("sudo", "killall", "-CONT", "dockerd").inheritIO().start().waitFor(), Matchers.is(0));
+                }
             }
         });
     }
