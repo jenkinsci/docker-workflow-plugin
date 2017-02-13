@@ -22,7 +22,7 @@
 # THE SOFTWARE.
 ##
 
-FROM jenkinsci/workflow-demo:2.4
+FROM jenkinsci/workflow-demo:2017-02-13
 
 USER root
 

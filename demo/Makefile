@@ -22,7 +22,7 @@
 # THE SOFTWARE.
 ##
 
-TAG=$(shell perl -n -e 'if (/docker-workflow:(.+)/) {print $$1}' plugins.txt)
+TAG=$(shell date -I -u)
 IMAGE=jenkinsci/docker-workflow-demo
 
 build-registry:
