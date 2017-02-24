@@ -269,4 +269,23 @@ public class WithContainerStepTest {
         });
     }
 
+    @Ignore("TODO reproducible")
+    @Issue("JENKINS-40101")
+    @Test public void wheezy() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                DockerTestUtil.assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                    "  withDockerContainer('debian:wheezy') {\n" +
+                    "    sh 'sleep 30s && echo ran OK'\n" +
+                    "  }\n" +
+                    "}", true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertLogContains("ran OK", b);
+            }
+        });
+    }
+
 }
