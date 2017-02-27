@@ -152,6 +152,7 @@ public class WithContainerStep extends AbstractStepImpl {
             Collection<String> volumesFromContainers = new LinkedHashSet<String>();
             Optional<String> containerId = dockerClient.getContainerIdIfContainerized();
             if (containerId.isPresent()) {
+                listener.getLogger().println(node.getDisplayName() + " seems to be running inside container " + containerId.get());
                 final Collection<String> mountedVolumes = dockerClient.getVolumes(envHost, containerId.get());
                 final String[] dirs = {ws, tmp};
                 for (String dir : dirs) {
@@ -165,12 +166,12 @@ public class WithContainerStep extends AbstractStepImpl {
                         }
                     }
                     if (!found) {
-                        // there was no volume which contains the directory, fall back to --volume mount
+                        listener.getLogger().println("but " + dir + " could not be found among " + mountedVolumes);
                         volumes.put(dir, dir);
                     }
                 }
             } else {
-                // Jenkins is not running inside a container
+                listener.getLogger().println(node.getDisplayName() + " does not seem to be running inside a container");
                 volumes.put(ws, ws);
                 volumes.put(tmp, tmp);
             }
