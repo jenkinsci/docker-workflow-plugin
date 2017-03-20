@@ -160,9 +160,9 @@ class Docker implements Serializable {
             docker.node {
                 def taggedImageName = toQualifiedImageName(parsedId.userAndRepo + ':' + tagName)
                 //get docker version
-                dockerVersion = docker.script.sh(script: "docker version --format '{{.Client.Version}}'", returnStdout: true).trim().split('.')
-                dockerMainVersion = dockerVersion[0].isInteger() ? dockerVersion[0].toInteger() : null
-                dockerMinorVersion = dockerVersion[1].isInteger() ? dockerVersion[1].toInteger() : null
+                def dockerVersion = docker.script.sh(script: "docker version --format '{{.Client.Version}}'", returnStdout: true).trim().split('.')
+                def dockerMainVersion = dockerVersion[0].isInteger() ? dockerVersion[0].toInteger() : null
+                def dockerMinorVersion = dockerVersion[1].isInteger() ? dockerVersion[1].toInteger() : null
                 if (dockerMainVersion >= 1 && dockerMinorVersion >= 12) {
                     docker.script.sh "docker tag ${id} ${taggedImageName}"
                 } else {
