@@ -124,7 +124,7 @@ public class WithContainerStep extends AbstractStepImpl {
 
         @Override public boolean start() throws Exception {
             EnvVars envReduced = new EnvVars(env);
-            EnvVars envHost = computer.getEnvironment();
+            EnvVars envHost = computer.buildEnvironment(TaskListener.NULL);
             envReduced.entrySet().removeAll(envHost.entrySet());
             LOGGER.log(Level.FINE, "reduced environment: {0}", envReduced);
             workspace.mkdirs(); // otherwise it may be owned by root when created for -v
