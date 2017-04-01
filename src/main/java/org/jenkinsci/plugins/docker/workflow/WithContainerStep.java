@@ -124,7 +124,7 @@ public class WithContainerStep extends AbstractStepImpl {
 
         @Override public boolean start() throws Exception {
             EnvVars envReduced = new EnvVars(env);
-            EnvVars envHost = computer.buildEnvironment(TaskListener.NULL);
+            EnvVars envHost = computer.getEnvironment();
             envReduced.entrySet().removeAll(envHost.entrySet());
             LOGGER.log(Level.FINE, "reduced environment: {0}", envReduced);
             workspace.mkdirs(); // otherwise it may be owned by root when created for -v
@@ -153,7 +153,8 @@ public class WithContainerStep extends AbstractStepImpl {
             Optional<String> containerId = dockerClient.getContainerIdIfContainerized();
             if (containerId.isPresent()) {
                 listener.getLogger().println(node.getDisplayName() + " seems to be running inside container " + containerId.get());
-                final Collection<String> mountedVolumes = dockerClient.getVolumes(envHost, containerId.get());
+                final EnvVars processEnv = computer.buildEnvironment(TaskListener.NULL);
+                final Collection<String> mountedVolumes = dockerClient.getVolumes(processEnv, containerId.get());
                 final String[] dirs = {ws, tmp};
                 for (String dir : dirs) {
                     // check if there is any volume which contains the directory
