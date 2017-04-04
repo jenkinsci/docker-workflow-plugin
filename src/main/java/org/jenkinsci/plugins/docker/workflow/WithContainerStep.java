@@ -153,8 +153,7 @@ public class WithContainerStep extends AbstractStepImpl {
             Optional<String> containerId = dockerClient.getContainerIdIfContainerized();
             if (containerId.isPresent()) {
                 listener.getLogger().println(node.getDisplayName() + " seems to be running inside container " + containerId.get());
-                final EnvVars processEnv = computer.buildEnvironment(listener);
-                final Collection<String> mountedVolumes = dockerClient.getVolumes(processEnv, containerId.get());
+                final Collection<String> mountedVolumes = dockerClient.getVolumes(env, containerId.get());
                 final String[] dirs = {ws, tmp};
                 for (String dir : dirs) {
                     // check if there is any volume which contains the directory
