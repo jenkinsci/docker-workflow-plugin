@@ -168,7 +168,7 @@ public class DockerClient {
      */
     public void stop(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
         LaunchResult result = launch(launchEnv, false, "stop", "--time=1", containerId);
-        if (result.getStatus() != 0) {
+        if (result.getStatus() != 0 && result.getStatus() != 143) {
             throw new IOException(String.format("Failed to kill container '%s'. Error %d: '%s','%s'",
                     containerId, result.getStatus(), result.getOut(), result.getErr()));
         }
