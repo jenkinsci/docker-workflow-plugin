@@ -24,6 +24,7 @@
 package org.jenkinsci.plugins.docker.workflow;
 
 import com.google.common.base.Optional;
+import org.apache.commons.lang.ArrayUtils;
 import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import com.google.inject.Inject;
 import hudson.AbortException;
@@ -72,7 +73,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 public class WithContainerStep extends AbstractStepImpl {
-    
+
     private static final Logger LOGGER = Logger.getLogger(WithContainerStep.class.getName());
     private final @Nonnull String image;
     private String args;
@@ -81,7 +82,7 @@ public class WithContainerStep extends AbstractStepImpl {
     @DataBoundConstructor public WithContainerStep(@Nonnull String image) {
         this.image = image;
     }
-    
+
     public String getImage() {
         return image;
     }
@@ -124,8 +125,10 @@ public class WithContainerStep extends AbstractStepImpl {
 
         @Override public boolean start() throws Exception {
             EnvVars envReduced = new EnvVars(env);
-            EnvVars envHost = computer.getEnvironment();
-            envReduced.entrySet().removeAll(envHost.entrySet());
+            EnvVars envComputer = computer.getEnvironment();
+            EnvVars envNode = computer.buildEnvironment(listener);
+
+            envReduced.entrySet().removeAll(envComputer.entrySet());
             LOGGER.log(Level.FINE, "reduced environment: {0}", envReduced);
             workspace.mkdirs(); // otherwise it may be owned by root when created for -v
             String ws = workspace.getRemote();
@@ -153,7 +156,8 @@ public class WithContainerStep extends AbstractStepImpl {
             Optional<String> containerId = dockerClient.getContainerIdIfContainerized();
             if (containerId.isPresent()) {
                 listener.getLogger().println(node.getDisplayName() + " seems to be running inside container " + containerId.get());
-                final Collection<String> mountedVolumes = dockerClient.getVolumes(envHost, containerId.get());
+
+                final Collection<String> mountedVolumes = dockerClient.getVolumes(envNode, containerId.get());
                 final String[] dirs = {ws, tmp};
                 for (String dir : dirs) {
                     // check if there is any volume which contains the directory
@@ -180,7 +184,7 @@ public class WithContainerStep extends AbstractStepImpl {
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
             ImageAction.add(step.image, run);
             getContext().newBodyInvoker().
-                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws, toolName))).
+                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envComputer, envNode, ws, toolName))).
                     withCallback(new Callback(container, toolName)).
                     start();
             return false;
@@ -204,13 +208,15 @@ public class WithContainerStep extends AbstractStepImpl {
 
         private static final long serialVersionUID = 1;
         private final String container;
-        private final String[] envHost;
+        private final String[] envComputer;
+        private final String[] envNode;
         private final String ws;
         private final @CheckForNull String toolName;
 
-        Decorator(String container, EnvVars envHost, String ws, String toolName) {
+        Decorator(String container, EnvVars envComputer, EnvVars envNode, String ws, String toolName) {
             this.container = container;
-            this.envHost = Util.mapToEnv(envHost);
+            this.envComputer = Util.mapToEnv(envComputer);
+            this.envNode = Util.mapToEnv(envNode);
             this.ws = ws;
             this.toolName = toolName;
         }
@@ -234,8 +240,10 @@ public class WithContainerStep extends AbstractStepImpl {
                             }
                         }
                     } // otherwise we are loading an old serialized Decorator
+
                     Set<String> envReduced = new TreeSet<String>(Arrays.asList(starter.envs()));
-                    envReduced.removeAll(Arrays.asList(envHost));
+                    envReduced.removeAll(Arrays.asList(envComputer));
+
                     prefix.addAll(envReduced);
                     // Adapted from decorateByPrefix:
                     starter.cmds().addAll(0, prefix);
@@ -244,6 +252,10 @@ public class WithContainerStep extends AbstractStepImpl {
                         System.arraycopy(starter.masks(), 0, masks, prefix.size(), starter.masks().length);
                         starter.masks(masks);
                     }
+
+                    //Add host environment, so docker is always run against the correct docker instance
+                    starter.envs((String[])ArrayUtils.addAll(envNode, starter.envs()));
+
                     return super.launch(starter);
                 }
                 @Override public void kill(Map<String,String> modelEnvVars) throws IOException, InterruptedException {
@@ -278,7 +290,7 @@ public class WithContainerStep extends AbstractStepImpl {
                 }
                 private String getExecutable() throws IOException, InterruptedException {
                     EnvVars env = new EnvVars();
-                    for (String pair : envHost) {
+                    for (String pair : envNode) {
                         env.addLine(pair);
                     }
                     return DockerTool.getExecutable(toolName, node, getListener(), env);
