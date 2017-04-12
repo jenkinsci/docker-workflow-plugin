@@ -116,7 +116,11 @@ public class DockerClient {
         }
         for (Map.Entry<String, String> variable : containerEnv.entrySet()) {
             argb.add("-e");
-            argb.addMasked(variable.getKey()+"="+variable.getValue());
+            if (variable.getKey().equals("PATH")) {
+                argb.add(variable.getKey()+"="+variable.getValue());
+            } else {
+                argb.addMasked(variable.getKey()+"="+variable.getValue());
+            }
         }
         argb.add("--entrypoint").add(entrypoint).add(image);
 
