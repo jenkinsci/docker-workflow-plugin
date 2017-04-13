@@ -111,8 +111,8 @@ class Docker implements Serializable {
         public String imageName() {
             return toQualifiedImageName(id)
         }
-        
-        public <V> V inside(String args = '', Closure<V> body) {
+
+        public String getRunId() {
             docker.node {
                 def toRun = imageName()
                 if (toRun != id && docker.script.sh(script: "docker inspect -f . ${id}", returnStatus: true) == 0) {
@@ -125,7 +125,13 @@ class Docker implements Serializable {
                         pull()
                     }
                 }
-                docker.script.withDockerContainer(image: toRun, args: args, toolName: docker.script.env.DOCKER_TOOL_NAME) {
+                return toRun
+            }
+        }
+        
+        public <V> V inside(String args = '', Closure<V> body) {
+            docker.node {
+                docker.script.withDockerContainer(image: getRunId(), args: args, toolName: docker.script.env.DOCKER_TOOL_NAME) {
                     body()
                 }
             }
@@ -139,18 +145,7 @@ class Docker implements Serializable {
 
         public Container run(String args = '', String command = "") {
             docker.node {
-                def toRun = imageName()
-                if (toRun != id && docker.script.sh(script: "docker inspect -f . ${id}", returnStatus: true) == 0) {
-                    // Can run it without registry prefix, because it was locally built.
-                    toRun = id
-                } else {
-                    if (docker.script.sh(script: "docker inspect -f . ${toRun}", returnStatus: true) != 0) {
-                        // Not yet present locally.
-                        // withDockerContainer requires the image to be available locally, since its start phase is not a durable task.
-                        pull()
-                    }
-                }
-                def container = docker.script.sh(script: "docker run -d${args != '' ? ' ' + args : ''} ${toRun}${command != '' ? ' ' + command : ''}", returnStdout: true).trim()
+                def container = docker.script.sh(script: "docker run -d${args != '' ? ' ' + args : ''} ${getRunId()}${command != '' ? ' ' + command : ''}", returnStdout: true).trim()
                 docker.script.dockerFingerprintRun containerId: container, toolName: docker.script.env.DOCKER_TOOL_NAME
                 new Container(docker, container)
             }
@@ -169,20 +164,9 @@ class Docker implements Serializable {
 
         public void tag(String tagName = parsedId.tag, boolean force = true) {
             docker.node {
-                def toRun = imageName()
-                if (toRun != id && docker.script.sh(script: "docker inspect -f . ${id}", returnStatus: true) == 0) {
-                    // Can run it without registry prefix, because it was locally built.
-                    toRun = id
-                } else {
-                    if (docker.script.sh(script: "docker inspect -f . ${toRun}", returnStatus: true) != 0) {
-                        // Not yet present locally.
-                        // withDockerContainer requires the image to be available locally, since its start phase is not a durable task.
-                        pull()
-                    }
-                }
                 def taggedImageName = toQualifiedImageName(parsedId.userAndRepo + ':' + tagName)
                 // TODO as of 1.10.0 --force is deprecated; for 1.12+ do not try it even once
-                docker.script.sh "docker tag --force=${force} ${toRun} ${taggedImageName} || docker tag ${toRun} ${taggedImageName}"
+                docker.script.sh "docker tag --force=${force} ${getRunId()} ${taggedImageName} || docker tag ${getRunId()} ${taggedImageName}"
                 return taggedImageName;
             }
         }
