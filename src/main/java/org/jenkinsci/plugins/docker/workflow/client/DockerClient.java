@@ -130,7 +130,8 @@ public class DockerClient {
         if (result.getStatus() == 0) {
             return result.getOut();
         } else {
-            throw new IOException(String.format("Failed to run image '%s'. Error: %s", image, result.getErr()));
+            throw new IOException(String.format("Failed to run image '%s'. Error %d: '%s','%s'",
+                    image, result.getStatus(), result.getOut(), result.getErr()));
         }
     }
 
@@ -168,7 +169,8 @@ public class DockerClient {
     public void stop(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
         LaunchResult result = launch(launchEnv, false, "stop", "--time=1", containerId);
         if (result.getStatus() != 0) {
-            throw new IOException(String.format("Failed to kill container '%s'.", containerId));
+            throw new IOException(String.format("Failed to kill container '%s'. Error %d: '%s','%s'",
+                    containerId, result.getStatus(), result.getOut(), result.getErr()));
         }
         rm(launchEnv, containerId);
     }
@@ -183,7 +185,8 @@ public class DockerClient {
         LaunchResult result;
         result = launch(launchEnv, false, "rm", "-f", containerId);
         if (result.getStatus() != 0) {
-            throw new IOException(String.format("Failed to rm container '%s'.", containerId));
+            throw new IOException(String.format("Failed to rm container '%s'. Error %d: '%s','%s'",
+                    containerId, result.getStatus(), result.getOut(), result.getErr()));
         }
     }
 
@@ -213,7 +216,7 @@ public class DockerClient {
      * @throws InterruptedException Interrupted
      * @since 1.1
      */
-    public @Nonnull String inspectRequiredField(@Nonnull EnvVars launchEnv, @Nonnull String objectId, 
+    public @Nonnull String inspectRequiredField(@Nonnull EnvVars launchEnv, @Nonnull String objectId,
             @Nonnull String fieldPath) throws IOException, InterruptedException {
         final String fieldValue = inspect(launchEnv, objectId, fieldPath);
         if (fieldValue == null) {
@@ -344,7 +347,7 @@ public class DockerClient {
 
         // TODO get tags and add for ContainerRecord
         return new ContainerRecord(host, containerId, image, containerName,
-                (created != null ? created.getTime() : 0L), 
+                (created != null ? created.getTime() : 0L),
                 Collections.<String,String>emptyMap());
     }
 
