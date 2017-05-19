@@ -1,3 +1,5 @@
+import com.cloudbees.groovy.cps.NonCPS
+
 node {
   git '/tmp/repo'
 
@@ -25,6 +27,7 @@ node {
     }
 
     def pcImg
+    def pushMsg
     stage('Bake Docker image') {
       // Use the spring-petclinic Dockerfile (see above 'maven.inside()' block)
       // to build a container that can run the app.
@@ -36,7 +39,7 @@ node {
 
       // Let us tag and push the newly built image. Will tag using the image name provided
       // in the 'docker.build' call above (which included the build number on the tag).
-      pcImg.push();
+      pushMsg = pcImg.push();
     }
 
     stage('Test Image') {
@@ -55,9 +58,30 @@ node {
       input "How do you like ${env.BUILD_URL}artifact/screenshot.jpg?"
     }
 
+    stage('pull image by digest'){
+        // pull image by digest, which is immutable identifier (see
+        // https://docs.docker.com/engine/reference/commandline/pull/#/pull-an-image-by-digest-immutable-identifier)
+        pullByDigest(pushMsg)
+    }
+
     stage('Promote Image') {
       // All the tests passed. We can now retag and push the 'latest' image.
       pcImg.push('latest')
     }
   }
+}
+
+@NonCPS
+def pullByDigest(def pushMsg){
+    def matcher = pushMsg =~ "(.*digest:\\s)([^\\s]*)(\\s.*)"
+
+    if (matcher){
+        imageUrl = "docker.51.nb/centos@${matcher[-1][2]}"
+    } else{
+        error("cannot find digest information")
+    }
+
+    println "url is: ${imageUrl}"
+    def pullImage = docker.image(imageUrl)
+    pullImage.pull()
 }
