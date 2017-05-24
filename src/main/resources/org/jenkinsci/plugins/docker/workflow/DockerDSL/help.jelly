@@ -5,7 +5,7 @@
         The <code>docker</code> variable offers convenient access to Docker-related functions from a Pipeline script.
     </p>
     <p>
-        Methods needing a slave will implicitly run a <code>node {…}</code> block if you have not wrapped them in one.
+        Methods needing a Jenkins agent will implicitly run a <code>node {…}</code> block if you have not wrapped them in one.
         It is a good idea to enclose a block of steps which should all run on the same node in such a block yourself.
         (If using a Swarm server, or any other specific Docker server, this probably does not matter, but if you are using the default server on localhost it likely will.)
     </p>
@@ -32,7 +32,7 @@
         <dd>
             <p>
                 Specifies the name of a Docker installation to use, if any are defined in Jenkins global configuration.
-                If unspecified, <code>docker</code> is assumed to be in the <code>$PATH</code> of the slave agent.
+                If unspecified, <code>docker</code> is assumed to be in the <code>$PATH</code> of the Jenkins agent.
             </p>
         </dd>
         <dt><code>image(id)</code></dt>
@@ -75,7 +75,7 @@
         <dd>
             <p>
                 Like <code>withRun</code> this starts a container for the duration of the body, but all external commands (<code>sh</code>) launched by the body run inside the container rather than on the host.
-                These commands run in the same working directory (normally a slave workspace), which means that the Docker server must be on localhost.
+                These commands run in the same working directory (normally a Jenkins agent workspace), which means that the Docker server must be on localhost.
             </p>
         </dd>
         <dt><code>Image.tag([tagname])</code></dt>
