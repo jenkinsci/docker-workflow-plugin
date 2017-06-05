@@ -43,6 +43,9 @@ echo '***************         Docker Registry Service running now             **
 # In case some tagged images were left over from a previous run using a cache:
 (docker images -q examplecorp/spring-petclinic; docker images -q localhost/examplecorp/spring-petclinic) | xargs docker rmi --no-prune=true --force
 
+# TODO delete any snapshots from m2repo volume
+# find … \( -type d -name '*-SNAPSHOT' -prune -o -type f -name maven-metadata-local.xml \) -exec rm -rfv {} \;
+
 #
 # Now run Jenkins.
 #
