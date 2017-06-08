@@ -36,6 +36,11 @@ import hudson.model.Run;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.jenkinsci.plugins.docker.commons.fingerprint.DockerFingerprints;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
@@ -49,11 +54,13 @@ public class FromFingerprintStep extends AbstractStepImpl {
 
     private final String dockerfile;
     private final String image;
+    private final List<String> buildArgs;
     private String toolName;
 
-    @DataBoundConstructor public FromFingerprintStep(String dockerfile, String image) {
+    @DataBoundConstructor public FromFingerprintStep(String dockerfile, String image, List<String> buildArgs) {
         this.dockerfile = dockerfile;
         this.image = image;
+        this.buildArgs = buildArgs;
     }
 
     public String getDockerfile() {
@@ -73,7 +80,7 @@ public class FromFingerprintStep extends AbstractStepImpl {
     }
 
     public static class Execution extends AbstractSynchronousNonBlockingStepExecution<Void> {
-        
+
         private static final long serialVersionUID = 1L;
 
         @Inject(optional=true) private transient FromFingerprintStep step;
@@ -85,6 +92,7 @@ public class FromFingerprintStep extends AbstractStepImpl {
         @StepContextParameter private transient Node node;
 
         @Override protected Void run() throws Exception {
+            Set<String> beforeFromArgs = new HashSet<>();
             String fromImage = null;
             FilePath dockerfile = workspace.child(step.dockerfile);
             InputStream is = dockerfile.read();
@@ -95,6 +103,10 @@ public class FromFingerprintStep extends AbstractStepImpl {
                     while ((line = r.readLine()) != null) {
                         line = line.trim();
                         if (line.startsWith("#")) {
+                            continue;
+                        }
+                        if (line.startsWith("ARG ")) {
+                            beforeFromArgs.add(line.substring(4));
                             continue;
                         }
                         if (line.startsWith("FROM ")) {
@@ -116,6 +128,23 @@ public class FromFingerprintStep extends AbstractStepImpl {
             if (fromImage.equals("scratch")) { // we just made a base image
                 DockerFingerprints.addFromFacet(null, descendantImageId, run);
             } else {
+                final HashMap<String, String> argsMap = new HashMap<>();
+                // add entry for each ARG clause defined before FROM in Dockerfile (with default value if exist)
+                for(String beforeFromArg : beforeFromArgs) {
+                    String[] splittedArg = beforeFromArg.split("=");
+                    argsMap.put(splittedArg[0], splittedArg.length > 1 ? splittedArg[1] : "");
+                }
+                // update existing entries with values passed in docker build command using '--build-arg'
+                for(String buildArg : step.buildArgs) {
+                    String[] splittedArg = buildArg.split("=");
+                    if (argsMap.containsKey(splittedArg[0])) {
+                        argsMap.put(splittedArg[0], splittedArg.length > 1 ? splittedArg[1] : "");
+                    }
+                }
+                Set<Map.Entry<String, String>> argEntries = argsMap.entrySet();
+                for (Map.Entry<String, String> argEntry : argEntries) {
+                    fromImage = fromImage.replaceAll("\\$" + argEntry.getKey(), argEntry.getValue());
+                }
                 DockerFingerprints.addFromFacet(client.inspectRequiredField(env, fromImage, ".Id"), descendantImageId, run);
                 ImageAction.add(fromImage, run);
             }
