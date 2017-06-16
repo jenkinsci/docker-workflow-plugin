@@ -24,6 +24,7 @@
 package org.jenkinsci.plugins.docker.workflow.client;
 
 import com.google.common.base.Optional;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -66,6 +67,7 @@ public class DockerClient {
     /**
      * Maximum amount of time (in seconds) to wait for {@code docker} client operations which are supposed to be more or less instantaneous.
      */
+    @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL", justification="mutable for scripts")
     @Restricted(NoExternalUse.class)
     public static int CLIENT_TIMEOUT = Integer.getInteger(DockerClient.class.getName() + ".CLIENT_TIMEOUT", 180); // TODO 2.4+ SystemProperties
 
