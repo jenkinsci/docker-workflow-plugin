@@ -79,15 +79,21 @@ class Docker implements Serializable {
 
             // Detect custom Dockerfile:
             def dockerfile = "${dir}/Dockerfile"
+            // Detect build-time variables
+            def buildArgs = []
             for (int i=0; i<parsedArgs.length; i++) {
                 if ((parsedArgs[i] == '-f' || parsedArgs[i] == '--file') && i < (parsedArgs.length - 1)) {
                     dockerfile = parsedArgs[i+1]
-                    break
+                    continue
+                }
+                if (parsedArgs[i] == '--build-arg' && i < (parsedArgs.length - 1)) {
+                    buildArgs.add(parsedArgs[i+1])
+                    continue
                 }
             }
 
             script.sh "docker build -t ${image} ${args}"
-            script.dockerFingerprintFrom dockerfile: dockerfile, image: image, toolName: script.env.DOCKER_TOOL_NAME
+            script.dockerFingerprintFrom dockerfile: dockerfile, image: image, buildArgs: buildArgs, toolName: script.env.DOCKER_TOOL_NAME
             this.image(image)
         }
     }
