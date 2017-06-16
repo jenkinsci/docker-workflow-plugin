@@ -8,7 +8,7 @@
         <relativePath />
     </parent>
     <artifactId>docker-workflow</artifactId>
-    <version>1.12-SNAPSHOT</version>
+    <version>1.12</version>
     <name>Docker Pipeline</name>
     <description>Build and use Docker containers from pipelines</description>
     <packaging>hpi</packaging>
@@ -25,7 +25,7 @@
       <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
       <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
       <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
-      <tag>HEAD</tag>
+      <tag>docker-workflow-1.12</tag>
     </scm>
 
     <properties>
