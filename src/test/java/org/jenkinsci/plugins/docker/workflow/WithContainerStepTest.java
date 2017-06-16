@@ -39,6 +39,7 @@ import org.jenkinsci.lib.configprovider.ConfigProvider;
 import org.jenkinsci.lib.configprovider.model.Config;
 import org.jenkinsci.plugins.configfiles.custom.CustomConfig;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
+import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import org.jenkinsci.plugins.plaincredentials.impl.FileCredentialsImpl;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -111,13 +112,19 @@ public class WithContainerStepTest {
                     "    }\n" +
                     "  }\n" +
                     "}", true));
-                WorkflowRun b = p.scheduleBuild2(0).waitForStart();
-                story.j.waitForMessage("+ sleep infinity", b);
-                Assume.assumeThat(new ProcessBuilder("sudo", "killall", "-STOP", "dockerd").inheritIO().start().waitFor(), Matchers.is(0));
+                int origTimeout = DockerClient.CLIENT_TIMEOUT;
+                DockerClient.CLIENT_TIMEOUT = 10;
                 try {
-                    story.j.assertBuildStatus(Result.ABORTED, story.j.waitForCompletion(b));
+                    WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+                    story.j.waitForMessage("+ sleep infinity", b);
+                    Assume.assumeThat(new ProcessBuilder("sudo", "killall", "-STOP", "dockerd").inheritIO().start().waitFor(), Matchers.is(0));
+                    try {
+                        story.j.assertBuildStatus(Result.ABORTED, story.j.waitForCompletion(b));
+                    } finally {
+                        Assume.assumeThat(new ProcessBuilder("sudo", "killall", "-CONT", "dockerd").inheritIO().start().waitFor(), Matchers.is(0));
+                    }
                 } finally {
-                    Assume.assumeThat(new ProcessBuilder("sudo", "killall", "-CONT", "dockerd").inheritIO().start().waitFor(), Matchers.is(0));
+                    DockerClient.CLIENT_TIMEOUT = origTimeout;
                 }
             }
         });
