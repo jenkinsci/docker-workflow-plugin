@@ -334,7 +334,7 @@ public class DockerClient {
      * @throws InterruptedException Interrupted
      */
     public List<String> getVolumes(@Nonnull EnvVars launchEnv, String containerID) throws IOException, InterruptedException {
-        LaunchResult result = launch(launchEnv, true, "inspect", "-f", "{{range .Mounts}}{{.Destination}}\n{{end}}", containerID);
+        LaunchResult result = launch(launchEnv, true, "inspect", "-f", "{{range.Mounts}}{{.Destination}}\n{{end}}", containerID);
         if (result.getStatus() != 0) {
             return Collections.emptyList();
         }
