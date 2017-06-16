@@ -249,7 +249,7 @@ public class WithContainerStep extends AbstractStepImpl {
                 @Override public void kill(Map<String,String> modelEnvVars) throws IOException, InterruptedException {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     String executable = getExecutable();
-                    if (getInner().launch().cmds(executable, "exec", container, "ps", "-A", "-o", "pid,command", "e").stdout(baos).quiet(true).start().joinWithTimeout(10, TimeUnit.SECONDS, listener) != 0) {
+                    if (getInner().launch().cmds(executable, "exec", container, "ps", "-A", "-o", "pid,command", "e").stdout(baos).quiet(true).start().joinWithTimeout(DockerClient.CLIENT_TIMEOUT, TimeUnit.SECONDS, listener) != 0) {
                         throw new IOException("failed to run ps");
                     }
                     List<String> pids = new ArrayList<String>();
@@ -271,7 +271,7 @@ public class WithContainerStep extends AbstractStepImpl {
                     if (!pids.isEmpty()) {
                         List<String> cmds = new ArrayList<>(Arrays.asList(executable, "exec", container, "kill"));
                         cmds.addAll(pids);
-                        if (getInner().launch().cmds(cmds).quiet(true).start().joinWithTimeout(10, TimeUnit.SECONDS, listener) != 0) {
+                        if (getInner().launch().cmds(cmds).quiet(true).start().joinWithTimeout(DockerClient.CLIENT_TIMEOUT, TimeUnit.SECONDS, listener) != 0) {
                             throw new IOException("failed to run kill");
                         }
                     }

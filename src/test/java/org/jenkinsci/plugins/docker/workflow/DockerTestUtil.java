@@ -43,7 +43,7 @@ public class DockerTestUtil {
     public static void assumeDocker() throws Exception {
         Launcher.LocalLauncher localLauncher = new Launcher.LocalLauncher(StreamTaskListener.NULL);
         try {
-            Assume.assumeThat("Docker working", localLauncher.launch().cmds(DockerTool.getExecutable(null, null, null, null), "ps").start().joinWithTimeout(10, TimeUnit.SECONDS, localLauncher.getListener()), is(0));
+            Assume.assumeThat("Docker working", localLauncher.launch().cmds(DockerTool.getExecutable(null, null, null, null), "ps").start().joinWithTimeout(DockerClient.CLIENT_TIMEOUT, TimeUnit.SECONDS, localLauncher.getListener()), is(0));
         } catch (IOException x) {
             Assume.assumeNoException("have Docker installed", x);
         }
