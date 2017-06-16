@@ -63,7 +63,12 @@ endif
 
 DOCKER_RUN=docker run --rm -p 127.0.0.1:8080:8080 -v /var/run/docker.sock:/var/run/docker.sock --group-add=$(shell stat $(STAT_OPT) %g /var/run/docker.sock)
 
-run:	build
+# http://stackoverflow.com/q/23544282/12916 unclear how best to ensure that the jenkins user can write to this volume
+volume:
+	docker volume create --name=m2repo
+	sudo chmod a+rw $$(docker volume inspect -f '{{.Mountpoint}}' m2repo)
+
+run:	build volume
 	$(DOCKER_RUN) $(IMAGE):$(TAG)
 
 clean:

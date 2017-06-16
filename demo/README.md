@@ -5,6 +5,8 @@ with Docker via [Docker Pipeline](https://wiki.jenkins-ci.org/display/JENKINS/Do
 
 Linux:
 
+TODO update
+
 ```
 docker run --rm -p 127.0.0.1:8080:8080 -v /var/run/docker.sock:/var/run/docker.sock --group-add=$(stat -c %g /var/run/docker.sock) jenkinsci/docker-workflow-demo
 ```
