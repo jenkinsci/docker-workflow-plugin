@@ -325,6 +325,38 @@ public class DockerDSLTest {
         });
     }
 
+    @Test public void buildWithMultiStage() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                        "node {\n" +
+                                "  sh 'mkdir -p child'\n" +
+                                "  writeFile file: 'child/stuff1', text: 'hello'\n" +
+                                "  writeFile file: 'child/stuff2', text: 'world'\n" +
+                                "  writeFile file: 'child/stuff3', text: env.BUILD_NUMBER\n" +
+                                "  writeFile file: 'child/Dockerfile.other', text: '# This is a test.\\n\\nFROM hello-world AS one\\nARG stuff4=4\\nARG stuff5=5\\nCOPY stuff1 /\\nFROM scratch\\nCOPY --from=one /stuff1 /\\nCOPY stuff2 /\\nCOPY stuff3 /\\n'\n" +
+                                "  def built = docker.build 'hello-world-stuff-arguments', '-f child/Dockerfile.other --build-arg stuff4=build4 --build-arg stuff5=build5 child'\n" +
+                                "  echo \"built ${built.id}\"\n" +
+                                "}", true));
+
+// Note the absence '--pull' in the above docker build ags as compared to other tests.
+// This is due to a Docker bug: https://github.com/docker/for-mac/issues/1751
+// It can be re-added when that is fixed
+
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                DockerClient client = new DockerClient(new Launcher.LocalLauncher(StreamTaskListener.NULL), null, null);
+                String descendantImageId1 = client.inspect(new EnvVars(), "hello-world-stuff-arguments", ".Id");
+                story.j.assertLogContains("built hello-world-stuff-arguments", b);
+                story.j.assertLogNotContains(" --no-cache ", b);
+                story.j.assertLogContains(descendantImageId1.replaceFirst("^sha256:", "").substring(0, 12), b);
+                story.j.assertLogContains(" --build-arg stuff4=build4 ", b);
+                story.j.assertLogContains(" --build-arg stuff5=build5 ", b);
+            }
+        });
+    }
+
     @Test public void buildArguments() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
