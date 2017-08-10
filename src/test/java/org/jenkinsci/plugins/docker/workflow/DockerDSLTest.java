@@ -25,6 +25,7 @@ package org.jenkinsci.plugins.docker.workflow;
 
 import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeDocker;
 
+import hudson.util.VersionNumber;
 import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import hudson.EnvVars;
 import hudson.Launcher;
@@ -328,7 +329,7 @@ public class DockerDSLTest {
     @Test public void buildWithMultiStage() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                assumeDocker();
+                assumeDocker(new VersionNumber("17.05"));
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                         "node {\n" +
