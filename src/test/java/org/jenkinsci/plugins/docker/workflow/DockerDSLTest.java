@@ -337,7 +337,16 @@ public class DockerDSLTest {
                                 "  writeFile file: 'child/stuff1', text: 'hello'\n" +
                                 "  writeFile file: 'child/stuff2', text: 'world'\n" +
                                 "  writeFile file: 'child/stuff3', text: env.BUILD_NUMBER\n" +
-                                "  writeFile file: 'child/Dockerfile.other', text: '# This is a test.\\n\\nFROM hello-world AS one\\nARG stuff4=4\\nARG stuff5=5\\nCOPY stuff1 /\\nFROM scratch\\nCOPY --from=one /stuff1 /\\nCOPY stuff2 /\\nCOPY stuff3 /\\n'\n" +
+                                "  writeFile file: 'child/Dockerfile.other', " +
+                                     "text: '# This is a test.\\n" +
+                                            "\\n" +
+                                            "FROM hello-world AS one\\n" +
+                                            "ARG stuff4=4\\n" +
+                                            "ARG stuff5=5\\n" +
+                                            "COPY stuff1 /\\n" +
+                                            "FROM scratch\\n" +
+                                            "COPY --from=one /stuff1 /\\n" +
+                                            "COPY stuff2 /\\nCOPY stuff3 /\\n'\n" +
                                 "  def built = docker.build 'hello-world-stuff-arguments', '-f child/Dockerfile.other --build-arg stuff4=build4 --build-arg stuff5=build5 child'\n" +
                                 "  echo \"built ${built.id}\"\n" +
                                 "}", true));
