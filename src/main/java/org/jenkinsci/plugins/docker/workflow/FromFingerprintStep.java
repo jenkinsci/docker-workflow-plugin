@@ -99,7 +99,7 @@ public class FromFingerprintStep extends AbstractStepImpl {
                         }
                         if (line.startsWith("FROM ")) {
                             fromImage = line.substring(5);
-                            break;
+                            continue;
                         }
                     }
                 } finally {
