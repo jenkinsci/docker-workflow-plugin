@@ -56,6 +56,10 @@ public class DockerTestUtil {
         Assume.assumeFalse("Docker version not < " + minimumVersion.toString(), dockerClient.version().isOlderThan(minimumVersion));
     }
 
+    public static void assumeNotWindows() throws Exception {
+        Assume.assumeFalse(System.getProperty("os.name").toLowerCase().contains("windows"));
+    }
+
     private DockerTestUtil() {}
     
 }

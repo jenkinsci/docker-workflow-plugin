@@ -50,8 +50,11 @@ import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
+
+import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeNotWindows;
 import static org.junit.Assert.*;
 import static org.junit.Assume.*;
+
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -162,6 +165,8 @@ public class DockerDSLTest {
     @Test public void endpoints() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
+                assumeNotWindows();
+
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "docker.withServer('tcp://host:1234') {\n" +
