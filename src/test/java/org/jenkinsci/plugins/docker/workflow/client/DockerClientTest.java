@@ -58,11 +58,31 @@ public class DockerClientTest {
     }
 
     @Test
-    public void test_run() throws IOException, InterruptedException {
+    public void test_runWithEntrypoint() throws IOException, InterruptedException {
         EnvVars launchEnv = newLaunchEnv();
         String containerId =
-                dockerClient.run(launchEnv, "learn/tutorial", null, null, Collections.<String, String>emptyMap(), Collections.<String>emptyList(), new EnvVars(),
+                dockerClient.runWithEntrypoint(launchEnv, "learn/tutorial", null, null, Collections.<String, String>emptyMap(), Collections.<String>emptyList(), new EnvVars(),
                         dockerClient.whoAmI(), "cat");
+        Assert.assertEquals(64, containerId.length());
+        ContainerRecord containerRecord = dockerClient.getContainerRecord(launchEnv, containerId);
+        Assert.assertEquals(dockerClient.inspect(launchEnv, "learn/tutorial", ".Id"), containerRecord.getImageId());
+        Assert.assertTrue(containerRecord.getContainerName().length() > 0);
+        Assert.assertTrue(containerRecord.getHost().length() > 0);
+        Assert.assertTrue(containerRecord.getCreated() > 1000000000000L);
+        Assert.assertEquals(Collections.<String>emptyList(), dockerClient.getVolumes(launchEnv, containerId));
+
+        // Also test that the stop works and cleans up after itself
+        Assert.assertNotNull(dockerClient.inspect(launchEnv, containerId, ".Name"));
+        dockerClient.stop(launchEnv, containerId);
+        Assert.assertNull(dockerClient.inspect(launchEnv, containerId, ".Name"));
+    }
+
+    @Test
+    public void test_runWithCommand() throws IOException, InterruptedException {
+        EnvVars launchEnv = newLaunchEnv();
+        String containerId =
+                dockerClient.runWithCommand(launchEnv, "learn/tutorial", null, null, Collections.<String, String>emptyMap(), Collections.<String>emptyList(), new EnvVars(),
+                        dockerClient.whoAmI(), "echo", "hello world");
         Assert.assertEquals(64, containerId.length());
         ContainerRecord containerRecord = dockerClient.getContainerRecord(launchEnv, containerId);
         Assert.assertEquals(dockerClient.inspect(launchEnv, "learn/tutorial", ".Id"), containerRecord.getImageId());

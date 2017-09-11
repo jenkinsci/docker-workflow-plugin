@@ -111,8 +111,16 @@ class Docker implements Serializable {
         public String imageName() {
             return toQualifiedImageName(id)
         }
-        
+
         public <V> V inside(String args = '', Closure<V> body) {
+            return insideExecution(false, args, body)
+        }
+
+        public <V> V overrideEntrypoint(String args = '', Closure<V> body) {
+            return insideExecution(true, args, body)
+        }
+
+        private <V> V insideExecution(boolean overrideEntrypoint, String args = '', Closure<V> body) {
             docker.node {
                 def toRun = imageName()
                 if (toRun != id && docker.script.sh(script: "docker inspect -f . ${id}", returnStatus: true) == 0) {
@@ -125,7 +133,7 @@ class Docker implements Serializable {
                         pull()
                     }
                 }
-                docker.script.withDockerContainer(image: toRun, args: args, toolName: docker.script.env.DOCKER_TOOL_NAME) {
+                docker.script.withDockerContainer(image: toRun, args: args, toolName: docker.script.env.DOCKER_TOOL_NAME, overrideEntrypoint: overrideEntrypoint) {
                     body()
                 }
             }
