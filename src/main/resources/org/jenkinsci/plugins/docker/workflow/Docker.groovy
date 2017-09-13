@@ -80,8 +80,9 @@ class Docker implements Serializable {
             // Detect custom Dockerfile:
             def dockerfile = "${dir}/Dockerfile"
             for (int i=0; i<parsedArgs.length; i++) {
-                if ((parsedArgs[i] == '-f' || parsedArgs[i] == '--file') && i < (parsedArgs.length - 1)) {
-                    dockerfile = parsedArgs[i+1]
+                def arg = parsedArgs[i]
+                if ((arg == '-f' || arg.startsWith('--file')) && i < (parsedArgs.length - 1)) {
+                    dockerfile = arg.startsWith('--file=') ? arg.split('=')[1] : parsedArgs[i+1]
                     break
                 }
             }
@@ -111,7 +112,7 @@ class Docker implements Serializable {
         public String imageName() {
             return toQualifiedImageName(id)
         }
-        
+
         public <V> V inside(String args = '', Closure<V> body) {
             docker.node {
                 def toRun = imageName()
