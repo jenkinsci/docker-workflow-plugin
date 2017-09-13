@@ -83,8 +83,9 @@ class Docker implements Serializable {
             // Detect custom Dockerfile:
             def dockerfile = "${dir}/Dockerfile"
             for (int i=0; i<parsedArgs.length; i++) {
-                if ((parsedArgs[i] == '-f' || parsedArgs[i] == '--file') && i < (parsedArgs.length - 1)) {
-                    dockerfile = parsedArgs[i+1]
+                def arg = parsedArgs[i]
+                if ((arg == '-f' || arg.startsWith('--file')) && i < (parsedArgs.length - 1)) {
+                    dockerfile = arg.startsWith('--file=') ? arg.split('=')[1] : parsedArgs[i+1]
                     break
                 }
             }
