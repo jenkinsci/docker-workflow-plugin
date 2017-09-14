@@ -112,7 +112,7 @@ class Docker implements Serializable {
             return toQualifiedImageName(id)
         }
         
-        public <V> V inside(String args = '', Closure<V> body) {
+        public <V> V inside(String args = '', List<String> env = null, Closure<V> body) {
             docker.node {
                 def toRun = imageName()
                 if (toRun != id && docker.script.sh(script: "docker inspect -f . ${id}", returnStatus: true) == 0) {
@@ -125,7 +125,7 @@ class Docker implements Serializable {
                         pull()
                     }
                 }
-                docker.script.withDockerContainer(image: toRun, args: args, toolName: docker.script.env.DOCKER_TOOL_NAME) {
+                docker.script.withDockerContainer(image: toRun, args: args, env: env, toolName: docker.script.env.DOCKER_TOOL_NAME) {
                     body()
                 }
             }
