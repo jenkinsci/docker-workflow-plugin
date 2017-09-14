@@ -103,12 +103,14 @@ public class WithContainerStepTest {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
-                    "  withDockerContainer('busybox') {\n" +
-                    "    echo 'ok'\n" +
+                    "  withEnv(['X=1', 'Y=2']) {\n" +
+                    "    withDockerContainer('busybox') {\n" +
+                    "      echo 'ok'\n" +
+                    "    }\n" +
                     "  }\n" +
                     "}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-                story.j.assertLogContains("-e ********", b);
+                story.j.assertLogContains("-e ******** -e ********", b);
             }
         });
     }
@@ -120,8 +122,10 @@ public class WithContainerStepTest {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
-                    "  withDockerContainer(image: 'busybox', env: [:]) {\n" +
-                    "    echo 'ok'\n" +
+                    "  withEnv(['X=1', 'Y=2']) {\n" +
+                    "    withDockerContainer(image: 'busybox', env: []) {\n" +
+                    "      echo 'ok'\n" +
+                    "    }\n" +
                     "  }\n" +
                     "}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
@@ -137,12 +141,15 @@ public class WithContainerStepTest {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
-                    "  withDockerContainer(image: 'busybox', env: [SAMPLE:'VAR']) {\n" +
-                    "    sh 'env'\n" +
+                    "  withEnv(['X=1', 'Y=2']) {\n" +
+                    "    withDockerContainer(image: 'busybox', env: ['Z=3']) {\n" +
+                    "      echo 'ok'\n" +
+                    "    }\n" +
                     "  }\n" +
                     "}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-                story.j.assertLogContains("SAMPLE=VAR", b);
+                story.j.assertLogContains("-e ********", b);
+                story.j.assertLogNotContains("-e ******** -e ********", b);
             }
         });
     }

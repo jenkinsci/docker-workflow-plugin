@@ -77,7 +77,7 @@ public class WithContainerStep extends AbstractStepImpl {
     private final @Nonnull String image;
     private String args;
     private String toolName;
-    private Map<String, String> env;
+    private List<String> env;
 
     @DataBoundConstructor public WithContainerStep(@Nonnull String image) {
         this.image = image;
@@ -100,7 +100,7 @@ public class WithContainerStep extends AbstractStepImpl {
         return toolName;
     }
 
-    public Map<String, String> getEnv() {
+    public List<String> getEnv() {
         return env;
     }
 
@@ -109,7 +109,7 @@ public class WithContainerStep extends AbstractStepImpl {
     }
 
     @DataBoundSetter
-    public void setEnv(Map<String, String> env) {
+    public void setEnv(List<String> env) {
         this.env = env;
     }
 
@@ -134,15 +134,17 @@ public class WithContainerStep extends AbstractStepImpl {
 
         @Override public boolean start() throws Exception {
             EnvVars envReduced;
-            EnvVars envHost;
+            EnvVars envHost = computer.getEnvironment();
             if (step.env == null) {
                 envReduced = new EnvVars(env);
                 envHost = computer.getEnvironment();
                 envReduced.entrySet().removeAll(envHost.entrySet());
                 envReduced.remove("");
             } else {
-                envReduced = new EnvVars(step.env);
-                envHost = new EnvVars(step.env);
+                envReduced = new EnvVars();
+                for (String line : step.env) {
+                    envReduced.addLine(line);
+                }
             }
             LOGGER.log(Level.FINE, "reduced environment: {0}", envReduced);
             workspace.mkdirs(); // otherwise it may be owned by root when created for -v
