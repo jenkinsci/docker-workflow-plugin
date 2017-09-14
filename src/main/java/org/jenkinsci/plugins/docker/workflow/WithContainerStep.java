@@ -77,6 +77,7 @@ public class WithContainerStep extends AbstractStepImpl {
     private final @Nonnull String image;
     private String args;
     private String toolName;
+    private Map<String, String> env;
 
     @DataBoundConstructor public WithContainerStep(@Nonnull String image) {
         this.image = image;
@@ -99,8 +100,17 @@ public class WithContainerStep extends AbstractStepImpl {
         return toolName;
     }
 
+    public Map<String, String> getEnv() {
+        return env;
+    }
+
     @DataBoundSetter public void setToolName(String toolName) {
         this.toolName = Util.fixEmpty(toolName);
+    }
+
+    @DataBoundSetter
+    public void setEnv(Map<String, String> env) {
+        this.env = env;
     }
 
     private static void destroy(String container, Launcher launcher, Node node, EnvVars launcherEnv, String toolName) throws Exception {
@@ -123,10 +133,17 @@ public class WithContainerStep extends AbstractStepImpl {
         private String toolName;
 
         @Override public boolean start() throws Exception {
-            EnvVars envReduced = new EnvVars(env);
-            EnvVars envHost = computer.getEnvironment();
-            envReduced.entrySet().removeAll(envHost.entrySet());
-            envReduced.remove("");
+            EnvVars envReduced;
+            EnvVars envHost;
+            if (step.env == null) {
+                envReduced = new EnvVars(env);
+                envHost = computer.getEnvironment();
+                envReduced.entrySet().removeAll(envHost.entrySet());
+                envReduced.remove("");
+            } else {
+                envReduced = new EnvVars(step.env);
+                envHost = new EnvVars(step.env);
+            }
             LOGGER.log(Level.FINE, "reduced environment: {0}", envReduced);
             workspace.mkdirs(); // otherwise it may be owned by root when created for -v
             String ws = workspace.getRemote();

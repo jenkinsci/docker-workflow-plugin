@@ -96,6 +96,57 @@ public class WithContainerStepTest {
         });
     }
 
+    @Test public void stepWithNodeEnv() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                DockerTestUtil.assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                    "  withDockerContainer('busybox') {\n" +
+                    "    echo 'ok'\n" +
+                    "  }\n" +
+                    "}", true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertLogContains("-e ********", b);
+            }
+        });
+    }
+
+    @Test public void stepWithoutNodeEnv() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                DockerTestUtil.assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                    "  withDockerContainer(image: 'busybox', env: [:]) {\n" +
+                    "    echo 'ok'\n" +
+                    "  }\n" +
+                    "}", true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertLogNotContains("-e ********", b);
+            }
+        });
+    }
+
+    @Test public void stepWithCustomEnv() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                DockerTestUtil.assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                    "  withDockerContainer(image: 'busybox', env: [SAMPLE:'VAR']) {\n" +
+                    "    sh 'env'\n" +
+                    "  }\n" +
+                    "}", true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertLogContains("SAMPLE=VAR", b);
+            }
+        });
+    }
+
     @Issue("JENKINS-37719")
     @Test public void hungDaemon() {
         story.addStep(new Statement() {
