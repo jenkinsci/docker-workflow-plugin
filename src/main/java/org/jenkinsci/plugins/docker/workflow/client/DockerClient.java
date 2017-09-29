@@ -35,17 +35,22 @@ import org.jenkinsci.plugins.docker.commons.fingerprint.ContainerRecord;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 import java.util.List;
 import java.util.Arrays;
+import java.util.StringTokenizer;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -129,6 +134,30 @@ public class DockerClient {
         } else {
             throw new IOException(String.format("Failed to run image '%s'. Error: %s", image, result.getErr()));
         }
+    }
+
+    public List<String> listProcess(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
+        LaunchResult result = launch(launchEnv, false, "top", containerId);
+        if (result.getStatus() != 0) {
+            throw new IOException(String.format("Failed to run top '%s'. Error: %s", containerId, result.getErr()));
+        }
+        List<String> processes = new ArrayList<>();
+        try (Reader r = new StringReader(result.getOut());
+             BufferedReader in = new BufferedReader(r)) {
+            String line;
+            in.readLine(); // ps header
+            while ((line = in.readLine()) != null) {
+                final StringTokenizer stringTokenizer = new StringTokenizer(line, " ");
+                if (stringTokenizer.countTokens() < 4) {
+                    throw new IOException("Unexpected `docker top` output : "+line);
+                }
+                stringTokenizer.nextToken(); // PID
+                stringTokenizer.nextToken(); // USER
+                stringTokenizer.nextToken(); // TIME
+                processes.add(stringTokenizer.nextToken()); // COMMAND
+            }
+        }
+        return processes;
     }
 
     /**
