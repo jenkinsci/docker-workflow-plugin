@@ -110,8 +110,13 @@ public class DockerClient {
      */
     public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, @Nonnull String entrypoint) throws IOException, InterruptedException {
         ArgumentListBuilder argb = new ArgumentListBuilder();
+        boolean iswin = !launcher.isUnix();
 
-        argb.add("run", "-t", "-d", "-u", user);
+        argb.add("run", "-t", "-d");
+        if (!iswin) {
+            argb.add("-u", user);
+        }
+
         if (args != null) {
             argb.addTokenized(args);
         }
@@ -120,7 +125,7 @@ public class DockerClient {
             argb.add("-w", workdir);
         }
         for (Map.Entry<String, String> volume : volumes.entrySet()) {
-            argb.add("-v", volume.getKey() + ":" + volume.getValue() + ":rw,z");
+            argb.add("-v", volume.getKey() + ":" + volume.getValue() + (iswin ? ":rw" : ":rw,z"));
         }
         for (String containerId : volumesFromContainers) {
             argb.add("--volumes-from", containerId);
