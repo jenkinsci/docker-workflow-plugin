@@ -23,6 +23,7 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
+import hudson.EnvVars;
 import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import hudson.Launcher;
 import hudson.util.StreamTaskListener;
@@ -53,7 +54,7 @@ public class DockerTestUtil {
             Assume.assumeNoException("have Docker installed", x);
         }
         DockerClient dockerClient = new DockerClient(localLauncher, null, null);
-        Assume.assumeFalse("Docker version not < " + minimumVersion.toString(), dockerClient.version().isOlderThan(minimumVersion));
+        Assume.assumeFalse("Docker version not < " + minimumVersion.toString(), dockerClient.version(new EnvVars()).isOlderThan(minimumVersion));
     }
 
     public static void assumeNotWindows() throws Exception {
