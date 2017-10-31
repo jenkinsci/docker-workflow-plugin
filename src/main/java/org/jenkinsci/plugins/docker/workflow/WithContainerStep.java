@@ -130,23 +130,23 @@ public class WithContainerStep extends AbstractStepImpl {
 
             // Remove PATH during cat.
             envReduced.remove("PATH");
+            envReduced.remove("");
 
-            LOGGER.log(Level.FINE, "(cat) reduced environment: {0}", envReduced);
+            LOGGER.log(Level.FINE, "reduced environment: {0}", envReduced);
             workspace.mkdirs(); // otherwise it may be owned by root when created for -v
             String ws = workspace.getRemote();
             toolName = step.toolName;
             DockerClient dockerClient = new DockerClient(launcher, node, toolName);
 
-            // Add a warning if the docker version is less than 1.4
             VersionNumber dockerVersion = dockerClient.version();
             if (dockerVersion != null) {
-                if (dockerVersion.isOlderThan(new VersionNumber("1.4"))) {
-                    throw new AbortException("The docker version is less than v1.4. Pipeline functions requiring 'docker exec' will not work e.g. 'docker.inside'.");
+                if (dockerVersion.isOlderThan(new VersionNumber("1.7"))) {
+                    throw new AbortException("The docker version is less than v1.7. Pipeline functions requiring 'docker exec' (e.g. 'docker.inside') or SELinux labeling will not work.");
                 } else if (dockerVersion.isOlderThan(new VersionNumber("1.8"))) {
                     listener.error("The docker version is less than v1.8. Running a 'docker.inside' from inside a container will not work.");
                 }
             } else {
-                listener.error("Failed to parse docker version. Please note there is a minimum docker version requirement of v1.4.");
+                listener.error("Failed to parse docker version. Please note there is a minimum docker version requirement of v1.7.");
             }
 
             FilePath tempDir = tempDir(workspace);
@@ -264,7 +264,7 @@ public class WithContainerStep extends AbstractStepImpl {
                 @Override public void kill(Map<String,String> modelEnvVars) throws IOException, InterruptedException {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     String executable = getExecutable();
-                    if (getInner().launch().cmds(executable, "exec", container, "ps", "-A", "-o", "pid,command", "e").stdout(baos).quiet(true).start().joinWithTimeout(10, TimeUnit.SECONDS, listener) != 0) {
+                    if (getInner().launch().cmds(executable, "exec", container, "ps", "-A", "-o", "pid,command", "e").stdout(baos).quiet(true).start().joinWithTimeout(DockerClient.CLIENT_TIMEOUT, TimeUnit.SECONDS, listener) != 0) {
                         throw new IOException("failed to run ps");
                     }
                     List<String> pids = new ArrayList<String>();
@@ -286,7 +286,7 @@ public class WithContainerStep extends AbstractStepImpl {
                     if (!pids.isEmpty()) {
                         List<String> cmds = new ArrayList<>(Arrays.asList(executable, "exec", container, "kill"));
                         cmds.addAll(pids);
-                        if (getInner().launch().cmds(cmds).quiet(true).start().joinWithTimeout(10, TimeUnit.SECONDS, listener) != 0) {
+                        if (getInner().launch().cmds(cmds).quiet(true).start().joinWithTimeout(DockerClient.CLIENT_TIMEOUT, TimeUnit.SECONDS, listener) != 0) {
                             throw new IOException("failed to run kill");
                         }
                     }

@@ -24,6 +24,7 @@
 package org.jenkinsci.plugins.docker.workflow.client;
 
 import com.google.common.base.Optional;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -51,6 +52,8 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
 
 /**
  * Simple docker client for Pipeline.
@@ -60,6 +63,13 @@ import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 public class DockerClient {
 
     private static final Logger LOGGER = Logger.getLogger(DockerClient.class.getName());
+
+    /**
+     * Maximum amount of time (in seconds) to wait for {@code docker} client operations which are supposed to be more or less instantaneous.
+     */
+    @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL", justification="mutable for scripts")
+    @Restricted(NoExternalUse.class)
+    public static int CLIENT_TIMEOUT = Integer.getInteger(DockerClient.class.getName() + ".CLIENT_TIMEOUT", 180); // TODO 2.4+ SystemProperties
 
     // e.g. 2015-04-09T13:40:21.981801679Z
     public static final String DOCKER_DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
@@ -74,7 +84,7 @@ public class DockerClient {
      */
     public static final String CGROUP_MATCHER_PATTERN = "(?m)^\\d+:[\\w,?]+:(?:/[\\w.]+)?(?:/docker[-/])(/?(?:docker/)?(?<containerId>\\p{XDigit}{12,}))+(?:\\.scope)?$";
 
-    private Launcher launcher;
+    private final Launcher launcher;
     private final @CheckForNull Node node;
     private final @CheckForNull String toolName;
 
@@ -110,7 +120,7 @@ public class DockerClient {
             argb.add("-w", workdir);
         }
         for (Map.Entry<String, String> volume : volumes.entrySet()) {
-            argb.add("-v", volume.getKey() + ":" + volume.getValue() + ":rw");
+            argb.add("-v", volume.getKey() + ":" + volume.getValue() + ":rw,z");
         }
         for (String containerId : volumesFromContainers) {
             argb.add("--volumes-from", containerId);
@@ -266,7 +276,7 @@ public class DockerClient {
         LaunchResult result = new LaunchResult();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
-        result.setStatus(procStarter.quiet(quiet).cmds(args).envs(launchEnv).stdout(out).stderr(err).start().joinWithTimeout(10, TimeUnit.SECONDS, launcher.getListener()));
+        result.setStatus(procStarter.quiet(quiet).cmds(args).envs(launchEnv).stdout(out).stderr(err).start().joinWithTimeout(CLIENT_TIMEOUT, TimeUnit.SECONDS, launcher.getListener()));
         final String charsetName = Charset.defaultCharset().name();
         result.setOut(out.toString(charsetName));
         result.setErr(err.toString(charsetName));
@@ -280,10 +290,10 @@ public class DockerClient {
      */
     public String whoAmI() throws IOException, InterruptedException {
         ByteArrayOutputStream userId = new ByteArrayOutputStream();
-        launcher.launch().cmds("id", "-u").quiet(true).stdout(userId).start().joinWithTimeout(10, TimeUnit.SECONDS, launcher.getListener());
+        launcher.launch().cmds("id", "-u").quiet(true).stdout(userId).start().joinWithTimeout(CLIENT_TIMEOUT, TimeUnit.SECONDS, launcher.getListener());
 
         ByteArrayOutputStream groupId = new ByteArrayOutputStream();
-        launcher.launch().cmds("id", "-g").quiet(true).stdout(groupId).start().joinWithTimeout(10, TimeUnit.SECONDS, launcher.getListener());
+        launcher.launch().cmds("id", "-g").quiet(true).stdout(groupId).start().joinWithTimeout(CLIENT_TIMEOUT, TimeUnit.SECONDS, launcher.getListener());
 
         final String charsetName = Charset.defaultCharset().name();
         return String.format("%s:%s", userId.toString(charsetName).trim(), groupId.toString(charsetName).trim());
@@ -334,7 +344,7 @@ public class DockerClient {
      * @throws InterruptedException Interrupted
      */
     public List<String> getVolumes(@Nonnull EnvVars launchEnv, String containerID) throws IOException, InterruptedException {
-        LaunchResult result = launch(launchEnv, true, "inspect", "-f", "{{range .Mounts}}{{.Destination}}\n{{end}}", containerID);
+        LaunchResult result = launch(launchEnv, true, "inspect", "-f", "{{range.Mounts}}{{.Destination}}\n{{end}}", containerID);
         if (result.getStatus() != 0) {
             return Collections.emptyList();
         }

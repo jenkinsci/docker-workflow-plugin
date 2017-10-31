@@ -25,6 +25,7 @@ package org.jenkinsci.plugins.docker.workflow;
 
 import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeDocker;
 
+import hudson.util.VersionNumber;
 import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import hudson.EnvVars;
 import hudson.Launcher;
@@ -49,8 +50,11 @@ import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
+
+import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeNotWindows;
 import static org.junit.Assert.*;
 import static org.junit.Assume.*;
+
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -161,6 +165,8 @@ public class DockerDSLTest {
     @Test public void endpoints() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
+                assumeNotWindows();
+
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "docker.withServer('tcp://host:1234') {\n" +
@@ -321,6 +327,47 @@ public class DockerDSLTest {
                 assertEquals(Collections.singleton(ancestorImageId), ancestorFacet.getAncestorImageIds());
                 assertEquals(descendantImageId2, ancestorFacet.getImageId());
                 assertEquals(Collections.singleton("hello-world"), DockerImageExtractor.getDockerImagesUsedByJobFromAll(p));
+            }
+        });
+    }
+
+    @Test public void buildWithMultiStage() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                assumeDocker(new VersionNumber("17.05"));
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                        "node {\n" +
+                                "  sh 'mkdir -p child'\n" +
+                                "  writeFile file: 'child/stuff1', text: 'hello'\n" +
+                                "  writeFile file: 'child/stuff2', text: 'world'\n" +
+                                "  writeFile file: 'child/stuff3', text: env.BUILD_NUMBER\n" +
+                                "  writeFile file: 'child/Dockerfile.other', " +
+                                     "text: '# This is a test.\\n" +
+                                            "\\n" +
+                                            "FROM hello-world AS one\\n" +
+                                            "ARG stuff4=4\\n" +
+                                            "ARG stuff5=5\\n" +
+                                            "COPY stuff1 /\\n" +
+                                            "FROM scratch\\n" +
+                                            "COPY --from=one /stuff1 /\\n" +
+                                            "COPY stuff2 /\\nCOPY stuff3 /\\n'\n" +
+                                "  def built = docker.build 'hello-world-stuff-arguments', '-f child/Dockerfile.other --build-arg stuff4=build4 --build-arg stuff5=build5 child'\n" +
+                                "  echo \"built ${built.id}\"\n" +
+                                "}", true));
+
+// Note the absence '--pull' in the above docker build ags as compared to other tests.
+// This is due to a Docker bug: https://github.com/docker/for-mac/issues/1751
+// It can be re-added when that is fixed
+
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                DockerClient client = new DockerClient(new Launcher.LocalLauncher(StreamTaskListener.NULL), null, null);
+                String descendantImageId1 = client.inspect(new EnvVars(), "hello-world-stuff-arguments", ".Id");
+                story.j.assertLogContains("built hello-world-stuff-arguments", b);
+                story.j.assertLogNotContains(" --no-cache ", b);
+                story.j.assertLogContains(descendantImageId1.replaceFirst("^sha256:", "").substring(0, 12), b);
+                story.j.assertLogContains(" --build-arg stuff4=build4 ", b);
+                story.j.assertLogContains(" --build-arg stuff5=build5 ", b);
             }
         });
     }

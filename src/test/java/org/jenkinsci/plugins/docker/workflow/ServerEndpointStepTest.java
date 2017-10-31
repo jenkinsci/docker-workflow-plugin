@@ -39,6 +39,8 @@ import org.jenkinsci.plugins.workflow.steps.StepConfigTester;
 import org.jenkinsci.plugins.workflow.structs.DescribableHelper;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import org.junit.Test;
+
+import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeNotWindows;
 import static org.junit.Assert.*;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -75,6 +77,8 @@ public class ServerEndpointStepTest {
     @Test public void variables() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
+                assumeNotWindows();
+
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +

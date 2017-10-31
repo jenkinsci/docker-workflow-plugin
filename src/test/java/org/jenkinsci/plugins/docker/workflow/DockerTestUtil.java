@@ -39,16 +39,25 @@ import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
  * @author <a href="mailto:tom.fennelly@gmail.com">tom.fennelly@gmail.com</a>
  */
 public class DockerTestUtil {
-    
+    public static String DEFAULT_MINIMUM_VERSION = "1.3";
+
     public static void assumeDocker() throws Exception {
+        assumeDocker(new VersionNumber(DEFAULT_MINIMUM_VERSION));
+    }
+    
+    public static void assumeDocker(VersionNumber minimumVersion) throws Exception {
         Launcher.LocalLauncher localLauncher = new Launcher.LocalLauncher(StreamTaskListener.NULL);
         try {
-            Assume.assumeThat("Docker working", localLauncher.launch().cmds(DockerTool.getExecutable(null, null, null, null), "ps").start().joinWithTimeout(10, TimeUnit.SECONDS, localLauncher.getListener()), is(0));
+            Assume.assumeThat("Docker working", localLauncher.launch().cmds(DockerTool.getExecutable(null, null, null, null), "ps").start().joinWithTimeout(DockerClient.CLIENT_TIMEOUT, TimeUnit.SECONDS, localLauncher.getListener()), is(0));
         } catch (IOException x) {
             Assume.assumeNoException("have Docker installed", x);
         }
         DockerClient dockerClient = new DockerClient(localLauncher, null, null);
-        Assume.assumeFalse("Docker version not < 1.3", dockerClient.version().isOlderThan(new VersionNumber("1.3")));
+        Assume.assumeFalse("Docker version not < " + minimumVersion.toString(), dockerClient.version().isOlderThan(minimumVersion));
+    }
+
+    public static void assumeNotWindows() throws Exception {
+        Assume.assumeFalse(System.getProperty("os.name").toLowerCase().contains("windows"));
     }
 
     private DockerTestUtil() {}
