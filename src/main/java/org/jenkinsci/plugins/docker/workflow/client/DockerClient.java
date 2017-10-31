@@ -81,8 +81,9 @@ public class DockerClient {
      * 2:cpu:/docker/3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b
      * 10:cpu,cpuacct:/docker/a9f3c3932cd81c4a74cc7e0a18c3300255159512f1d000545c42895adaf68932/docker/3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b
      * 3:cpu:/docker/4193df6bcf5fce75f3fc77f303b2ac06fb664adeb269b959b7ae17b3f8dcf329/14d7240da87b145e4992654c908a8631dbf179abb7f88115ea72743e1192d07d
+     * 8:cpuset:/kubepods.slice/kubepods-pod9c26dfb6_b9c9_11e7_bfb9_02c6c1fc4861.slice/docker-89eda038d5b8d64e8e0476f2d2a13c28023fbd088e2690047de6f2391417d835.scope
      */
-    public static final String CGROUP_MATCHER_PATTERN = "(?m)^\\d+:[\\w,?]+:(?:/[\\w.]+)?(?:/docker[-/])(/?(?:docker/)?(?<containerId>\\p{XDigit}{12,}))+(?:\\.scope)?$";
+    public static final String CGROUP_MATCHER_PATTERN = "(?m)^\\d+:[\\w,?]+:(?:/[\\w./-]+)?(?:/docker[-/])(/?(?:docker/)?(?<containerId>\\p{XDigit}{12,}))+(?:\\.scope)?$";
 
     private final Launcher launcher;
     private final @CheckForNull Node node;
