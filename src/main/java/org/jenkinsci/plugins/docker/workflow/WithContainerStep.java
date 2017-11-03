@@ -46,6 +46,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
@@ -126,7 +127,11 @@ public class WithContainerStep extends AbstractStepImpl {
             EnvVars envReduced = new EnvVars(env);
             EnvVars envHost = computer.getEnvironment();
             envReduced.entrySet().removeAll(envHost.entrySet());
+
+            // Remove PATH during cat.
+            envReduced.remove("PATH");
             envReduced.remove("");
+
             LOGGER.log(Level.FINE, "reduced environment: {0}", envReduced);
             workspace.mkdirs(); // otherwise it may be owned by root when created for -v
             String ws = workspace.getRemote();
@@ -236,7 +241,17 @@ public class WithContainerStep extends AbstractStepImpl {
                     } // otherwise we are loading an old serialized Decorator
                     Set<String> envReduced = new TreeSet<String>(Arrays.asList(starter.envs()));
                     envReduced.removeAll(Arrays.asList(envHost));
+
+                    // Remove PATH during `exec` as well.
+                    Iterator<String> it = envReduced.iterator();
+                    while (it.hasNext()) {
+                        if (it.next().startsWith("PATH=")) {
+                            it.remove();
+                        }
+                    }
+                    LOGGER.log(Level.FINE, "(exec) reduced environment: {0}", envReduced);
                     prefix.addAll(envReduced);
+
                     // Adapted from decorateByPrefix:
                     starter.cmds().addAll(0, prefix);
                     if (starter.masks() != null) {
