@@ -60,7 +60,6 @@ public final class DockerUtils {
                 result.put(key, value);
             }
         }
-
         return result;
     }
 
