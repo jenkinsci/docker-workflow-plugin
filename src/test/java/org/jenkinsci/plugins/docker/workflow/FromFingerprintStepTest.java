@@ -42,70 +42,63 @@ import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeDocker;
 import static org.junit.Assert.assertNotNull;
 
 public class FromFingerprintStepTest {
-	@Rule
-	public RestartableJenkinsRule story = new RestartableJenkinsRule();
+    @Rule public RestartableJenkinsRule story = new RestartableJenkinsRule();
 
-	/**
-	 * Test quotation marks in --build-arg parameters
-	 */
-	@Test
-	public void buildWithFROMArgs()
-	throws Exception {
+    /**
+     * Test quotation marks in --build-arg parameters
+     */
+    @Test public void buildWithFROMArgs() throws Exception {
+        assertBuild("prj-simple",
+            script("--build-arg IMAGE_TO_UPDATE=hello-world:latest"));
 
-		assertBuild("prj-simple",
-					script("--build-arg IMAGE_TO_UPDATE=hello-world:latest"));
+        assertBuild("prj-singlequotes-in-build-arg---aroundValue",
+            script("--build-arg IMAGE_TO_UPDATE=\\'hello-world:latest\\'"));
 
-		assertBuild("prj-singlequotes-in-build-arg---aroundValue",
-					script("--build-arg IMAGE_TO_UPDATE=\\'hello-world:latest\\'"));
+        assertBuild("prj-dobulequotes-in-build-arg---aroundValue",
+            script("--build-arg IMAGE_TO_UPDATE=\"hello-world:latest\""));
 
-		assertBuild("prj-dobulequotes-in-build-arg---aroundValue",
-					script("--build-arg IMAGE_TO_UPDATE=\"hello-world:latest\""));
+        assertBuild("prj-singlequotes-in-build-arg---aroundAll",
+            script("--build-arg \\'IMAGE_TO_UPDATE=hello-world:latest\\'"));
 
-		assertBuild("prj-singlequotes-in-build-arg---aroundAll",
-					script("--build-arg \\'IMAGE_TO_UPDATE=hello-world:latest\\'"));
+        assertBuild("prj-doublequotes-in-build-arg---aroundAll",
+            script("--build-arg \"IMAGE_TO_UPDATE=hello-world:latest\""));
+    }
 
-		assertBuild("prj-doublequotes-in-build-arg---aroundAll",
-					script("--build-arg \"IMAGE_TO_UPDATE=hello-world:latest\""));
-	}
+    private static String script(String buildArg) {
+        String dockerfile = "" + 
+            "ARG IMAGE_TO_UPDATE\\n" +
+            "FROM ${IMAGE_TO_UPDATE}\\n";
+        String fullBuildArgs = buildArg + " buildWithFROMArgs";
 
-	private static String script(String buildArg) {
-		String dockerfile = ""
-				+ "ARG IMAGE_TO_UPDATE\\n"
-				+ "FROM ${IMAGE_TO_UPDATE}\\n";
-		String fullBuildArgs = buildArg + " buildWithFROMArgs";
+        String script = "node {\n" +
+            "  sh 'mkdir buildWithFROMArgs'\n" +
+            "  writeFile file: 'buildWithFROMArgs/Dockerfile', text: '" + dockerfile + "'\n" +
+            "  def built = docker.build 'from-with-arg', '" + fullBuildArgs + "'\n" +
+            "  echo \"built ${built.id}\"\n" +
+            "}";
 
-		String script = "node {\n"
-				+ "  sh 'mkdir buildWithFROMArgs'\n"
-				+ "  writeFile file: 'buildWithFROMArgs/Dockerfile', text: '" + dockerfile + "'\n"
-				+ "  def built = docker.build 'from-with-arg', '" + fullBuildArgs + "'\n"
-				+ "  echo \"built ${built.id}\"\n"
-				+ "}";
+        return script;
+    }
 
-		return script;
-	}
+    private void assertBuild(final String projectName, final String piplineCode) throws Exception {
+        story.addStep(new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                assumeDocker();
 
-	private void assertBuild(final String projectName, final String piplineCode)
-	throws Exception {
-		story.addStep(new Statement() {
-			@Override
-			public void evaluate()
-			throws Throwable {
-				assumeDocker();
-
-				WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, projectName);
-				p.setDefinition(new CpsFlowDefinition(piplineCode, true));
-				WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-				DockerClient client = new DockerClient(new LocalLauncher(StreamTaskListener.NULL), null, null);
-				String ancestorImageId = client.inspect(new EnvVars(), "hello-world", ".Id");
-				story.j.assertLogContains("built from-with-arg", b);
-				story.j.assertLogContains(ancestorImageId.replaceFirst("^sha256:", "").substring(0, 12), b);
-				Fingerprint f = DockerFingerprints.of(ancestorImageId);
-				assertNotNull(f);
-				DockerDescendantFingerprintFacet descendantFacet = f.getFacet(
-						DockerDescendantFingerprintFacet.class);
-				assertNotNull(descendantFacet);
-			}
-		});
-	}
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, projectName);
+                p.setDefinition(new CpsFlowDefinition(piplineCode, true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                DockerClient client = new DockerClient(new LocalLauncher(StreamTaskListener.NULL), null, null);
+                String ancestorImageId = client.inspect(new EnvVars(), "hello-world", ".Id");
+                story.j.assertLogContains("built from-with-arg", b);
+                story.j.assertLogContains(ancestorImageId.replaceFirst("^sha256:", "").substring(0, 12), b);
+                Fingerprint f = DockerFingerprints.of(ancestorImageId);
+                assertNotNull(f);
+                DockerDescendantFingerprintFacet descendantFacet = f.getFacet(DockerDescendantFingerprintFacet.class);
+                assertNotNull(descendantFacet);
+            }
+        });
+    }
 
 }

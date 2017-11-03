@@ -32,53 +32,51 @@ import java.util.regex.Pattern;
 import org.apache.tools.ant.types.Commandline;
 
 public final class DockerUtils {
-	private DockerUtils() {
-		// utility class
-	}
+    private DockerUtils() {
+        // utility class
+    }
 
-	public static Map<String, String> parseBuildArgs(String commandLine) {
-		// this also accounts for quote, escapes, ...
-		Commandline parsed = new Commandline(commandLine);
-		Map<String, String> result = new HashMap<>();
+    public static Map<String, String> parseBuildArgs(String commandLine) {
+        // this also accounts for quote, escapes, ...
+        Commandline parsed = new Commandline(commandLine);
+        Map<String, String> result = new HashMap<>();
 
-		String[] arguments = parsed.getArguments();
-		for (int i = 0; i < arguments.length; i++) {
-			String arg = arguments[i];
-			if (arg.equals("--build-arg")) {
-				if (arguments.length < i + 1) {
-					throw new IllegalArgumentException(
-							"Missing parameter for --build-arg: " + commandLine);
-				}
-				String keyVal = arguments[i+1];
+        String[] arguments = parsed.getArguments();
+        for (int i = 0; i < arguments.length; i++) {
+            String arg = arguments[i];
+            if (arg.equals("--build-arg")) {
+                if (arguments.length < i + 1) {
+                    throw new IllegalArgumentException("Missing parameter for --build-arg: " + commandLine);
+                }
+                String keyVal = arguments[i+1];
 
-				String parts[] = keyVal.split("=", 2);
-				if (parts.length != 2) {
-					throw new IllegalArgumentException("Illegal syntax for --build-arg " + keyVal + ", need KEY=VALUE");
-				}
-				String key = parts[0];
-				String value = parts[1];
+                String parts[] = keyVal.split("=", 2);
+                if (parts.length != 2) {
+                    throw new IllegalArgumentException("Illegal syntax for --build-arg " + keyVal + ", need KEY=VALUE");
+                }
+                String key = parts[0];
+                String value = parts[1];
 
-				result.put(key, value);
-			}
-		}
+                result.put(key, value);
+            }
+        }
 
-		return result;
-	}
+        return result;
+    }
 
-	public static SimpleEntry<String, String> splitArgs(String argString) {
-		//TODO: support complex single/double quotation marks
-		Pattern p = Pattern.compile("^['\"]?(\\w+)=(.*?)['\"]?$");
+    public static SimpleEntry<String, String> splitArgs(String argString) {
+        //TODO: support complex single/double quotation marks
+        Pattern p = Pattern.compile("^['\"]?(\\w+)=(.*?)['\"]?$");
 
-		Matcher matcher = p.matcher(argString.trim());
-		if (!matcher.matches()) {
-			throw new IllegalArgumentException("Illegal --build-arg parameter syntax: " + argString);
-		}
+        Matcher matcher = p.matcher(argString.trim());
+        if (!matcher.matches()) {
+            throw new IllegalArgumentException("Illegal --build-arg parameter syntax: " + argString);
+        }
 
-		String key = matcher.group(1);
-		String value = matcher.group(2);
+        String key = matcher.group(1);
+        String value = matcher.group(2);
 
-		return new SimpleEntry<>(key, value);
-	}
-
+        return new SimpleEntry<>(key, value);
+    }
 
 }
