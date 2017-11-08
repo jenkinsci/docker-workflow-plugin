@@ -40,6 +40,7 @@ import org.jenkinsci.lib.configprovider.model.Config;
 import org.jenkinsci.plugins.configfiles.custom.CustomConfig;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
+import org.jenkinsci.plugins.durabletask.BourneShellScript;
 import org.jenkinsci.plugins.plaincredentials.impl.FileCredentialsImpl;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -154,11 +155,12 @@ public class WithContainerStepTest {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
                 DockerTestUtil.assumeDocker();
+                logging.record(BourneShellScript.class, Level.FINE);
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                     "  withDockerContainer('httpd:2.4.12') {\n" +
-                    "    sh \"sleep 5; kill -9 `cat ${pwd tmp: true}/*/pid`\"\n" +
+                    "    sh \"sleep 5; ps -e -o pid,command | egrep '${pwd tmp: true}/durable-.+/script.sh' | fgrep -v grep | sort -n | tr -s ' ' | cut -d ' ' -f2 | xargs kill -9\"\n" +
                     "  }\n" +
                     "}", true));
                 WorkflowRun b = story.j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
