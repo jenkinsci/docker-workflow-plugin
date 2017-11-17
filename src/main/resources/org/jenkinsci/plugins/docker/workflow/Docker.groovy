@@ -23,12 +23,20 @@
  */
 package org.jenkinsci.plugins.docker.workflow
 
+import hudson.util.VersionNumber
+import org.jenkinsci.plugins.docker.workflow.client.DockerClient
+import hudson.model.TaskListener
+import hudson.util.StreamTaskListener
+import hudson.Launcher
+
 class Docker implements Serializable {
 
     private org.jenkinsci.plugins.workflow.cps.CpsScript script
+    private final useTagForce;
 
     public Docker(org.jenkinsci.plugins.workflow.cps.CpsScript script) {
         this.script = script
+        this.useTagForce = this.shouldUseTagForce()
     }
 
     public <V> V withRegistry(String url, String credentialsId = null, Closure<V> body) {
@@ -159,8 +167,13 @@ class Docker implements Serializable {
         public void tag(String tagName = parsedId.tag, boolean force = true) {
             docker.node {
                 def taggedImageName = toQualifiedImageName(parsedId.userAndRepo + ':' + tagName)
-                // TODO as of 1.10.0 --force is deprecated; for 1.12+ do not try it even once
-                docker.script.sh "docker tag --force=${force} ${id} ${taggedImageName} || docker tag ${id} ${taggedImageName}"
+                // as of 1.10.0 --force is deprecated; for 1.12+ do not try it even once
+                if (docker.useTagForce) {
+                    docker.script.sh "docker tag --force=${force} ${id} ${taggedImageName} || docker tag ${id} ${taggedImageName}"
+                }
+                else {
+                    docker.script.sh "docker tag ${id} ${taggedImageName}"
+                }
                 return taggedImageName;
             }
         }
@@ -195,4 +208,18 @@ class Docker implements Serializable {
         }
     }
 
+    @NonCPS
+    private Boolean shouldUseTagForce() {
+        TaskListener taskListener = new StreamTaskListener();
+        Launcher.LocalLauncher launcher = new
+        Launcher.LocalLauncher(taskListener);
+
+        DockerClient  dockerClient          = new DockerClient(launcher, null, null)
+        VersionNumber clientVersion         = dockerClient.version();
+        VersionNumber noForceAfterVersion   = new VersionNumber("1.10.0")
+
+        // if we're newer than the "cut off version" then we do not want
+        // to use --force
+        return !(clientVersion.isNewerThan(noForceAfterVersion))
+    }
 }
