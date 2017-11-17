@@ -35,6 +35,14 @@
                 If unspecified, <code>docker</code> is assumed to be in the <code>$PATH</code> of the Jenkins agent.
             </p>
         </dd>
+        <dt><code>images()</code></dt>
+        <dd>
+            <p>
+                Creates an <code>Images</code> object which reflects all images available in the system. Created object is a snapshot
+                of available images. It is not linked with docker daemon, therefore building new images or pulling new ones will not
+                update this object. To refresh the Images object one needs to call <code>docker.images()</code> again.
+            </p>
+        </dd>
         <dt><code>image(id)</code></dt>
         <dd>
             <p>
@@ -50,10 +58,28 @@
                 Records a <code>FROM</code> fingerprint in the build.
             </p>
         </dd>
+        <dt><code>Images.findFirst {…}</code></dt>
+        <dd>
+            <p>
+                Allows to search through available images in the system. First image matched by provided body will be returned.
+            </p>
+        </dd>
         <dt><code>Image.id</code></dt>
         <dd>
             <p>
                 The image name with optional tag (<code>mycorp/myapp</code>, <code>mycorp/myapp:latest</code>) or ID (hexadecimal hash).
+            </p>
+        </dd>
+        <dt><code>Image.getUserAndRepo()</code></dt>
+        <dd>
+            <p>
+                The image user and repository if it was possible to parse it.
+            </p>
+        </dd>
+        <dt><code>Image.getTag()</code></dt>
+        <dd>
+            <p>
+                The image tag if it was possible to parse it.
             </p>
         </dd>
         <dt><code>Image.run([args, command])</code></dt>
@@ -63,6 +89,12 @@
                 Additional <code>args</code> may be added, such as <code>'-p 8080:8080 --memory-swap=-1'</code>.
                 Optional <code>command</code> is equivalent to Docker command specified after the image.
                 Records a run fingerprint in the build.
+            </p>
+        </dd>
+        <dt><code>Image.runForInsideJob([args, command])</code></dt>
+        <dd>
+            <p>
+                Similar to run but in addition set the container up to allow job executions inside it.
             </p>
         </dd>
         <dt><code>Image.withRun[(args[, command])] {…}</code></dt>
@@ -110,6 +142,21 @@
         <dd>
             <p>
                 Hexadecimal ID of a running container.
+            </p>
+        </dd>
+        <dt><code>Container.inside {…}</code></dt>
+        <dd>
+            <p>
+                Like <code>Image.inside</code> allows to run external commands (<code>sh</code>) launched by the body to run inside the container rather than on the host.
+                These commands run in the same working directory (normally a slave workspace), which means that the Docker server must be on localhost.
+                Important note: this container will not be stopped after the body exits. This way it is possible to use the same container for
+                another jobs or, if it is needed, to persist its state with <code>Container.commit</code>.
+            </p>
+        </dd>
+        <dt><code>Container.commit(name, [params])</code></dt>
+        <dd>
+            <p>
+                Commits this container with the given <code>name</code> using optional parameters.
             </p>
         </dd>
         <dt><code>Container.stop</code></dt>
