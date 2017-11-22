@@ -166,8 +166,7 @@ class Docker implements Serializable {
         public void tag(String tagName = parsedId.tag, boolean force = true) {
             docker.node {
                 def taggedImageName = toQualifiedImageName(parsedId.userAndRepo + ':' + tagName)
-                // TODO as of 1.10.0 --force is deprecated; for 1.12+ do not try it even once
-                docker.script.sh "docker tag --force=${force} ${id} ${taggedImageName} || docker tag ${id} ${taggedImageName}"
+                docker.script.sh "docker tag ${id} ${taggedImageName}"
                 return taggedImageName;
             }
         }
