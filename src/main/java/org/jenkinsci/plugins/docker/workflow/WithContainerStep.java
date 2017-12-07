@@ -185,7 +185,7 @@ public class WithContainerStep extends AbstractStepImpl {
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
             ImageAction.add(step.image, run);
             getContext().newBodyInvoker().
-                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws, toolName))).
+                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws, toolName, dockerVersion))).
                     withCallback(new Callback(container, toolName)).
                     start();
             return false;
@@ -212,12 +212,16 @@ public class WithContainerStep extends AbstractStepImpl {
         private final String[] envHost;
         private final String ws;
         private final @CheckForNull String toolName;
+        private final boolean hasEnv;
+        private final boolean hasWorkdir;
 
-        Decorator(String container, EnvVars envHost, String ws, String toolName) {
+        Decorator(String container, EnvVars envHost, String ws, String toolName, VersionNumber dockerVersion) {
             this.container = container;
             this.envHost = Util.mapToEnv(envHost);
             this.ws = ws;
             this.toolName = toolName;
+            this.hasEnv = dockerVersion.isOlderThan(new VersionNumber("1.13.0"));
+            this.hasWorkdir = !dockerVersion.isOlderThan(new VersionNumber("17.12"));
         }
 
         @Override public Launcher decorate(final Launcher launcher, final Node node) {
@@ -229,13 +233,18 @@ public class WithContainerStep extends AbstractStepImpl {
                     } catch (InterruptedException x) {
                         throw new IOException(x);
                     }
-                    List<String> prefix = new ArrayList<>(Arrays.asList(executable, "exec", container, "env"));
+                    List<String> prefix = new ArrayList<>(Arrays.asList(executable, "exec"));
                     if (ws != null) {
                         FilePath cwd = starter.pwd();
                         if (cwd != null) {
                             String path = cwd.getRemote();
                             if (!path.equals(ws)) {
-                                launcher.getListener().getLogger().println("JENKINS-33510: working directory will be " + ws + " not " + path);
+                                if (hasWorkdir) {
+                                    prefix.add("--workdir");
+                                    prefix.add(path);
+                                } else {
+                                    launcher.getListener().getLogger().println("Docker version is older than 17.12, working directory will be " + ws + " not " + path);
+                                }
                             }
                         }
                     } // otherwise we are loading an old serialized Decorator
@@ -250,7 +259,17 @@ public class WithContainerStep extends AbstractStepImpl {
                         }
                     }
                     LOGGER.log(Level.FINE, "(exec) reduced environment: {0}", envReduced);
-                    prefix.addAll(envReduced);
+                    if (hasEnv) {
+                        for (String e : envReduced) {
+                            prefix.add("--env");
+                            prefix.add(e);
+                        }
+                        prefix.add(container);
+                    } else {
+                        prefix.add(container);
+                        prefix.add("env");
+                        prefix.addAll(envReduced);
+                    }
 
                     // Adapted from decorateByPrefix:
                     starter.cmds().addAll(0, prefix);

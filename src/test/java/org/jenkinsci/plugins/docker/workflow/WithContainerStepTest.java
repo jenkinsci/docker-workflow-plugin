@@ -256,7 +256,6 @@ public class WithContainerStepTest {
         });
     }
 
-    @Ignore("TODO no fix yet")
     @Issue("JENKINS-33510")
     @Test public void cd() throws Exception {
         story.addStep(new Statement() {
