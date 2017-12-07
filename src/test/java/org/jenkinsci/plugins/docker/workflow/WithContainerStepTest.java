@@ -260,7 +260,6 @@ public class WithContainerStepTest {
 
     @Issue("JENKINS-33510")
     @Test public void cd() throws Exception {
-
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
                 DockerTestUtil.assumeDocker(new VersionNumber("17.12"));
