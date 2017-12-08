@@ -220,8 +220,8 @@ public class WithContainerStep extends AbstractStepImpl {
             this.envHost = Util.mapToEnv(envHost);
             this.ws = ws;
             this.toolName = toolName;
-            this.hasEnv = dockerVersion.compareTo(new VersionNumber("1.13.0")) >= 0;
-            this.hasWorkdir = dockerVersion.compareTo(new VersionNumber("17.12")) >= 0;
+            this.hasEnv = dockerVersion != null && dockerVersion.compareTo(new VersionNumber("1.13.0")) >= 0;
+            this.hasWorkdir = dockerVersion != null && dockerVersion.compareTo(new VersionNumber("17.12")) >= 0;
         }
 
         @Override public Launcher decorate(final Launcher launcher, final Node node) {
