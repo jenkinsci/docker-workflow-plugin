@@ -86,8 +86,11 @@ class Docker implements Serializable {
                 }
             }
 
-            script.sh "docker build -t ${image} ${args}"
-            script.dockerFingerprintFrom dockerfile: dockerfile, image: image, toolName: script.env.DOCKER_TOOL_NAME
+            def commandLine = "docker build -t ${image} ${args}"
+            def buildArgs = DockerUtils.parseBuildArgs(commandLine)
+
+            script.sh commandLine
+            script.dockerFingerprintFrom dockerfile: dockerfile, image: image, toolName: script.env.DOCKER_TOOL_NAME, buildArgs: buildArgs
             this.image(image)
         }
     }
@@ -111,7 +114,7 @@ class Docker implements Serializable {
         public String imageName() {
             return toQualifiedImageName(id)
         }
-        
+
         public <V> V inside(String args = '', Closure<V> body) {
             docker.node {
                 def toRun = imageName()
