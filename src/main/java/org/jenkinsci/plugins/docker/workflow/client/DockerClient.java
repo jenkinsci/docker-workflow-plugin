@@ -200,7 +200,7 @@ public class DockerClient {
             @Nonnull String fieldPath) throws IOException, InterruptedException {
         final String fieldValue = inspect(launchEnv, objectId, fieldPath);
         if (fieldValue == null) {
-            throw new IOException("Cannot retrieve " + fieldPath + " from 'docker inspect" + objectId + "'");
+            throw new IOException("Cannot retrieve " + fieldPath + " from 'docker inspect " + objectId + "'");
         }
         return fieldValue;
     }
