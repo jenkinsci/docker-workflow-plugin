@@ -23,9 +23,6 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.Map;
 
 import com.google.inject.Inject;
@@ -48,10 +45,12 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 public class FromFingerprintStep extends AbstractStepImpl {
 
+    private static final String FIELD_ID = ".Id";
+
     private final String dockerfile;
     private final String image;
     private String toolName;
-    private Map<String, String> buildArgs;
+    private String commandLine;
 
     @DataBoundConstructor public FromFingerprintStep(String dockerfile, String image) {
         this.dockerfile = dockerfile;
@@ -74,12 +73,12 @@ public class FromFingerprintStep extends AbstractStepImpl {
         this.toolName = Util.fixEmpty(toolName);
     }
 
-    public Map<String, String> getBuildArgs() {
-        return buildArgs;
+    public String getCommandLine() {
+        return commandLine;
     }
 
-    @DataBoundSetter public void setBuildArgs(Map<String, String> buildArgs) {
-        this.buildArgs = buildArgs;
+    @DataBoundSetter public void setCommandLine(String commandLine) {
+        this.commandLine = commandLine;
     }
 
     public static class Execution extends AbstractSynchronousNonBlockingStepExecution<Void> {
@@ -95,42 +94,24 @@ public class FromFingerprintStep extends AbstractStepImpl {
         @StepContextParameter private transient Node node;
 
         @Override protected Void run() throws Exception {
-            String fromImage = null;
-            FilePath dockerfile = workspace.child(step.dockerfile);
-            InputStream is = dockerfile.read();
-            try {
-                BufferedReader r = new BufferedReader(new InputStreamReader(is, "ISO-8859-1")); // encoding probably irrelevant since image/tag names must be ASCII
-                try {
-                    String line;
-                    while ((line = r.readLine()) != null) {
-                        line = line.trim();
-                        if (line.startsWith("#")) {
-                            continue;
-                        }
-                        if (line.startsWith("FROM ")) {
-                            fromImage = line.substring(5);
-                            continue;
-                        }
-                    }
-                } finally {
-                    r.close();
-                }
-            } finally {
-                is.close();
+            FilePath dockerfilePath = workspace.child(step.dockerfile);
+            Dockerfile dockerfile = new Dockerfile(dockerfilePath);
+            Map<String, String> buildArgs = DockerUtils.parseBuildArgs(dockerfile, step.commandLine);
+            String fromImage = dockerfile.getFroms().getLast();
+
+            if (dockerfile.getFroms().isEmpty()) {
+                throw new AbortException("could not find FROM instruction in " + dockerfilePath);
             }
-            if (fromImage == null) {
-                throw new AbortException("could not find FROM instruction in " + dockerfile);
-            }
-            if (step.getBuildArgs() != null) {
+            if (buildArgs != null) {
                 // Fortunately, Docker uses the same EnvVar syntax as Jenkins :)
-                fromImage = Util.replaceMacro(fromImage, step.getBuildArgs());
+                fromImage = Util.replaceMacro(fromImage, buildArgs);
             }
             DockerClient client = new DockerClient(launcher, node, step.toolName);
-            String descendantImageId = client.inspectRequiredField(env, step.image, ".Id");
+            String descendantImageId = client.inspectRequiredField(env, step.image, FIELD_ID);
             if (fromImage.equals("scratch")) { // we just made a base image
                 DockerFingerprints.addFromFacet(null, descendantImageId, run);
             } else {
-                DockerFingerprints.addFromFacet(client.inspectRequiredField(env, fromImage, ".Id"), descendantImageId, run);
+                DockerFingerprints.addFromFacet(client.inspectRequiredField(env, fromImage, FIELD_ID), descendantImageId, run);
                 ImageAction.add(fromImage, run);
             }
             return null;

@@ -33,10 +33,13 @@ public final class DockerUtils {
         // utility class
     }
 
-    public static Map<String, String> parseBuildArgs(String commandLine) {
+    public static Map<String, String> parseBuildArgs(final Dockerfile dockerfile, final String commandLine) {
         // this also accounts for quote, escapes, ...
         Commandline parsed = new Commandline(commandLine);
         Map<String, String> result = new HashMap<>();
+        if (dockerfile != null) {
+            result.putAll(dockerfile.getArgs());
+        }
 
         String[] arguments = parsed.getArguments();
         for (int i = 0; i < arguments.length; i++) {
