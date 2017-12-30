@@ -1,0 +1,3 @@
+# Dockerfile with FROM ARG
+ARG IMAGE_TO_UPDATE
+FROM ${IMAGE_TO_UPDATE}
