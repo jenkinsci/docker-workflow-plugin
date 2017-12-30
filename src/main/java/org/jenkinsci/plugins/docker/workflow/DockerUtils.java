@@ -42,7 +42,7 @@ public final class DockerUtils {
         for (int i = 0; i < arguments.length; i++) {
             String arg = arguments[i];
             if (arg.equals("--build-arg")) {
-                if (arguments.length < i + 1) {
+                if (arguments.length <= i + 1) {
                     throw new IllegalArgumentException("Missing parameter for --build-arg: " + commandLine);
                 }
                 String keyVal = arguments[i+1];
