@@ -45,7 +45,7 @@ public class DockerfileTest {
     @Test public void parseDockerfile() throws IOException, InterruptedException {
         Dockerfile dockerfile = new Dockerfile(dockerfilePath);
         Assert.assertThat(dockerfile.getFroms(), IsCollectionWithSize.hasSize(1));
-        Assert.assertThat(dockerfile.getFroms().getLast(), IsEqual.equalTo("${REGISTRY_URL}learn/tutorial:${TAG}"));
+        Assert.assertThat(dockerfile.getFroms().getLast(), IsEqual.equalTo("${REGISTRY_URL}hello-world:${TAG}"));
         Assert.assertThat(dockerfile.getArgs().keySet(), IsCollectionWithSize.hasSize(2));
         Assert.assertThat(dockerfile.getArgs().keySet(), IsCollectionContaining.hasItems("REGISTRY_URL", "TAG"));
     }
