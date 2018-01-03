@@ -28,6 +28,9 @@ import hudson.Extension;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jenkinsci.plugins.workflow.cps.GlobalVariable;
 
+/**
+ * Something you should <strong>not copy</strong>. Write plain old {@code Step}s and leave it at that.
+ */
 @Extension public class DockerDSL extends GlobalVariable {
 
     @Override public String getName() {

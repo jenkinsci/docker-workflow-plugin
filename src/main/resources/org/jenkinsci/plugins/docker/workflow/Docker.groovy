@@ -23,6 +23,9 @@
  */
 package org.jenkinsci.plugins.docker.workflow
 
+/**
+ * Do not copy this idiom unless you fully understand the consequences.
+ */
 class Docker implements Serializable {
 
     private org.jenkinsci.plugins.workflow.cps.CpsScript script
