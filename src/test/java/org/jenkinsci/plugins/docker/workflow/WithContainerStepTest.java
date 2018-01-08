@@ -32,6 +32,8 @@ import hudson.tools.ToolProperty;
 import java.io.File;
 import java.util.Collections;
 import java.util.logging.Level;
+
+import hudson.util.VersionNumber;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.Matchers;
@@ -256,12 +258,11 @@ public class WithContainerStepTest {
         });
     }
 
-    @Ignore("TODO no fix yet")
     @Issue("JENKINS-33510")
     @Test public void cd() throws Exception {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                DockerTestUtil.assumeDocker();
+                DockerTestUtil.assumeDocker(new VersionNumber("17.12"));
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
