@@ -57,7 +57,7 @@ import org.kohsuke.accmod.restrictions.NoExternalUse;
 
 /**
  * Simple docker client for Pipeline.
- * 
+ *
  * @author <a href="mailto:tom.fennelly@gmail.com">tom.fennelly@gmail.com</a>
  */
 public class DockerClient {
@@ -73,10 +73,10 @@ public class DockerClient {
 
     // e.g. 2015-04-09T13:40:21.981801679Z
     public static final String DOCKER_DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
-    
+
     /**
      * Known cgroup formats
-     * 
+     *
      * 4:cpuset:/system.slice/docker-3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b.scope
      * 2:cpu:/docker/3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b
      * 10:cpu,cpuacct:/docker/a9f3c3932cd81c4a74cc7e0a18c3300255159512f1d000545c42895adaf68932/docker/3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b
@@ -115,7 +115,7 @@ public class DockerClient {
         if (args != null) {
             argb.addTokenized(args);
         }
-        
+
         if (workdir != null) {
             argb.add("-w", workdir);
         }
@@ -129,7 +129,11 @@ public class DockerClient {
             argb.add("-e");
             argb.addMasked(variable.getKey()+"="+variable.getValue());
         }
-        argb.add("--entrypoint").add(entrypoint).add(image);
+        if (!entrypoint.equals("--")) {
+        argb.add("--entrypoint", entrypoint);
+        }
+
+        argb.add(image);
 
         LaunchResult result = launch(launchEnv, false, null, argb);
         if (result.getStatus() == 0) {
@@ -141,10 +145,10 @@ public class DockerClient {
 
     /**
      * Stop a container.
-     * 
-     * <p>                              
+     *
+     * <p>
      * Also removes ({@link #rm(EnvVars, String)}) the container.
-     * 
+     *
      * @param launchEnv Docker client launch environment.
      * @param containerId The container ID.
      */
@@ -158,7 +162,7 @@ public class DockerClient {
 
     /**
      * Remove a container.
-     * 
+     *
      * @param launchEnv Docker client launch environment.
      * @param containerId The container ID.
      */
@@ -185,7 +189,7 @@ public class DockerClient {
             return null;
         }
     }
-    
+
     /**
      * Inspect a docker image/container.
      * @param launchEnv Docker client launch environment.
@@ -196,7 +200,7 @@ public class DockerClient {
      * @throws InterruptedException Interrupted
      * @since 1.1
      */
-    public @Nonnull String inspectRequiredField(@Nonnull EnvVars launchEnv, @Nonnull String objectId, 
+    public @Nonnull String inspectRequiredField(@Nonnull EnvVars launchEnv, @Nonnull String objectId,
             @Nonnull String fieldPath) throws IOException, InterruptedException {
         final String fieldValue = inspect(launchEnv, objectId, fieldPath);
         if (fieldValue == null) {
@@ -204,7 +208,7 @@ public class DockerClient {
         }
         return fieldValue;
     }
-    
+
     private @CheckForNull Date getCreatedDate(@Nonnull EnvVars launchEnv, @Nonnull String objectId) throws IOException, InterruptedException {
         String createdString = inspect(launchEnv, objectId, "json .Created");
         if (createdString == null) {
@@ -233,7 +237,7 @@ public class DockerClient {
             return null;
         }
     }
-    
+
     private static final Pattern pattern = Pattern.compile("^(\\D+)(\\d+)\\.(\\d+)\\.(\\d+)(.*)");
     /**
      * Parse a Docker version string (e.g. "Docker version 1.5.0, build a8a31ef").
@@ -250,7 +254,7 @@ public class DockerClient {
             return new VersionNumber(String.format("%s.%s.%s", major, minor, maint));
         } else {
             return null;
-        }        
+        }
     }
 
     private LaunchResult launch(@Nonnull EnvVars launchEnv, boolean quiet, @Nonnull String... args) throws IOException, InterruptedException {
@@ -330,7 +334,7 @@ public class DockerClient {
 
         // TODO get tags and add for ContainerRecord
         return new ContainerRecord(host, containerId, image, containerName,
-                (created != null ? created.getTime() : 0L), 
+                (created != null ? created.getTime() : 0L),
                 Collections.<String,String>emptyMap());
     }
 

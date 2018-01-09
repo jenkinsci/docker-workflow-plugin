@@ -78,6 +78,12 @@
                 These commands run in the same working directory (normally a Jenkins agent workspace), which means that the Docker server must be on localhost.
             </p>
         </dd>
+        <dt><code>Image.exec[(args)] {…}</code></dt>
+        <dd>
+            <p>
+                Like <code>inside</code> this starts a container for the duration of the body with all external commands run in the container. Unlike <code>inside</code> this does not overwrite ENTRYPOINT.
+            </p>
+        </dd>
         <dt><code>Image.tag([tagname])</code></dt>
         <dd>
             <p>

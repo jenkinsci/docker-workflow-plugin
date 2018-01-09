@@ -73,16 +73,17 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 public class WithContainerStep extends AbstractStepImpl {
-    
+
     private static final Logger LOGGER = Logger.getLogger(WithContainerStep.class.getName());
     private final @Nonnull String image;
+    private String entrypoint;
     private String args;
     private String toolName;
 
     @DataBoundConstructor public WithContainerStep(@Nonnull String image) {
         this.image = image;
     }
-    
+
     public String getImage() {
         return image;
     }
@@ -90,6 +91,15 @@ public class WithContainerStep extends AbstractStepImpl {
     @DataBoundSetter
     public void setArgs(String args) {
         this.args = Util.fixEmpty(args);
+    }
+
+    @DataBoundSetter
+    public void setEntrypoint(String entrypoint) {
+        this.entrypoint = entrypoint;
+    }
+
+    public String getEntrypoint() {
+        return entrypoint;
     }
 
     public String getArgs() {
@@ -180,8 +190,10 @@ public class WithContainerStep extends AbstractStepImpl {
                 volumes.put(ws, ws);
                 volumes.put(tmp, tmp);
             }
-
-            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
+            if (step.entrypoint == null) {
+                step.entrypoint = "cat";
+            }
+            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ step.entrypoint);
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
             ImageAction.add(step.image, run);
             getContext().newBodyInvoker().
