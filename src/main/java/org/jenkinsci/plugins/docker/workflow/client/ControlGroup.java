@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,11 +34,10 @@ public class ControlGroup {
 
 
     public static Optional<String> getContainerId(FilePath procfile) throws IOException, InterruptedException {
-        return getContainerId(new InputStreamReader(procfile.read()));
+        return getContainerId(new InputStreamReader(procfile.read(), StandardCharsets.UTF_8));
     }
 
     static Optional<String> getContainerId(Reader reader) throws IOException {
-        List<ControlGroup> groups = new ArrayList<>();
         try (BufferedReader r = new BufferedReader(reader)) {
             String line;
             while ((line = r.readLine()) != null) {
