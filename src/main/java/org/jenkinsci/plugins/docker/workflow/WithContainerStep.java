@@ -24,6 +24,7 @@
 package org.jenkinsci.plugins.docker.workflow;
 
 import com.google.common.base.Optional;
+import hudson.util.ArgumentListBuilder;
 import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import com.google.inject.Inject;
 import hudson.AbortException;
@@ -181,7 +182,13 @@ public class WithContainerStep extends AbstractStepImpl {
                 volumes.put(tmp, tmp);
             }
 
-            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
+            /**
+             * owner of the workspace. We need to ensure build process inside container do write files in workspace
+             * with same UID so agent can manage workspace when build inside container has completed.
+             */
+            final String userId = dockerClient.whoAmI();
+
+            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, null, /* expected to hang until killed */ "cat");
             final List<String> ps = dockerClient.listProcess(env, container);
             if (!ps.contains("cat")) {
                 listener.error("The container started but didn't run the expected command. Please double check your ENTRYPOINT does execute the command passed as docker run argument. See https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices/#entrypoint for entrypoint best practices.");
@@ -190,7 +197,7 @@ public class WithContainerStep extends AbstractStepImpl {
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
             ImageAction.add(step.image, run);
             getContext().newBodyInvoker().
-                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws, toolName, dockerVersion))).
+                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws, userId, toolName, dockerVersion))).
                     withCallback(new Callback(container, toolName)).
                     start();
             return false;
@@ -216,17 +223,19 @@ public class WithContainerStep extends AbstractStepImpl {
         private final String container;
         private final String[] envHost;
         private final String ws;
+        private final String user;
         private final @CheckForNull String toolName;
         private final boolean hasEnv;
         private final boolean hasWorkdir;
 
-        Decorator(String container, EnvVars envHost, String ws, String toolName, VersionNumber dockerVersion) {
+        Decorator(String container, EnvVars envHost, String ws, String user, String toolName, VersionNumber dockerVersion) {
             this.container = container;
             this.envHost = Util.mapToEnv(envHost);
             this.ws = ws;
             this.toolName = toolName;
             this.hasEnv = dockerVersion != null && dockerVersion.compareTo(new VersionNumber("1.13.0")) >= 0;
             this.hasWorkdir = dockerVersion != null && dockerVersion.compareTo(new VersionNumber("17.12")) >= 0;
+            this.user = user;
         }
 
         @Override public Launcher decorate(final Launcher launcher, final Node node) {
@@ -238,7 +247,14 @@ public class WithContainerStep extends AbstractStepImpl {
                     } catch (InterruptedException x) {
                         throw new IOException(x);
                     }
+                    
                     List<String> prefix = new ArrayList<>(Arrays.asList(executable, "exec"));
+
+                    if (user != null) {
+                        prefix.add("-u");
+                        prefix.add(user);
+                    }
+
                     if (ws != null) {
                         FilePath cwd = starter.pwd();
                         if (cwd != null) {
