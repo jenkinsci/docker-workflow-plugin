@@ -135,7 +135,7 @@ public class DockerClient {
     }
 
     public List<String> listProcess(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
-        LaunchResult result = launch(launchEnv, false, "top", containerId);
+        LaunchResult result = launch(launchEnv, false, "top", containerId, "-o","pid,uid,time,command","-ax");
         if (result.getStatus() != 0) {
             throw new IOException(String.format("Failed to run top '%s'. Error: %s", containerId, result.getErr()));
         }
