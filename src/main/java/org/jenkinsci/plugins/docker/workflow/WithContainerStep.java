@@ -184,7 +184,11 @@ public class WithContainerStep extends AbstractStepImpl {
             container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
             final List<String> ps = dockerClient.listProcess(env, container);
             if (!ps.contains("cat")) {
-                listener.error("The container started but didn't run the expected command. Please double check your ENTRYPOINT does execute the command passed as docker run argument. See https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices/#entrypoint for entrypoint best practices.");
+                listener.error(
+                    "The container started but didn't run the expected command. " +
+                        "Please double check your ENTRYPOINT does execute the command passed as docker run argument, " +
+                        "as required by official docker images (see https://github.com/docker-library/official-images#consistency for entrypoint best practices).\n" +
+                        "Alternatively you can force image   entrypoint to be disabled by adding option `--entrypoint=''`.");
             }
 
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
