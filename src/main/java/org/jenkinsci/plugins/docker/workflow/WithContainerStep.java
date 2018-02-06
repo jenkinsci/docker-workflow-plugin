@@ -187,8 +187,8 @@ public class WithContainerStep extends AbstractStepImpl {
                 listener.error(
                     "The container started but didn't run the expected command. " +
                         "Please double check your ENTRYPOINT does execute the command passed as docker run argument, " +
-                        "as required by official docker images (see https://github.com/docker-library/official-images#consistency for entrypoint best practices).\n" +
-                        "Alternatively you can force image   entrypoint to be disabled by adding option `--entrypoint=''`.");
+                        "as required by official docker images (see https://github.com/docker-library/official-images#consistency for entrypoint consistency requirements).\n" +
+                        "Alternatively you can force image entrypoint to be disabled by adding option `--entrypoint=''`.");
             }
 
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
