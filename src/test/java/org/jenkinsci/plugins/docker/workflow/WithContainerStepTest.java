@@ -25,6 +25,7 @@ package org.jenkinsci.plugins.docker.workflow;
 
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.SecretBytes;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import hudson.model.FileParameterValue;
 import hudson.model.Result;
@@ -205,7 +206,7 @@ public class WithContainerStepTest {
                 File f = tmp.newFile("some-file");
                 FileUtils.write(f, "some-content");
                 FileItem fi = new FileParameterValue.FileItemImpl(f);
-                FileCredentialsImpl fc = new FileCredentialsImpl(CredentialsScope.GLOBAL, "secretfile", "", fi, fi.getName(), null);
+                FileCredentialsImpl fc = new FileCredentialsImpl(CredentialsScope.GLOBAL, "secretfile", "", fi, fi.getName(), (SecretBytes) null);
                 CredentialsProvider.lookupStores(story.j.jenkins).iterator().next().addCredentials(Domain.global(), fc);
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(

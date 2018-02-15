@@ -37,7 +37,7 @@ class Docker implements Serializable {
     public <V> V withRegistry(String url, String credentialsId = null, Closure<V> body) {
         node {
             script.withEnv(["DOCKER_REGISTRY_URL=${url}"]) {
-                script.withDockerRegistry([url: url, credentialsId: credentialsId]) {
+                script.withDockerRegistry(registry: [url: url, credentialsId: credentialsId], toolName: script.env.DOCKER_TOOL_NAME) {
                     body()
                 }
             }
