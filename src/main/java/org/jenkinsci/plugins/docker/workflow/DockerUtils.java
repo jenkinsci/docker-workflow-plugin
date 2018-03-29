@@ -23,7 +23,9 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
+import java.text.ParseException;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -32,37 +34,79 @@ import java.util.regex.Pattern;
 import org.apache.tools.ant.types.Commandline;
 
 public final class DockerUtils {
+
+    // marks the parameter format: --build-arg FOO=BAR
+    private static final String BUILD_ARG_SEPARATE = "--build-arg";
+    // marks the parameter format: --build-arg=FOO=BAR
+    private static final String BUILD_ARG_CONCATENATED = "--build-arg=";
+
     private DockerUtils() {
         // utility class
     }
 
-    public static Map<String, String> parseBuildArgs(String commandLine) {
+    public static Map<String, String> parseBuildArgs(String commandLineString)  {
         // this also accounts for quote, escapes, ...
-        Commandline parsed = new Commandline(commandLine);
+        Commandline commandLine = new Commandline(commandLineString);
         Map<String, String> result = new HashMap<>();
 
-        String[] arguments = parsed.getArguments();
+        String[] arguments = commandLine.getArguments();
         for (int i = 0; i < arguments.length; i++) {
             String arg = arguments[i];
-            if (arg.equals("--build-arg")) {
-                if (arguments.length < i + 1) {
-                    throw new IllegalArgumentException("Missing parameter for --build-arg: " + commandLine);
+            try {
+                if (arg.equals(BUILD_ARG_SEPARATE)) {
+                    String[] buildArgs = Arrays.copyOfRange(arguments, i, arguments.length);
+                    SimpleEntry<String, String> parsed = parseBuildArgsArray(buildArgs);
+                    result.put(parsed.getKey(), parsed.getValue());
+                } else if (arg.startsWith(BUILD_ARG_CONCATENATED)) {
+                    SimpleEntry<String, String> parsed = parseBuildArgsConcatenated(arg);
+                    result.put(parsed.getKey(), parsed.getValue());
                 }
-                String keyVal = arguments[i+1];
-
-                String parts[] = keyVal.split("=", 2);
-                if (parts.length != 2) {
-                    throw new IllegalArgumentException("Illegal syntax for --build-arg " + keyVal + ", need KEY=VALUE");
-                }
-                String key = parts[0];
-                String value = parts[1];
-
-                result.put(key, value);
+            } catch (ParseException pe) {
+                throw new IllegalArgumentException("Error parsing --build-arg: " + pe.getMessage() + ", cmdline: " + commandLineString);
             }
         }
         return result;
     }
 
+    /**
+     * Requires input: --build-arg=FOO=BAR
+     */
+    private static SimpleEntry<String, String> parseBuildArgsConcatenated(String concatenated) throws ParseException {
+        String args = concatenated.substring(BUILD_ARG_CONCATENATED.length());
+
+        SimpleEntry<String, String> result = splitArgNameValue(args);
+        return result;
+    }
+
+    /**
+     * Requires input of the format: ["--build-args", "FOO=BAR", ...]
+     */
+    private static SimpleEntry<String, String> parseBuildArgsArray(String arguments[]) throws ParseException {
+        if (arguments.length < 2) {
+			throw new ParseException("Missing parameter for --build-arg", 0);
+		}
+        String keyVal = arguments[1];
+
+        SimpleEntry<String, String> result = splitArgNameValue(keyVal);
+        return result;
+    }
+
+    private static SimpleEntry<String, String> splitArgNameValue(String nameValue) throws ParseException {
+        String parts[] = nameValue.split("=", 2);
+        if (parts.length != 2) {
+			throw new ParseException("Illegal syntax for --build-arg " + nameValue +
+                ": need further arguments with KEY=VALUE, e.g.: --build-arg FOO=Bar or --build-arg=FOO=Bar", 0);
+		}
+        String key = parts[0];
+        String value = parts[1];
+
+        return new SimpleEntry<>(key, value);
+    }
+
+    /**
+     * @deprecated this implementation does not handle quotation marks properly!
+     */
+    @Deprecated
     public static SimpleEntry<String, String> splitArgs(String argString) {
         //TODO: support complex single/double quotation marks
         Pattern p = Pattern.compile("^['\"]?(\\w+)=(.*?)['\"]?$");

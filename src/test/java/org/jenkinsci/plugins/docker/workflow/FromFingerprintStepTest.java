@@ -57,16 +57,39 @@ public class FromFingerprintStepTest {
         assertBuild("prj-dobulequotes-in-build-arg---aroundValue",
             script("--build-arg IMAGE_TO_UPDATE=\"hello-world:latest\""));
 
-        assertBuild("prj-singlequotes-in-build-arg---aroundAll",
+        assertBuild("prj-singlequotes-in-build-arg---aroundAllArgs",
             script("--build-arg \\'IMAGE_TO_UPDATE=hello-world:latest\\'"));
 
-        assertBuild("prj-doublequotes-in-build-arg---aroundAll",
+        assertBuild("prj-doublequotes-in-build-arg---aroundAllArgs",
             script("--build-arg \"IMAGE_TO_UPDATE=hello-world:latest\""));
+
+        // and again with equals after --build-arg
+        assertBuild("prj-equals-simple",
+            script("--build-arg=IMAGE_TO_UPDATE=hello-world:latest"));
+
+        assertBuild("prj-equals-singlequotes-in-build-arg---aroundValue",
+            script("--build-arg=IMAGE_TO_UPDATE=\\'hello-world:latest\\'"));
+
+        assertBuild("prj-equals-dobulequotes-in-build-arg---aroundValue",
+            script("--build-arg=IMAGE_TO_UPDATE=\"hello-world:latest\""));
+
+        assertBuild("prj-equals-singlequotes-in-build-arg---aroundAllArgs",
+            script("--build-arg=\\'IMAGE_TO_UPDATE=hello-world:latest\\'"));
+
+        assertBuild("prj-equals-doublequotes-in-build-arg---aroundAllArgs",
+            script("--build-arg=\"IMAGE_TO_UPDATE=hello-world:latest\""));
+
+        // quotes around all of the --build-arg= stuff
+        assertBuild("prj-equals-singlequotes-in-build-arg---aroundAll",
+            script("\\'--build-arg=IMAGE_TO_UPDATE=hello-world:latest\\'"));
+
+        assertBuild("prj-equals-doublequotes-in-build-arg---aroundAll",
+            script("\"--build-arg=IMAGE_TO_UPDATE=hello-world:latest\""));
     }
 
     private static String script(String buildArg) {
         String dockerfile = "" + 
-            "ARG IMAGE_TO_UPDATE\\n" +
+            "ARG IMAGE_TO_UPDATE=hello-world:latest\\n" +
             "FROM ${IMAGE_TO_UPDATE}\\n";
         String fullBuildArgs = buildArg + " buildWithFROMArgs";
 
