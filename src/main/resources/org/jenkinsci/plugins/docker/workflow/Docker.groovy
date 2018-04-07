@@ -91,10 +91,9 @@ class Docker implements Serializable {
             }
 
             def commandLine = "docker build -t ${image} ${args}"
-            def buildArgs = DockerUtils.parseBuildArgs(commandLine)
 
             script.sh commandLine
-            script.dockerFingerprintFrom dockerfile: dockerfile, image: image, toolName: script.env.DOCKER_TOOL_NAME, buildArgs: buildArgs
+            script.dockerFingerprintFrom dockerfile: dockerfile, image: image, toolName: script.env.DOCKER_TOOL_NAME, commandLine: commandLine
             this.image(image)
         }
     }

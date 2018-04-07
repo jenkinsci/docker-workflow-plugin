@@ -44,10 +44,13 @@ public final class DockerUtils {
         // utility class
     }
 
-    public static Map<String, String> parseBuildArgs(String commandLineString)  {
+    public static Map<String, String> parseBuildArgs(final Dockerfile dockerfile, final String commandLineString) {
         // this also accounts for quote, escapes, ...
         Commandline commandLine = new Commandline(commandLineString);
         Map<String, String> result = new HashMap<>();
+        if (dockerfile != null) {
+            result.putAll(dockerfile.getArgs());
+        }
 
         String[] arguments = commandLine.getArguments();
         for (int i = 0; i < arguments.length; i++) {
@@ -102,24 +105,4 @@ public final class DockerUtils {
 
         return new SimpleEntry<>(key, value);
     }
-
-    /**
-     * @deprecated this implementation does not handle quotation marks properly!
-     */
-    @Deprecated
-    public static SimpleEntry<String, String> splitArgs(String argString) {
-        //TODO: support complex single/double quotation marks
-        Pattern p = Pattern.compile("^['\"]?(\\w+)=(.*?)['\"]?$");
-
-        Matcher matcher = p.matcher(argString.trim());
-        if (!matcher.matches()) {
-            throw new IllegalArgumentException("Illegal --build-arg parameter syntax: " + argString);
-        }
-
-        String key = matcher.group(1);
-        String value = matcher.group(2);
-
-        return new SimpleEntry<>(key, value);
-    }
-
 }

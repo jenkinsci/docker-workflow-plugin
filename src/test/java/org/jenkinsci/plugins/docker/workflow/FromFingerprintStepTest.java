@@ -44,10 +44,11 @@ import static org.junit.Assert.assertNotNull;
 public class FromFingerprintStepTest {
     @Rule public RestartableJenkinsRule story = new RestartableJenkinsRule();
 
-    /**
-     * Test quotation marks in --build-arg parameters
-     */
-    @Test public void buildWithFROMArgs() throws Exception {
+    private static final String HELLO_WORLD_IMAGE = "hello-world";
+    private static final String BUSYBOX_IMAGE = "busybox";
+
+    /*
+        @Test public void buildWithFROMArgs() throws Exception {
         assertBuild("prj-simple",
             script("--build-arg IMAGE_TO_UPDATE=hello-world:latest"));
 
@@ -86,11 +87,61 @@ public class FromFingerprintStepTest {
         assertBuild("prj-equals-doublequotes-in-build-arg---aroundAll",
             script("\"--build-arg=IMAGE_TO_UPDATE=hello-world:latest\""));
     }
-
-    private static String script(String buildArg) {
-        String dockerfile = "" + 
-            "ARG IMAGE_TO_UPDATE=hello-world:latest\\n" +
+     */
+    /**
+     * Test quotation marks in --build-arg parameters
+     */
+    @Test public void buildWithFROMArgs() throws Exception {
+        String dockerfile = "" +
+            "ARG IMAGE_TO_UPDATE\\n" +
             "FROM ${IMAGE_TO_UPDATE}\\n";
+
+        assertBuild("prj-simple",
+            script(dockerfile, "--build-arg IMAGE_TO_UPDATE=hello-world:latest"), HELLO_WORLD_IMAGE);
+
+        assertBuild("prj-singlequotes-in-build-arg---aroundValue",
+            script(dockerfile, "--build-arg IMAGE_TO_UPDATE=\\'hello-world:latest\\'"), HELLO_WORLD_IMAGE);
+
+        assertBuild("prj-dobulequotes-in-build-arg---aroundValue",
+            script(dockerfile, "--build-arg IMAGE_TO_UPDATE=\"hello-world:latest\""), HELLO_WORLD_IMAGE);
+
+        assertBuild("prj-singlequotes-in-build-arg---aroundAll",
+            script(dockerfile, "--build-arg \\'IMAGE_TO_UPDATE=hello-world:latest\\'"), HELLO_WORLD_IMAGE);
+
+        assertBuild("prj-doublequotes-in-build-arg---aroundAll",
+            script(dockerfile, "--build-arg \"IMAGE_TO_UPDATE=hello-world:latest\""), HELLO_WORLD_IMAGE);
+    }
+
+    @Test public void buildWithDefaultArgsFromDockerfile() throws Exception {
+        String dockerfile = ""+
+            "ARG REGISTRY_URL\\n" +
+            "ARG TAG=latest\\n" +
+            "FROM ${REGISTRY_URL}busybox:${TAG}\\n";
+
+        assertBuild("prj-with-default-arg-from-dockerfile",
+            script(dockerfile, ""), BUSYBOX_IMAGE);
+
+        assertBuild("prj-override-empty-value",
+            script(dockerfile, "--build-arg REGISTRY_URL="), BUSYBOX_IMAGE);
+
+        assertBuild("prj-with-override-value",
+            script(dockerfile, "--build-arg TAG=1.27.1"), BUSYBOX_IMAGE+":1.27.1");
+
+        assertBuild("prj-with-override-value2",
+            script(dockerfile, "--build-arg TAG=1.26"), BUSYBOX_IMAGE+":1.26");
+    }
+
+    @Test public void buildOverridingRegistry() throws Exception {
+        String quayDockerfile = ""+
+            "ARG REGISTRY_URL\\n" +
+            "ARG TAG=latest\\n" +
+            "FROM ${REGISTRY_URL}prometheus/busybox:${TAG}\\n";
+
+        assertBuild("prj-override-registry",
+            script(quayDockerfile, "--build-arg REGISTRY_URL=\\'quay.io/\\'"), "quay.io/prometheus/busybox");
+    }
+
+    private static String script(String dockerfile, String buildArg) {
         String fullBuildArgs = buildArg + " buildWithFROMArgs";
 
         String script = "node {\n" +
@@ -103,17 +154,17 @@ public class FromFingerprintStepTest {
         return script;
     }
 
-    private void assertBuild(final String projectName, final String piplineCode) throws Exception {
+    private void assertBuild(final String projectName, final String pipelineCode, final String fromImage) throws Exception {
         story.addStep(new Statement() {
             @Override
             public void evaluate() throws Throwable {
                 assumeDocker();
 
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, projectName);
-                p.setDefinition(new CpsFlowDefinition(piplineCode, true));
+                p.setDefinition(new CpsFlowDefinition(pipelineCode, true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
                 DockerClient client = new DockerClient(new LocalLauncher(StreamTaskListener.NULL), null, null);
-                String ancestorImageId = client.inspect(new EnvVars(), "hello-world", ".Id");
+                String ancestorImageId = client.inspect(new EnvVars(), fromImage, ".Id");
                 story.j.assertLogContains("built from-with-arg", b);
                 story.j.assertLogContains(ancestorImageId.replaceFirst("^sha256:", "").substring(0, 12), b);
                 Fingerprint f = DockerFingerprints.of(ancestorImageId);
