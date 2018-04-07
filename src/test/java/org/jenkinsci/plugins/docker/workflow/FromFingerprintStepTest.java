@@ -47,47 +47,6 @@ public class FromFingerprintStepTest {
     private static final String HELLO_WORLD_IMAGE = "hello-world";
     private static final String BUSYBOX_IMAGE = "busybox";
 
-    /*
-        @Test public void buildWithFROMArgs() throws Exception {
-        assertBuild("prj-simple",
-            script("--build-arg IMAGE_TO_UPDATE=hello-world:latest"));
-
-        assertBuild("prj-singlequotes-in-build-arg---aroundValue",
-            script("--build-arg IMAGE_TO_UPDATE=\\'hello-world:latest\\'"));
-
-        assertBuild("prj-dobulequotes-in-build-arg---aroundValue",
-            script("--build-arg IMAGE_TO_UPDATE=\"hello-world:latest\""));
-
-        assertBuild("prj-singlequotes-in-build-arg---aroundAllArgs",
-            script("--build-arg \\'IMAGE_TO_UPDATE=hello-world:latest\\'"));
-
-        assertBuild("prj-doublequotes-in-build-arg---aroundAllArgs",
-            script("--build-arg \"IMAGE_TO_UPDATE=hello-world:latest\""));
-
-        // and again with equals after --build-arg
-        assertBuild("prj-equals-simple",
-            script("--build-arg=IMAGE_TO_UPDATE=hello-world:latest"));
-
-        assertBuild("prj-equals-singlequotes-in-build-arg---aroundValue",
-            script("--build-arg=IMAGE_TO_UPDATE=\\'hello-world:latest\\'"));
-
-        assertBuild("prj-equals-dobulequotes-in-build-arg---aroundValue",
-            script("--build-arg=IMAGE_TO_UPDATE=\"hello-world:latest\""));
-
-        assertBuild("prj-equals-singlequotes-in-build-arg---aroundAllArgs",
-            script("--build-arg=\\'IMAGE_TO_UPDATE=hello-world:latest\\'"));
-
-        assertBuild("prj-equals-doublequotes-in-build-arg---aroundAllArgs",
-            script("--build-arg=\"IMAGE_TO_UPDATE=hello-world:latest\""));
-
-        // quotes around all of the --build-arg= stuff
-        assertBuild("prj-equals-singlequotes-in-build-arg---aroundAll",
-            script("\\'--build-arg=IMAGE_TO_UPDATE=hello-world:latest\\'"));
-
-        assertBuild("prj-equals-doublequotes-in-build-arg---aroundAll",
-            script("\"--build-arg=IMAGE_TO_UPDATE=hello-world:latest\""));
-    }
-     */
     /**
      * Test quotation marks in --build-arg parameters
      */
@@ -105,11 +64,34 @@ public class FromFingerprintStepTest {
         assertBuild("prj-dobulequotes-in-build-arg---aroundValue",
             script(dockerfile, "--build-arg IMAGE_TO_UPDATE=\"hello-world:latest\""), HELLO_WORLD_IMAGE);
 
-        assertBuild("prj-singlequotes-in-build-arg---aroundAll",
+        assertBuild("prj-singlequotes-in-build-arg---aroundAllArgs",
             script(dockerfile, "--build-arg \\'IMAGE_TO_UPDATE=hello-world:latest\\'"), HELLO_WORLD_IMAGE);
 
-        assertBuild("prj-doublequotes-in-build-arg---aroundAll",
+        assertBuild("prj-doublequotes-in-build-arg---aroundAllArgs",
             script(dockerfile, "--build-arg \"IMAGE_TO_UPDATE=hello-world:latest\""), HELLO_WORLD_IMAGE);
+
+        // and again with equals after --build-arg
+        assertBuild("prj-equals-simple",
+            script(dockerfile, "--build-arg=IMAGE_TO_UPDATE=hello-world:latest"), HELLO_WORLD_IMAGE);
+
+        assertBuild("prj-equals-singlequotes-in-build-arg---aroundValue",
+            script(dockerfile, "--build-arg=IMAGE_TO_UPDATE=\\'hello-world:latest\\'"), HELLO_WORLD_IMAGE);
+
+        assertBuild("prj-equals-dobulequotes-in-build-arg---aroundValue",
+            script(dockerfile, "--build-arg=IMAGE_TO_UPDATE=\"hello-world:latest\""), HELLO_WORLD_IMAGE);
+
+        assertBuild("prj-equals-singlequotes-in-build-arg---aroundAllArgs",
+            script(dockerfile, "--build-arg=\\'IMAGE_TO_UPDATE=hello-world:latest\\'"), HELLO_WORLD_IMAGE);
+
+        assertBuild("prj-equals-doublequotes-in-build-arg---aroundAllArgs",
+            script(dockerfile, "--build-arg=\"IMAGE_TO_UPDATE=hello-world:latest\""), HELLO_WORLD_IMAGE);
+
+        // quotes around all of the --build-arg= stuff
+        assertBuild("prj-equals-singlequotes-in-build-arg---aroundAll",
+            script(dockerfile, "\\'--build-arg=IMAGE_TO_UPDATE=hello-world:latest\\'"), HELLO_WORLD_IMAGE);
+
+        assertBuild("prj-equals-doublequotes-in-build-arg---aroundAll",
+            script(dockerfile, "\"--build-arg=IMAGE_TO_UPDATE=hello-world:latest\""), HELLO_WORLD_IMAGE);
     }
 
     @Test public void buildWithDefaultArgsFromDockerfile() throws Exception {
