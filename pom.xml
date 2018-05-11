@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>3.3</version>
+        <version>3.9</version>
         <relativePath />
     </parent>
     <artifactId>docker-workflow</artifactId>
@@ -33,7 +33,6 @@
         <java.level>8</java.level>
         <workflow-step-api-plugin.version>2.9</workflow-step-api-plugin.version>
         <workflow-support-plugin.version>2.12</workflow-support-plugin.version>
-        <hpi-plugin.version>2.2</hpi-plugin.version> <!-- TODO pending https://github.com/jenkinsci/plugin-pom/pull/94 -->
     </properties>
     <repositories>
         <repository>
@@ -51,7 +50,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>docker-commons</artifactId>
-            <version>1.12-20180131.190257-1</version> <!-- TODO https://github.com/jenkinsci/docker-commons-plugin/pull/67 -->
+            <version>1.12</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
