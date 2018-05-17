@@ -29,16 +29,13 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
-import java.util.Collections;
-import java.util.Map;
-import java.util.TreeMap;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
-import org.jenkinsci.plugins.structs.describable.DescribableModel;
+import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.SnippetizerTester;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.steps.StepConfigTester;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.Issue;
@@ -48,32 +45,42 @@ public class RegistryEndpointStepTest {
 
     @Rule public JenkinsRule r = new JenkinsRule();
 
-    @Ignore("fails to run withDockerRegistry without registry: prefix, which is what Snippetizer offers")
     @Issue("JENKINS-51395")
     @Test public void configRoundTrip() throws Exception {
-        SnippetizerTester st = new SnippetizerTester(r);
-        RegistryEndpointStep step = new RegistryEndpointStep(new DockerRegistryEndpoint("https://myreg/", null));
-        st.assertRoundTrip(step, "withDockerRegistry([url: 'https://myreg/']) {\n    // some block\n}");
-        step = new RegistryEndpointStep(new DockerRegistryEndpoint(null, "hubcreds"));
-        st.assertRoundTrip(step, "withDockerRegistry([credentialsId: 'hubcreds']) {\n    // some block\n}");
-        step = new RegistryEndpointStep(new DockerRegistryEndpoint("https://myreg/", "mycreds"));
-        step.setToolName("ce");
-        st.assertRoundTrip(step, "withDockerRegistry(registry: [credentialsId: 'mycreds', url: 'https://myreg/'], toolName: 'ce') {\n    // some block\n}");
-        IdCredentials registryCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "registryCreds", null, "me", "pass");
-        CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), registryCredentials);
-        StepConfigTester sct = new StepConfigTester(r);
-        // TODO use of DescribableModel here is gratuitous; the rest should just test the UI
-        Map<String,Object> registryConfig = new TreeMap<>();
-        registryConfig.put("url", "https://docker.my.com/");
-        registryConfig.put("credentialsId", registryCredentials.getId());
-        Map<String,Object> config = Collections.singletonMap("registry", registryConfig);
-        step = new DescribableModel<>(RegistryEndpointStep.class).instantiate(config);
-        step = sct.configRoundTrip(step);
-        DockerRegistryEndpoint registry = step.getRegistry();
-        assertNotNull(registry);
-        assertEquals("https://docker.my.com/", registry.getUrl());
-        assertEquals(registryCredentials.getId(), registry.getCredentialsId());
-        assertEquals(config, new DescribableModel<>(RegistryEndpointStep.class).uninstantiate(step));
+        { // Recommended syntax.
+            SnippetizerTester st = new SnippetizerTester(r);
+            RegistryEndpointStep step = new RegistryEndpointStep(new DockerRegistryEndpoint("https://myreg/", null));
+            st.assertRoundTrip(step, "withDockerRegistry(url: 'https://myreg/') {\n    // some block\n}");
+            step = new RegistryEndpointStep(new DockerRegistryEndpoint(null, "hubcreds"));
+            st.assertRoundTrip(step, "withDockerRegistry(credentialsId: 'hubcreds') {\n    // some block\n}");
+            step = new RegistryEndpointStep(new DockerRegistryEndpoint("https://myreg/", "mycreds"));
+            step.setToolName("ce");
+            st.assertRoundTrip(step, "withDockerRegistry(credentialsId: 'mycreds', toolName: 'ce', url: 'https://myreg/') {\n    // some block\n}");
+        }
+        { // Older syntax.
+            WorkflowJob p = r.createProject(WorkflowJob.class, "p");
+            p.setDefinition(new CpsFlowDefinition("node {withDockerRegistry(registry: [url: 'https://docker.my.com/'], toolName: 'irrelevant') {}}", true));
+            r.buildAndAssertSuccess(p);
+            p.setDefinition(new CpsFlowDefinition("node {withDockerRegistry(registry: [url: 'https://docker.my.com/']) {}}", true));
+            r.buildAndAssertSuccess(p);
+            p.setDefinition(new CpsFlowDefinition("node {withDockerRegistry([url: 'https://docker.my.com/']) {}}", true));
+            r.buildAndAssertSuccess(p);
+            // and new, just in case SnippetizerTester is faking it:
+            p.setDefinition(new CpsFlowDefinition("node {withDockerRegistry(url: 'https://docker.my.com/') {}}", true));
+            r.buildAndAssertSuccess(p);
+        }
+        { // UI form.
+            IdCredentials registryCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "registryCreds", null, "me", "pass");
+            CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), registryCredentials);
+            StepConfigTester sct = new StepConfigTester(r);
+            RegistryEndpointStep step = new RegistryEndpointStep(new DockerRegistryEndpoint("https://docker.my.com/", "registryCreds"));
+            step = sct.configRoundTrip(step);
+            DockerRegistryEndpoint registry = step.getRegistry();
+            assertNotNull(registry);
+            assertEquals("https://docker.my.com/", registry.getUrl());
+            assertEquals("registryCreds", registry.getCredentialsId());
+            // TODO check toolName
+        }
     }
 
 }
