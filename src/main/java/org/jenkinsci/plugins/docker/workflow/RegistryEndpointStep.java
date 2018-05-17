@@ -85,7 +85,7 @@ public class RegistryEndpointStep extends AbstractStepImpl {
         @StepContextParameter private transient EnvVars envVars;
 
         @Override protected KeyMaterialFactory newKeyMaterialFactory() throws IOException, InterruptedException {
-            return step.registry.newKeyMaterialFactory(job, workspace, launcher, listener, DockerTool.getExecutable(step.toolName, node, listener, envVars));
+            return step.registry.newKeyMaterialFactory(job, workspace, launcher, envVars, listener, DockerTool.getExecutable(step.toolName, node, listener, envVars));
         }
 
     }
