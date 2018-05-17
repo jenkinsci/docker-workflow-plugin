@@ -85,6 +85,8 @@ public class ServerEndpointStep extends AbstractStepImpl {
             return true;
         }
 
+        // TODO allow DockerServerEndpoint fields to be inlined, as in RegistryEndpointStep, so Docker.groovy can say simply: script.withDockerServer(uri: uri, credentialsId: credentialsId) {…}
+
     }
 
 }
