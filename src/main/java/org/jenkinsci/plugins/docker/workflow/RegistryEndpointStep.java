@@ -50,7 +50,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 public class RegistryEndpointStep extends AbstractStepImpl {
-
+    
     private final @Nonnull DockerRegistryEndpoint registry;
     private @CheckForNull String toolName;
 
@@ -111,8 +111,7 @@ public class RegistryEndpointStep extends AbstractStepImpl {
             return true;
         }
 
-        @Override
-        public UninstantiatedDescribable uninstantiate(Step step) throws UnsupportedOperationException {
+        @Override public UninstantiatedDescribable uninstantiate(Step step) throws UnsupportedOperationException {
             RegistryEndpointStep s = (RegistryEndpointStep) step;
             Map<String, Object> args = new TreeMap<>();
             args.put("url", s.registry.getUrl());
@@ -122,8 +121,7 @@ public class RegistryEndpointStep extends AbstractStepImpl {
             return new UninstantiatedDescribable(args);
         }
 
-        @Override
-        public Step newInstance(Map<String, Object> arguments) throws Exception {
+        @Override public Step newInstance(Map<String, Object> arguments) throws Exception {
             if (arguments.containsKey("url") || arguments.containsKey("credentialsId")) {
                 if (arguments.containsKey("registry")) {
                     throw new IllegalArgumentException("cannot mix url/credentialsId with registry");
