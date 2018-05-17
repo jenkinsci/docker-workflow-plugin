@@ -34,6 +34,7 @@ import hudson.model.Node;
 import hudson.model.TaskListener;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import javax.annotation.CheckForNull;
@@ -122,6 +123,7 @@ public class RegistryEndpointStep extends AbstractStepImpl {
         }
 
         @Override public Step newInstance(Map<String, Object> arguments) throws Exception {
+            arguments = new HashMap<>(arguments);
             if (arguments.containsKey("url") || arguments.containsKey("credentialsId")) {
                 if (arguments.containsKey("registry")) {
                     throw new IllegalArgumentException("cannot mix url/credentialsId with registry");
