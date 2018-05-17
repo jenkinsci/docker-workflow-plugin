@@ -28,6 +28,7 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
+import hudson.Util;
 import hudson.model.Job;
 import hudson.model.Node;
 import hudson.model.TaskListener;
@@ -67,7 +68,7 @@ public class RegistryEndpointStep extends AbstractStepImpl {
     }
 
     @DataBoundSetter public void setToolName(String toolName) {
-        this.toolName = toolName;
+        this.toolName = Util.fixEmpty(toolName);
     }
 
     public static class Execution extends AbstractEndpointStepExecution {

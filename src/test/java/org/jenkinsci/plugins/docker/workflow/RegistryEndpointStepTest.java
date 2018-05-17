@@ -50,6 +50,7 @@ public class RegistryEndpointStepTest {
         { // Recommended syntax.
             SnippetizerTester st = new SnippetizerTester(r);
             RegistryEndpointStep step = new RegistryEndpointStep(new DockerRegistryEndpoint("https://myreg/", null));
+            step.setToolName("");
             st.assertRoundTrip(step, "withDockerRegistry(url: 'https://myreg/') {\n    // some block\n}");
             step = new RegistryEndpointStep(new DockerRegistryEndpoint(null, "hubcreds"));
             st.assertRoundTrip(step, "withDockerRegistry(credentialsId: 'hubcreds') {\n    // some block\n}");
