@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package org.jenkinsci.plugins.docker.workflow;
 
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -32,41 +33,47 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
+import org.jenkinsci.plugins.structs.describable.DescribableModel;
+import org.jenkinsci.plugins.workflow.cps.SnippetizerTester;
 import org.jenkinsci.plugins.workflow.steps.StepConfigTester;
-import org.jenkinsci.plugins.workflow.structs.DescribableHelper;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runners.model.Statement;
-import org.jvnet.hudson.test.BuildWatcher;
-import org.jvnet.hudson.test.RestartableJenkinsRule;
+import org.jvnet.hudson.test.Issue;
+import org.jvnet.hudson.test.JenkinsRule;
 
 public class RegistryEndpointStepTest {
 
-    @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
-    @Rule public RestartableJenkinsRule story = new RestartableJenkinsRule();
+    @Rule public JenkinsRule r = new JenkinsRule();
 
-    @Test public void configRoundTrip() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                IdCredentials registryCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "registryCreds", null, "me", "pass");
-                CredentialsProvider.lookupStores(story.j.jenkins).iterator().next().addCredentials(Domain.global(), registryCredentials);
-                StepConfigTester sct = new StepConfigTester(story.j);
-                Map<String,Object> registryConfig = new TreeMap<String,Object>();
-                registryConfig.put("url", "https://docker.my.com/");
-                registryConfig.put("credentialsId", registryCredentials.getId());
-                Map<String,Object> config = Collections.<String,Object>singletonMap("registry", registryConfig);
-                RegistryEndpointStep step = DescribableHelper.instantiate(RegistryEndpointStep.class, config);
-                step = sct.configRoundTrip(step);
-                DockerRegistryEndpoint registry = step.getRegistry();
-                assertNotNull(registry);
-                assertEquals("https://docker.my.com/", registry.getUrl());
-                assertEquals(registryCredentials.getId(), registry.getCredentialsId());
-                assertEquals(config, DescribableHelper.uninstantiate(step));
-           }
-        });
+    @Ignore("fails to run withDockerRegistry without registry: prefix, which is what Snippetizer offers")
+    @Issue("JENKINS-51395")
+    @Test public void configRoundTrip() throws Exception {
+        SnippetizerTester st = new SnippetizerTester(r);
+        RegistryEndpointStep step = new RegistryEndpointStep(new DockerRegistryEndpoint("https://myreg/", null));
+        st.assertRoundTrip(step, "withDockerRegistry([url: 'https://myreg/']) {\n    // some block\n}");
+        step = new RegistryEndpointStep(new DockerRegistryEndpoint(null, "hubcreds"));
+        st.assertRoundTrip(step, "withDockerRegistry([credentialsId: 'hubcreds']) {\n    // some block\n}");
+        step = new RegistryEndpointStep(new DockerRegistryEndpoint("https://myreg/", "mycreds"));
+        step.setToolName("ce");
+        st.assertRoundTrip(step, "withDockerRegistry(registry: [credentialsId: 'mycreds', url: 'https://myreg/'], toolName: 'ce') {\n    // some block\n}");
+        IdCredentials registryCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "registryCreds", null, "me", "pass");
+        CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), registryCredentials);
+        StepConfigTester sct = new StepConfigTester(r);
+        // TODO use of DescribableModel here is gratuitous; the rest should just test the UI
+        Map<String,Object> registryConfig = new TreeMap<>();
+        registryConfig.put("url", "https://docker.my.com/");
+        registryConfig.put("credentialsId", registryCredentials.getId());
+        Map<String,Object> config = Collections.singletonMap("registry", registryConfig);
+        step = new DescribableModel<>(RegistryEndpointStep.class).instantiate(config);
+        step = sct.configRoundTrip(step);
+        DockerRegistryEndpoint registry = step.getRegistry();
+        assertNotNull(registry);
+        assertEquals("https://docker.my.com/", registry.getUrl());
+        assertEquals(registryCredentials.getId(), registry.getCredentialsId());
+        assertEquals(config, new DescribableModel<>(RegistryEndpointStep.class).uninstantiate(step));
     }
 
 }
