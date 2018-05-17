@@ -4,11 +4,11 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>3.9</version>
+        <version>3.12</version>
         <relativePath />
     </parent>
     <artifactId>docker-workflow</artifactId>
-    <version>1.17-SNAPSHOT</version>
+    <version>${revision}${changelist}</version>
     <name>Docker Pipeline</name>
     <description>Build and use Docker containers from pipelines</description>
     <packaging>hpi</packaging>
@@ -25,10 +25,12 @@
       <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
       <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
       <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
-      <tag>HEAD</tag>
+      <tag>${scmTag}</tag>
     </scm>
 
     <properties>
+        <revision>1.17</revision>
+        <changelist>-SNAPSHOT</changelist>
         <jenkins.version>2.60.3</jenkins.version>
         <java.level>8</java.level>
         <workflow-step-api-plugin.version>2.9</workflow-step-api-plugin.version>
