@@ -8,7 +8,7 @@
         <relativePath />
     </parent>
     <artifactId>docker-workflow</artifactId>
-    <version>1.18-SNAPSHOT</version>
+    <version>${revision}${changelist}</version>
     <name>Docker Pipeline</name>
     <description>Build and use Docker containers from pipelines</description>
     <packaging>hpi</packaging>
@@ -29,7 +29,7 @@
     </scm>
 
     <properties>
-        <revision>1.17</revision>
+        <revision>1.18</revision>
         <changelist>-SNAPSHOT</changelist>
         <jenkins.version>2.60.3</jenkins.version>
         <java.level>8</java.level>
