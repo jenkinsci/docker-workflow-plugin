@@ -144,6 +144,9 @@ public class WithContainerStep extends AbstractStepImpl {
                     throw new AbortException("The docker version is less than v1.7. Pipeline functions requiring 'docker exec' (e.g. 'docker.inside') or SELinux labeling will not work.");
                 } else if (dockerVersion.isOlderThan(new VersionNumber("1.8"))) {
                     listener.error("The docker version is less than v1.8. Running a 'docker.inside' from inside a container will not work.");
+                } else if (dockerVersion.isOlderThan(new VersionNumber("1.13"))) {
+                    if (!launcher.isUnix())
+                        throw new AbortException("The docker version is less than v1.13. Running a 'docker.inside' from inside a Windows container will not work.");
                 }
             } else {
                 listener.error("Failed to parse docker version. Please note there is a minimum docker version requirement of v1.7.");
@@ -181,9 +184,9 @@ public class WithContainerStep extends AbstractStepImpl {
                 volumes.put(tmp, tmp);
             }
 
-            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
+            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced);
             final List<String> ps = dockerClient.listProcess(env, container);
-            if (!ps.contains("cat")) {
+            if (!ps.contains("cat") && !ps.contains("cmd")) {
                 listener.error(
                     "The container started but didn't run the expected command. " +
                         "Please double check your ENTRYPOINT does execute the command passed as docker run argument, " +
@@ -242,6 +245,7 @@ public class WithContainerStep extends AbstractStepImpl {
                     } catch (InterruptedException x) {
                         throw new IOException(x);
                     }
+
                     List<String> prefix = new ArrayList<>(Arrays.asList(executable, "exec"));
                     if (ws != null) {
                         FilePath cwd = starter.pwd();
@@ -267,6 +271,7 @@ public class WithContainerStep extends AbstractStepImpl {
                             it.remove();
                         }
                     }
+
                     LOGGER.log(Level.FINE, "(exec) reduced environment: {0}", envReduced);
                     if (hasEnv) {
                         for (String e : envReduced) {
@@ -275,9 +280,11 @@ public class WithContainerStep extends AbstractStepImpl {
                         }
                         prefix.add(container);
                     } else {
-                        prefix.add(container);
-                        prefix.add("env");
-                        prefix.addAll(envReduced);
+                        if(launcher.isUnix()) {
+                            prefix.add(container);
+                            prefix.add("env");
+                            prefix.addAll(envReduced);
+                        }
                     }
 
                     // Adapted from decorateByPrefix:

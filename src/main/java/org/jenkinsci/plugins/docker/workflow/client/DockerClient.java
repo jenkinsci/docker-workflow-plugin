@@ -99,18 +99,19 @@ public class DockerClient {
      * @param volumes Volumes to be bound. Supply an empty list if no volumes are to be bound.
      * @param volumesFromContainers Mounts all volumes from the given containers.
      * @param containerEnv Environment variables to set in container.
-     * @param user The <strong>uid:gid</strong> to execute the container command as. Use {@link #whoAmI()}.
-     * @param command The command to execute in the image container being run.
      * @return The container ID.
      */
-    public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, @Nonnull String... command) throws IOException, InterruptedException {
+
+    public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv) throws IOException, InterruptedException {
         ArgumentListBuilder argb = new ArgumentListBuilder();
 
-        argb.add("run", "-t", "-d", "-u", user);
+        argb.add("run", "-t", "-d");
+        if(launcher.isUnix()) {
+            argb.add("-u", whoAmI());
+        }
         if (args != null) {
             argb.addTokenized(args);
         }
-        
         if (workdir != null) {
             argb.add("-w", workdir);
         }
@@ -124,7 +125,7 @@ public class DockerClient {
             argb.add("-e");
             argb.addMasked(variable.getKey()+"="+variable.getValue());
         }
-        argb.add(image).add(command);
+        argb.add("--entrypoint").add(launcher.isUnix() ? "cat" : "cmd").add(image);
 
         LaunchResult result = launch(launchEnv, false, null, argb);
         if (result.getStatus() == 0) {
@@ -305,7 +306,7 @@ public class DockerClient {
      *
      * @return a {@link String} containing the <strong>uid:gid</strong>.
      */
-    public String whoAmI() throws IOException, InterruptedException {
+    private String whoAmI() throws IOException, InterruptedException {
         ByteArrayOutputStream userId = new ByteArrayOutputStream();
         launcher.launch().cmds("id", "-u").quiet(true).stdout(userId).start().joinWithTimeout(CLIENT_TIMEOUT, TimeUnit.SECONDS, launcher.getListener());
 

@@ -71,6 +71,12 @@ class Docker implements Serializable {
         }
     }
 
+    String shell() {
+        node {
+            script.isUnix() ? "sh" : "bat"
+        }
+    }
+
     public Image image(String id) {
         new Image(this, id)
     }
@@ -93,7 +99,7 @@ class Docker implements Serializable {
             def commandLine = "docker build -t ${image} ${args}"
             def buildArgs = DockerUtils.parseBuildArgs(commandLine)
 
-            script.sh commandLine
+            script."${shell()}" commandLine
             script.dockerFingerprintFrom dockerfile: dockerfile, image: image, toolName: script.env.DOCKER_TOOL_NAME, buildArgs: buildArgs
             this.image(image)
         }
@@ -122,11 +128,11 @@ class Docker implements Serializable {
         public <V> V inside(String args = '', Closure<V> body) {
             docker.node {
                 def toRun = imageName()
-                if (toRun != id && docker.script.sh(script: "docker inspect -f . ${id}", returnStatus: true) == 0) {
+                if (toRun != id && docker.script."${docker.shell()}"(script: "docker inspect -f . ${id}", returnStatus: true) == 0) {
                     // Can run it without registry prefix, because it was locally built.
                     toRun = id
                 } else {
-                    if (docker.script.sh(script: "docker inspect -f . ${toRun}", returnStatus: true) != 0) {
+                    if (docker.script."${docker.shell()}"(script: "docker inspect -f . ${toRun}", returnStatus: true) != 0) {
                         // Not yet present locally.
                         // withDockerContainer requires the image to be available locally, since its start phase is not a durable task.
                         pull()
@@ -140,13 +146,13 @@ class Docker implements Serializable {
 
         public void pull() {
             docker.node {
-                docker.script.sh "docker pull ${imageName()}"
+                docker.script."${docker.shell()}" "docker pull ${imageName()}"
             }
         }
 
         public Container run(String args = '', String command = "") {
             docker.node {
-                def container = docker.script.sh(script: "docker run -d${args != '' ? ' ' + args : ''} ${id}${command != '' ? ' ' + command : ''}", returnStdout: true).trim()
+                def container = docker.script."${docker.shell()}"(script: "docker run -d${args != '' ? ' ' + args : ''} ${id}${command != '' ? ' ' + command : ''}", returnStdout: true).trim()
                 docker.script.dockerFingerprintRun containerId: container, toolName: docker.script.env.DOCKER_TOOL_NAME
                 new Container(docker, container)
             }
@@ -166,7 +172,7 @@ class Docker implements Serializable {
         public void tag(String tagName = parsedId.tag, boolean force = true) {
             docker.node {
                 def taggedImageName = toQualifiedImageName(parsedId.userAndRepo + ':' + tagName)
-                docker.script.sh "docker tag ${id} ${taggedImageName}"
+                docker.script."${docker.shell()}" "docker tag ${id} ${taggedImageName}"
                 return taggedImageName;
             }
         }
@@ -176,7 +182,7 @@ class Docker implements Serializable {
                 // The image may have already been tagged, so the tagging may be a no-op.
                 // That's ok since tagging is cheap.
                 def taggedImageName = tag(tagName, force)
-                docker.script.sh "docker push ${taggedImageName}"
+                docker.script."${docker.shell()}" "docker push ${taggedImageName}"
             }
         }
 
@@ -193,11 +199,11 @@ class Docker implements Serializable {
         }
 
         public void stop() {
-            docker.script.sh "docker stop ${id} && docker rm -f ${id}"
+            docker.script."${docker.shell()}" "docker stop ${id} && docker rm -f ${id}"
         }
 
         public String port(int port) {
-            docker.script.sh(script: "docker port ${id} ${port}", returnStdout: true).trim()
+            docker.script."${docker.shell()}"(script: "docker port ${id} ${port}", returnStdout: true).trim()
         }
     }
 
