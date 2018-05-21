@@ -29,8 +29,8 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
-import hudson.model.Job;
 import hudson.model.Node;
+import hudson.model.Run;
 import hudson.model.TaskListener;
 import java.io.IOException;
 import java.util.Collections;
@@ -77,15 +77,15 @@ public class RegistryEndpointStep extends AbstractStepImpl {
         private static final long serialVersionUID = 1;
 
         @Inject(optional=true) private transient RegistryEndpointStep step;
-        @StepContextParameter private transient Job<?,?> job;
         @StepContextParameter private transient FilePath workspace;
         @StepContextParameter private transient Launcher launcher;
         @StepContextParameter private transient TaskListener listener;
         @StepContextParameter private transient Node node;
         @StepContextParameter private transient EnvVars envVars;
+        @StepContextParameter private transient Run run;
 
         @Override protected KeyMaterialFactory newKeyMaterialFactory() throws IOException, InterruptedException {
-            return step.registry.newKeyMaterialFactory(job, workspace, launcher, envVars, listener, DockerTool.getExecutable(step.toolName, node, listener, envVars));
+            return step.registry.newKeyMaterialFactory(run, workspace, launcher, envVars, listener, DockerTool.getExecutable(step.toolName, node, listener, envVars));
         }
 
     }
