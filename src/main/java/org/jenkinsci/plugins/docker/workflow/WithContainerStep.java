@@ -242,7 +242,7 @@ public class WithContainerStep extends AbstractStepImpl {
                     } catch (InterruptedException x) {
                         throw new IOException(x);
                     }
-                    List<String> prefix = new ArrayList<>(Arrays.asList(executable, "exec"));
+                    List<String> prefix = new ArrayList<>(Arrays.asList(executable, "exec", "-t"));
                     if (ws != null) {
                         FilePath cwd = starter.pwd();
                         if (cwd != null) {
