@@ -23,7 +23,11 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
-import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Map;
+
 import com.google.inject.Inject;
 import hudson.AbortException;
 import hudson.EnvVars;
@@ -33,11 +37,8 @@ import hudson.Launcher;
 import hudson.Util;
 import hudson.model.Node;
 import hudson.model.Run;
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-
 import org.jenkinsci.plugins.docker.commons.fingerprint.DockerFingerprints;
+import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
@@ -50,6 +51,7 @@ public class FromFingerprintStep extends AbstractStepImpl {
     private final String dockerfile;
     private final String image;
     private String toolName;
+    private Map<String, String> buildArgs;
 
     @DataBoundConstructor public FromFingerprintStep(String dockerfile, String image) {
         this.dockerfile = dockerfile;
@@ -72,8 +74,16 @@ public class FromFingerprintStep extends AbstractStepImpl {
         this.toolName = Util.fixEmpty(toolName);
     }
 
+    public Map<String, String> getBuildArgs() {
+        return buildArgs;
+    }
+
+    @DataBoundSetter public void setBuildArgs(Map<String, String> buildArgs) {
+        this.buildArgs = buildArgs;
+    }
+
     public static class Execution extends AbstractSynchronousNonBlockingStepExecution<Void> {
-        
+
         private static final long serialVersionUID = 1L;
 
         @Inject(optional=true) private transient FromFingerprintStep step;
@@ -110,6 +120,10 @@ public class FromFingerprintStep extends AbstractStepImpl {
             }
             if (fromImage == null) {
                 throw new AbortException("could not find FROM instruction in " + dockerfile);
+            }
+            if (step.getBuildArgs() != null) {
+                // Fortunately, Docker uses the same EnvVar syntax as Jenkins :)
+                fromImage = Util.replaceMacro(fromImage, step.getBuildArgs());
             }
             DockerClient client = new DockerClient(launcher, node, step.toolName);
             String descendantImageId = client.inspectRequiredField(env, step.image, ".Id");

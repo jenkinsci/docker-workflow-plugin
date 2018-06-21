@@ -153,7 +153,7 @@ public class DockerDSLTest {
                 assumeDocker();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
-                        "docker.image('maven:latest').inside {\n" +
+                        "docker.image('maven:3.5.3-jdk-8').inside {\n" +
                         "  sh 'mvn -version'\n" +
                         "}", true));
 

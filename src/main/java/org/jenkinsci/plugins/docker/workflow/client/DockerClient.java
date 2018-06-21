@@ -35,17 +35,22 @@ import org.jenkinsci.plugins.docker.commons.fingerprint.ContainerRecord;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 import java.util.List;
 import java.util.Arrays;
+import java.util.StringTokenizer;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -74,16 +79,6 @@ public class DockerClient {
     // e.g. 2015-04-09T13:40:21.981801679Z
     public static final String DOCKER_DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
     
-    /**
-     * Known cgroup formats
-     * 
-     * 4:cpuset:/system.slice/docker-3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b.scope
-     * 2:cpu:/docker/3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b
-     * 10:cpu,cpuacct:/docker/a9f3c3932cd81c4a74cc7e0a18c3300255159512f1d000545c42895adaf68932/docker/3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b
-     * 3:cpu:/docker/4193df6bcf5fce75f3fc77f303b2ac06fb664adeb269b959b7ae17b3f8dcf329/14d7240da87b145e4992654c908a8631dbf179abb7f88115ea72743e1192d07d
-     */
-    public static final String CGROUP_MATCHER_PATTERN = "(?m)^\\d+:[\\w,?]+:(?:/[\\w.]+)?(?:/docker[-/])(/?(?:docker/)?(?<containerId>\\p{XDigit}{12,}))+(?:\\.scope)?$";
-
     private final Launcher launcher;
     private final @CheckForNull Node node;
     private final @CheckForNull String toolName;
@@ -105,10 +100,10 @@ public class DockerClient {
      * @param volumesFromContainers Mounts all volumes from the given containers.
      * @param containerEnv Environment variables to set in container.
      * @param user The <strong>uid:gid</strong> to execute the container command as. Use {@link #whoAmI()}.
-     * @param entrypoint The command to execute in the image container being run.
+     * @param command The command to execute in the image container being run.
      * @return The container ID.
      */
-    public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, @Nonnull String entrypoint) throws IOException, InterruptedException {
+    public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, @Nonnull String... command) throws IOException, InterruptedException {
         ArgumentListBuilder argb = new ArgumentListBuilder();
         boolean iswin = !launcher.isUnix();
 
@@ -134,7 +129,7 @@ public class DockerClient {
             argb.add("-e");
             argb.addMasked(variable.getKey()+"="+variable.getValue());
         }
-        argb.add("--entrypoint").add(entrypoint).add(image);
+        argb.add(image).add(command);
 
         LaunchResult result = launch(launchEnv, false, null, argb);
         if (result.getStatus() == 0) {
@@ -142,6 +137,28 @@ public class DockerClient {
         } else {
             throw new IOException(String.format("Failed to run image '%s'. Error: %s", image, result.getErr()));
         }
+    }
+
+    public List<String> listProcess(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
+        LaunchResult result = launch(launchEnv, false, "top", containerId, "-eo", "pid,comm");
+        if (result.getStatus() != 0) {
+            throw new IOException(String.format("Failed to run top '%s'. Error: %s", containerId, result.getErr()));
+        }
+        List<String> processes = new ArrayList<>();
+        try (Reader r = new StringReader(result.getOut());
+             BufferedReader in = new BufferedReader(r)) {
+            String line;
+            in.readLine(); // ps header
+            while ((line = in.readLine()) != null) {
+                final StringTokenizer stringTokenizer = new StringTokenizer(line, " ");
+                if (stringTokenizer.countTokens() < 2) {
+                    throw new IOException("Unexpected `docker top` output : "+line);
+                }
+                stringTokenizer.nextToken(); // PID
+                processes.add(stringTokenizer.nextToken()); // COMMAND
+            }
+        }
+        return processes;
     }
 
     /**
@@ -205,7 +222,7 @@ public class DockerClient {
             @Nonnull String fieldPath) throws IOException, InterruptedException {
         final String fieldValue = inspect(launchEnv, objectId, fieldPath);
         if (fieldValue == null) {
-            throw new IOException("Cannot retrieve " + fieldPath + " from 'docker inspect" + objectId + "'");
+            throw new IOException("Cannot retrieve " + fieldPath + " from 'docker inspect " + objectId + "'");
         }
         return fieldValue;
     }
@@ -314,7 +331,6 @@ public class DockerClient {
      * @see <a href="http://stackoverflow.com/a/25729598/12916">Discussion</a>
      */
     public Optional<String> getContainerIdIfContainerized() throws IOException, InterruptedException {
-        final Pattern pattern = Pattern.compile(CGROUP_MATCHER_PATTERN);
         if (node == null) {
             return Optional.absent();
         }
@@ -322,9 +338,7 @@ public class DockerClient {
         if (cgroupFile == null || !cgroupFile.exists()) {
             return Optional.absent();
         }
-        String cgroup = cgroupFile.readToString();
-        Matcher matcher = pattern.matcher(cgroup);
-        return matcher.find() ? Optional.of(matcher.group(matcher.groupCount())) : Optional.<String>absent();
+        return ControlGroup.getContainerId(cgroupFile);
     }
 
     public ContainerRecord getContainerRecord(@Nonnull EnvVars launchEnv, String containerId) throws IOException, InterruptedException {

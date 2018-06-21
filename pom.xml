@@ -4,11 +4,11 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>2.21</version>
+        <version>3.12</version>
         <relativePath />
     </parent>
     <artifactId>docker-workflow</artifactId>
-    <version>1.14-SNAPSHOT</version>
+    <version>${revision}${changelist}</version>
     <name>Docker Pipeline</name>
     <description>Build and use Docker containers from pipelines</description>
     <packaging>hpi</packaging>
@@ -16,20 +16,26 @@
     <licenses>
       <license>
         <name>MIT License</name>
-        <url>http://opensource.org/licenses/MIT</url>
+        <url>https://opensource.org/licenses/MIT</url>
       </license>
     </licenses>
     
-    <url>http://wiki.jenkins-ci.org/display/JENKINS/Docker+Pipeline+Plugin</url>
+    <url>https://wiki.jenkins.io/display/JENKINS/Docker+Pipeline+Plugin</url>
     <scm>
       <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
       <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
       <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
-      <tag>HEAD</tag>
+      <tag>${scmTag}</tag>
     </scm>
 
     <properties>
-        <jenkins.version>1.642.3</jenkins.version>
+        <revision>1.18</revision>
+        <changelist>-SNAPSHOT</changelist>
+        <jenkins.version>2.60.3</jenkins.version>
+        <java.level>8</java.level>
+        <workflow-step-api-plugin.version>2.9</workflow-step-api-plugin.version>
+        <workflow-support-plugin.version>2.12</workflow-support-plugin.version>
+        <workflow-cps-plugin.version>2.25</workflow-cps-plugin.version>
     </properties>
     <repositories>
         <repository>
@@ -47,30 +53,62 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>docker-commons</artifactId>
-            <version>1.5</version>
+            <version>1.13</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-cps</artifactId>
-            <version>2.25</version>
+            <version>${workflow-cps-plugin.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-durable-task-step</artifactId>
             <version>2.8</version>
         </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins.workflow</groupId>
+            <artifactId>workflow-basic-steps</artifactId>
+            <version>2.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins.workflow</groupId>
+            <artifactId>workflow-api</artifactId>
+            <version>2.8</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>script-security</artifactId>
+            <version>1.25</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins.workflow</groupId>
+            <artifactId>workflow-step-api</artifactId>
+            <version>${workflow-step-api-plugin.version}</version>
+        </dependency>
+        <dependency> <!-- SemaphoreStep -->
+            <groupId>org.jenkins-ci.plugins.workflow</groupId>
+            <artifactId>workflow-support</artifactId>
+            <version>${workflow-support-plugin.version}</version>
+        </dependency>
         <dependency> <!-- StepConfigTester -->
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-step-api</artifactId>
+            <version>${workflow-step-api-plugin.version}</version>
             <classifier>tests</classifier>
-            <version>2.7</version>
             <scope>test</scope>
         </dependency>
         <dependency> <!-- SemaphoreStep -->
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-support</artifactId>
+            <version>${workflow-support-plugin.version}</version>
             <classifier>tests</classifier>
-            <version>2.12</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins.workflow</groupId>
+            <artifactId>workflow-cps</artifactId>
+            <version>${workflow-cps-plugin.version}</version>
+            <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -80,15 +118,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.jenkins-ci.plugins.workflow</groupId>
-            <artifactId>workflow-basic-steps</artifactId>
-            <version>2.3</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>credentials-binding</artifactId>
-            <version>1.7</version>
+            <version>1.12</version>
             <scope>test</scope>
         </dependency>
         <dependency>

@@ -23,6 +23,9 @@
  */
 package org.jenkinsci.plugins.docker.workflow
 
+/**
+ * Do not copy this idiom unless you fully understand the consequences.
+ */
 class Docker implements Serializable {
 
     private org.jenkinsci.plugins.workflow.cps.CpsScript script
@@ -34,7 +37,7 @@ class Docker implements Serializable {
     public <V> V withRegistry(String url, String credentialsId = null, Closure<V> body) {
         node {
             script.withEnv(["DOCKER_REGISTRY_URL=${url}"]) {
-                script.withDockerRegistry([url: url, credentialsId: credentialsId]) {
+                script.withDockerRegistry(url: url, credentialsId: credentialsId, toolName: script.env.DOCKER_TOOL_NAME) {
                     body()
                 }
             }
@@ -80,14 +83,18 @@ class Docker implements Serializable {
             // Detect custom Dockerfile:
             def dockerfile = "${dir}/Dockerfile"
             for (int i=0; i<parsedArgs.length; i++) {
-                if ((parsedArgs[i] == '-f' || parsedArgs[i] == '--file') && i < (parsedArgs.length - 1)) {
-                    dockerfile = parsedArgs[i+1]
+                def arg = parsedArgs[i]
+                if ((arg == '-f' || arg.startsWith('--file')) && i < (parsedArgs.length - 1)) {
+                    dockerfile = arg.startsWith('--file=') ? arg.split('=')[1] : parsedArgs[i+1]
                     break
                 }
             }
 
-            script.sh "docker build -t ${image} ${args}"
-            script.dockerFingerprintFrom dockerfile: dockerfile, image: image, toolName: script.env.DOCKER_TOOL_NAME
+            def commandLine = "docker build -t ${image} ${args}"
+            def buildArgs = DockerUtils.parseBuildArgs(commandLine)
+
+            script.sh commandLine
+            script.dockerFingerprintFrom dockerfile: dockerfile, image: image, toolName: script.env.DOCKER_TOOL_NAME, buildArgs: buildArgs
             this.image(image)
         }
     }
@@ -111,7 +118,7 @@ class Docker implements Serializable {
         public String imageName() {
             return toQualifiedImageName(id)
         }
-        
+
         public <V> V inside(String args = '', Closure<V> body) {
             docker.node {
                 def toRun = imageName()
@@ -159,8 +166,7 @@ class Docker implements Serializable {
         public void tag(String tagName = parsedId.tag, boolean force = true) {
             docker.node {
                 def taggedImageName = toQualifiedImageName(parsedId.userAndRepo + ':' + tagName)
-                // TODO as of 1.10.0 --force is deprecated; for 1.12+ do not try it even once
-                docker.script.sh "docker tag --force=${force} ${id} ${taggedImageName} || docker tag ${id} ${taggedImageName}"
+                docker.script.sh "docker tag ${id} ${taggedImageName}"
                 return taggedImageName;
             }
         }

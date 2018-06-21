@@ -25,6 +25,7 @@ package org.jenkinsci.plugins.docker.workflow;
 
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.SecretBytes;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import hudson.model.FileParameterValue;
 import hudson.model.Result;
@@ -32,6 +33,8 @@ import hudson.tools.ToolProperty;
 import java.io.File;
 import java.util.Collections;
 import java.util.logging.Level;
+
+import hudson.util.VersionNumber;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.Matchers;
@@ -40,6 +43,7 @@ import org.jenkinsci.lib.configprovider.model.Config;
 import org.jenkinsci.plugins.configfiles.custom.CustomConfig;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
+import org.jenkinsci.plugins.durabletask.BourneShellScript;
 import org.jenkinsci.plugins.plaincredentials.impl.FileCredentialsImpl;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -154,11 +158,12 @@ public class WithContainerStepTest {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
                 DockerTestUtil.assumeDocker();
+                logging.record(BourneShellScript.class, Level.FINE);
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                     "  withDockerContainer('httpd:2.4.12') {\n" +
-                    "    sh \"sleep 5; kill -9 `cat ${pwd tmp: true}/*/pid`\"\n" +
+                    "    sh \"sleep 5; ps -e -o pid,command | egrep '${pwd tmp: true}/durable-.+/script.sh' | fgrep -v grep | sort -n | tr -s ' ' | cut -d ' ' -f2 | xargs kill -9\"\n" +
                     "  }\n" +
                     "}", true));
                 WorkflowRun b = story.j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
@@ -201,7 +206,7 @@ public class WithContainerStepTest {
                 File f = tmp.newFile("some-file");
                 FileUtils.write(f, "some-content");
                 FileItem fi = new FileParameterValue.FileItemImpl(f);
-                FileCredentialsImpl fc = new FileCredentialsImpl(CredentialsScope.GLOBAL, "secretfile", "", fi, fi.getName(), null);
+                FileCredentialsImpl fc = new FileCredentialsImpl(CredentialsScope.GLOBAL, "secretfile", "", fi, fi.getName(), (SecretBytes) null);
                 CredentialsProvider.lookupStores(story.j.jenkins).iterator().next().addCredentials(Domain.global(), fc);
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
@@ -254,12 +259,11 @@ public class WithContainerStepTest {
         });
     }
 
-    @Ignore("TODO no fix yet")
     @Issue("JENKINS-33510")
     @Test public void cd() throws Exception {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                DockerTestUtil.assumeDocker();
+                DockerTestUtil.assumeDocker(new VersionNumber("17.12"));
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +

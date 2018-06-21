@@ -24,23 +24,36 @@
 package org.jenkinsci.plugins.docker.workflow;
 
 import com.google.inject.Inject;
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
+import hudson.Util;
 import hudson.model.Job;
+import hudson.model.Node;
 import hudson.model.TaskListener;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 import org.jenkinsci.plugins.docker.commons.credentials.KeyMaterialFactory;
+import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
+import org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
+import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 public class RegistryEndpointStep extends AbstractStepImpl {
     
     private final @Nonnull DockerRegistryEndpoint registry;
+    private @CheckForNull String toolName;
 
     @DataBoundConstructor public RegistryEndpointStep(@Nonnull DockerRegistryEndpoint registry) {
         assert registry != null;
@@ -49,6 +62,14 @@ public class RegistryEndpointStep extends AbstractStepImpl {
     
     public DockerRegistryEndpoint getRegistry() {
         return registry;
+    }
+
+    public String getToolName() {
+        return toolName;
+    }
+
+    @DataBoundSetter public void setToolName(String toolName) {
+        this.toolName = Util.fixEmpty(toolName);
     }
 
     public static class Execution extends AbstractEndpointStepExecution {
@@ -60,9 +81,11 @@ public class RegistryEndpointStep extends AbstractStepImpl {
         @StepContextParameter private transient FilePath workspace;
         @StepContextParameter private transient Launcher launcher;
         @StepContextParameter private transient TaskListener listener;
+        @StepContextParameter private transient Node node;
+        @StepContextParameter private transient EnvVars envVars;
 
         @Override protected KeyMaterialFactory newKeyMaterialFactory() throws IOException, InterruptedException {
-            return step.registry.newKeyMaterialFactory(job, workspace.getChannel(), launcher, listener);
+            return step.registry.newKeyMaterialFactory(job, workspace, launcher, envVars, listener, DockerTool.getExecutable(step.toolName, node, listener, envVars));
         }
 
     }
@@ -87,6 +110,29 @@ public class RegistryEndpointStep extends AbstractStepImpl {
 
         @Override public boolean isAdvanced() {
             return true;
+        }
+
+        @Override public UninstantiatedDescribable uninstantiate(Step step) throws UnsupportedOperationException {
+            RegistryEndpointStep s = (RegistryEndpointStep) step;
+            Map<String, Object> args = new TreeMap<>();
+            args.put("url", s.registry.getUrl());
+            args.put("credentialsId", s.registry.getCredentialsId());
+            args.put("toolName", s.toolName);
+            args.values().removeAll(Collections.singleton(null));
+            return new UninstantiatedDescribable(args);
+        }
+
+        @Override public Step newInstance(Map<String, Object> arguments) throws Exception {
+            arguments = new HashMap<>(arguments);
+            if (arguments.containsKey("url") || arguments.containsKey("credentialsId")) {
+                if (arguments.containsKey("registry")) {
+                    throw new IllegalArgumentException("cannot mix url/credentialsId with registry");
+                }
+                arguments.put("registry", new DockerRegistryEndpoint((String) arguments.remove("url"), (String) arguments.remove("credentialsId")));
+            } else if (!arguments.containsKey("registry")) {
+                throw new IllegalArgumentException("must specify url/credentialsId (or registry)");
+            }
+            return super.newInstance(arguments);
         }
 
     }
