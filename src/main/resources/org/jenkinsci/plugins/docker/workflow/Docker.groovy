@@ -192,8 +192,9 @@ class Docker implements Serializable {
             this.id = id
         }
 
-        public void stop() {
-            docker.script.sh "docker stop ${id} && docker rm -f ${id}"
+        public void stop(boolean removeVolumes = false) {
+            String dockerRmArgs = removeVolumes ? "-f -v" : "-f"
+            docker.script.sh "docker stop ${id} && docker rm ${dockerRmArgs} ${id}"
         }
 
         public String port(int port) {
