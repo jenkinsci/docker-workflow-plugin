@@ -24,6 +24,9 @@
 package org.jenkinsci.plugins.docker.workflow;
 
 import com.google.common.base.Optional;
+import hudson.slaves.NodeProperty;
+import hudson.slaves.NodePropertyDescriptor;
+import hudson.util.DescribableList;
 import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import com.google.inject.Inject;
 import hudson.AbortException;
@@ -63,6 +66,7 @@ import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.jenkinsci.plugins.docker.commons.fingerprint.DockerFingerprints;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
+import org.jenkinsci.plugins.docker.workflow.client.WindowsDockerClient;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepExecutionImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
@@ -111,7 +115,6 @@ public class WithContainerStep extends AbstractStepImpl {
 
     // TODO switch to GeneralNonBlockingStepExecution
     public static class Execution extends AbstractStepExecutionImpl {
-
         private static final long serialVersionUID = 1;
         @Inject(optional=true) private transient WithContainerStep step;
         @StepContextParameter private transient Launcher launcher;
@@ -138,7 +141,9 @@ public class WithContainerStep extends AbstractStepImpl {
             workspace.mkdirs(); // otherwise it may be owned by root when created for -v
             String ws = workspace.getRemote();
             toolName = step.toolName;
-            DockerClient dockerClient = new DockerClient(launcher, node, toolName);
+            DockerClient dockerClient = launcher.isUnix()
+                ? new DockerClient(launcher, node, toolName)
+                : new WindowsDockerClient(launcher, node, toolName);
 
             VersionNumber dockerVersion = dockerClient.version();
             if (dockerVersion != null) {
@@ -166,7 +171,11 @@ public class WithContainerStep extends AbstractStepImpl {
                     // check if there is any volume which contains the directory
                     boolean found = false;
                     for (String vol : mountedVolumes) {
-                        if (dir.startsWith(vol)) {
+                        boolean dirStartsWithVol = launcher.isUnix()
+                            ? dir.startsWith(vol) // Linux
+                            : dir.toLowerCase().startsWith(vol.toLowerCase()); // Windows
+
+                        if (dirStartsWithVol) {
                             volumesFromContainers.add(containerId.get());
                             found = true;
                             break;
@@ -183,9 +192,10 @@ public class WithContainerStep extends AbstractStepImpl {
                 volumes.put(tmp, tmp);
             }
 
-            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
+            String command = launcher.isUnix() ? "cat" : "cmd.exe";
+            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ command);
             final List<String> ps = dockerClient.listProcess(env, container);
-            if (!ps.contains("cat")) {
+            if (!ps.contains(command)) {
                 listener.error(
                     "The container started but didn't run the expected command. " +
                         "Please double check your ENTRYPOINT does execute the command passed as docker run argument, " +
