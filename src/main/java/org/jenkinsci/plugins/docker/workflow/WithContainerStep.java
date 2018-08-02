@@ -151,6 +151,9 @@ public class WithContainerStep extends AbstractStepImpl {
                     throw new AbortException("The docker version is less than v1.7. Pipeline functions requiring 'docker exec' (e.g. 'docker.inside') or SELinux labeling will not work.");
                 } else if (dockerVersion.isOlderThan(new VersionNumber("1.8"))) {
                     listener.error("The docker version is less than v1.8. Running a 'docker.inside' from inside a container will not work.");
+                } else if (dockerVersion.isOlderThan(new VersionNumber("1.13"))) {
+                    if (!launcher.isUnix())
+                        throw new AbortException("The docker version is less than v1.13. Running a 'docker.inside' from inside a Windows container will not work.");
                 }
             } else {
                 listener.error("Failed to parse docker version. Please note there is a minimum docker version requirement of v1.7.");
