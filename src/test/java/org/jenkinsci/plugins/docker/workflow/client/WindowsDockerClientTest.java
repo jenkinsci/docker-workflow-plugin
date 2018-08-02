@@ -32,18 +32,18 @@ public class WindowsDockerClientTest {
         EnvVars launchEnv = DockerTestUtil.newDockerLaunchEnv();
         String containerId = dockerClient.run(
             launchEnv,
-            "microsoft/nanoserver",
+            "learn/tutorial",
             null,
             null,
             Collections.emptyMap(),
             Collections.emptyList(),
             new EnvVars(),
             dockerClient.whoAmI(),
-            "cmd");
+            "cat");
 
         Assert.assertEquals(64, containerId.length());
         ContainerRecord containerRecord = dockerClient.getContainerRecord(launchEnv, containerId);
-        Assert.assertEquals(dockerClient.inspect(launchEnv, "microsoft/nanoserver", ".Id"), containerRecord.getImageId());
+        Assert.assertEquals(dockerClient.inspect(launchEnv, "learn/tutorial", ".Id"), containerRecord.getImageId());
         Assert.assertTrue(containerRecord.getContainerName().length() > 0);
         Assert.assertTrue(containerRecord.getHost().length() > 0);
         Assert.assertTrue(containerRecord.getCreated() > 1000000000000L);
