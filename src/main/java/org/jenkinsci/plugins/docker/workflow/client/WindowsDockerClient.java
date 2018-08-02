@@ -103,10 +103,10 @@ public class WindowsDockerClient extends DockerClient {
         return Optional.of(getLongIdResult.getOut());
     }
 
-    private LaunchResult launch(@Nonnull EnvVars env, boolean quiet, FilePath workDir, String... args) throws IOException, InterruptedException {
+    private LaunchResult launch(EnvVars env, boolean quiet, FilePath workDir, String... args) throws IOException, InterruptedException {
         return launch(env, quiet, workDir, new ArgumentListBuilder(args));
     }
-    private LaunchResult launch(@Nonnull EnvVars env, boolean quiet, FilePath workDir, ArgumentListBuilder argb) throws IOException, InterruptedException {
+    private LaunchResult launch(EnvVars env, boolean quiet, FilePath workDir, ArgumentListBuilder argb) throws IOException, InterruptedException {
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.log(Level.FINE, "Executing command \"{0}\"", argb);
         }
