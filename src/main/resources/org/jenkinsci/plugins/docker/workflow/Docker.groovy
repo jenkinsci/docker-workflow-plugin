@@ -80,13 +80,21 @@ class Docker implements Serializable {
             def parsedArgs = args.split(/ (?=([^"']*["'][^"']*["'])*[^"']*$)/)
             def dir = parsedArgs[-1] ?: '.'
 
-            // Detect custom Dockerfile:
+            // iterate through arguments to check for extra variables that need to be set
+            def target = null
             def dockerfile = "${dir}/Dockerfile"
             for (int i=0; i<parsedArgs.length; i++) {
                 def arg = parsedArgs[i]
-                if ((arg == '-f' || arg.startsWith('--file')) && i < (parsedArgs.length - 1)) {
+                // determine build target
+                if (arg.startsWith('--target=')) {
+                    target = arg.split('=')[1]
+                }
+                else if (arg.startsWith('--target') && i < (parsedArgs.length - 1)) {
+                    target = parsedArgs[i+1]
+                }
+                // determine custom dockerfile
+                else if ((arg == '-f' || arg.startsWith('--file')) && i < (parsedArgs.length - 1)) {
                     dockerfile = arg.startsWith('--file=') ? arg.split('=')[1] : parsedArgs[i+1]
-                    break
                 }
             }
 
@@ -94,7 +102,7 @@ class Docker implements Serializable {
             def buildArgs = DockerUtils.parseBuildArgs(commandLine)
 
             script.sh commandLine
-            script.dockerFingerprintFrom dockerfile: dockerfile, image: image, toolName: script.env.DOCKER_TOOL_NAME, buildArgs: buildArgs
+            script.dockerFingerprintFrom dockerfile: dockerfile, image: image, toolName: script.env.DOCKER_TOOL_NAME, buildArgs: buildArgs, target: target
             this.image(image)
         }
     }

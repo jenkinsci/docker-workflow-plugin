@@ -50,12 +50,14 @@ public class FromFingerprintStep extends AbstractStepImpl {
 
     private final String dockerfile;
     private final String image;
+    private final String target;
     private String toolName;
     private Map<String, String> buildArgs;
 
-    @DataBoundConstructor public FromFingerprintStep(String dockerfile, String image) {
+    @DataBoundConstructor public FromFingerprintStep(String dockerfile, String image, String target) {
         this.dockerfile = dockerfile;
         this.image = image;
+        this.target = target;
     }
 
     public String getDockerfile() {
@@ -64,6 +66,10 @@ public class FromFingerprintStep extends AbstractStepImpl {
 
     public String getImage() {
         return image;
+    }
+
+    public String getTarget() {
+        return target;
     }
 
     public String getToolName() {
@@ -96,6 +102,7 @@ public class FromFingerprintStep extends AbstractStepImpl {
 
         @Override protected Void run() throws Exception {
             String fromImage = null;
+            String target = step.target;
             FilePath dockerfile = workspace.child(step.dockerfile);
             InputStream is = dockerfile.read();
             try {
@@ -108,8 +115,12 @@ public class FromFingerprintStep extends AbstractStepImpl {
                             continue;
                         }
                         if (line.startsWith("FROM ")) {
-                            fromImage = line.substring(5);
-                            continue;
+                            String[] parts = line.split("\\s+");
+                            // if target is set, we want to find the line which matches "FROM x AS target"
+                            if (target == null || (parts.length == 4 && parts[3] == target)) {
+                                fromImage = parts[1];
+                                continue;
+                            }
                         }
                     }
                 } finally {
@@ -119,7 +130,11 @@ public class FromFingerprintStep extends AbstractStepImpl {
                 is.close();
             }
             if (fromImage == null) {
-                throw new AbortException("could not find FROM instruction in " + dockerfile);
+                String msg = "could not find FROM instruction in " + dockerfile;
+                if (target != null) {
+                    msg = msg + "for target " + target;
+                }
+                throw new AbortException(msg);
             }
             if (step.getBuildArgs() != null) {
                 // Fortunately, Docker uses the same EnvVar syntax as Jenkins :)
