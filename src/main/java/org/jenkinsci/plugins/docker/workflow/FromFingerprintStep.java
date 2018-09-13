@@ -45,6 +45,7 @@ import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepEx
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.apache.commons.validator.routines.UrlValidator;
 
 public class FromFingerprintStep extends AbstractStepImpl {
 
@@ -96,30 +97,36 @@ public class FromFingerprintStep extends AbstractStepImpl {
 
         @Override protected Void run() throws Exception {
             String fromImage = null;
-            FilePath dockerfile = workspace.child(step.dockerfile);
-            InputStream is = dockerfile.read();
-            try {
-                BufferedReader r = new BufferedReader(new InputStreamReader(is, "ISO-8859-1")); // encoding probably irrelevant since image/tag names must be ASCII
+            UrlValidator urlValidator = new UrlValidator();
+            if (urlValidator.isValid(step.dockerfile)) {
+                fromImage = "scratch";
+            }
+            else {
+                FilePath dockerfile = workspace.child(step.dockerfile);
+                InputStream is = dockerfile.read();
                 try {
-                    String line;
-                    while ((line = r.readLine()) != null) {
-                        line = line.trim();
-                        if (line.startsWith("#")) {
-                            continue;
+                    BufferedReader r = new BufferedReader(new InputStreamReader(is, "ISO-8859-1")); // encoding probably irrelevant since image/tag names must be ASCII
+                    try {
+                        String line;
+                        while ((line = r.readLine()) != null) {
+                            line = line.trim();
+                            if (line.startsWith("#")) {
+                                continue;
+                            }
+                            if (line.startsWith("FROM ")) {
+                                fromImage = line.substring(5);
+                                continue;
+                            }
                         }
-                        if (line.startsWith("FROM ")) {
-                            fromImage = line.substring(5);
-                            continue;
-                        }
+                    } finally {
+                        r.close();
                     }
                 } finally {
-                    r.close();
+                    is.close();
                 }
-            } finally {
-                is.close();
             }
             if (fromImage == null) {
-                throw new AbortException("could not find FROM instruction in " + dockerfile);
+                throw new AbortException("could not find FROM instruction in " + step.dockerfile);
             }
             if (step.getBuildArgs() != null) {
                 // Fortunately, Docker uses the same EnvVar syntax as Jenkins :)
