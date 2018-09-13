@@ -119,7 +119,7 @@ public class FromFingerprintStep extends AbstractStepImpl {
                 is.close();
             }
             if (fromImage == null) {
-                throw new AbortException("could not find FROM instruction in " + dockerfile);
+                fromImage = "scratch";
             }
             if (step.getBuildArgs() != null) {
                 // Fortunately, Docker uses the same EnvVar syntax as Jenkins :)
