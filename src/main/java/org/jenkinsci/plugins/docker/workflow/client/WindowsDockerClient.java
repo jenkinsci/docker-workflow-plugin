@@ -103,6 +103,14 @@ public class WindowsDockerClient extends DockerClient {
         return Optional.of(getLongIdResult.getOut());
     }
 
+    @Override
+    public String whoAmI() throws IOException, InterruptedException {
+        try (ByteArrayOutputStream userId = new ByteArrayOutputStream()) {
+            launcher.launch().cmds("whoami").quiet(true).stdout(userId).start().joinWithTimeout(CLIENT_TIMEOUT, TimeUnit.SECONDS, launcher.getListener());
+            return userId.toString();
+        }
+    }
+
     private LaunchResult launch(EnvVars env, boolean quiet, FilePath workDir, String... args) throws IOException, InterruptedException {
         return launch(env, quiet, workDir, new ArgumentListBuilder(args));
     }
