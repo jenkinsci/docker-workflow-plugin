@@ -107,7 +107,7 @@ public class WindowsDockerClient extends DockerClient {
     public String whoAmI() throws IOException, InterruptedException {
         try (ByteArrayOutputStream userId = new ByteArrayOutputStream()) {
             launcher.launch().cmds("whoami").quiet(true).stdout(userId).start().joinWithTimeout(CLIENT_TIMEOUT, TimeUnit.SECONDS, launcher.getListener());
-            return userId.toString();
+            return userId.toString(Charset.defaultCharset().name()).trim();
         }
     }
 
