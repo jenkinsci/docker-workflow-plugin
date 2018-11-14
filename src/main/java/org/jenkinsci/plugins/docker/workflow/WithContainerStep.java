@@ -252,7 +252,8 @@ public class WithContainerStep extends AbstractStepImpl {
                                     prefix.add("--workdir");
                                     prefix.add(path);
                                 } else {
-                                    launcher.getListener().getLogger().println("Docker version is older than 17.12, working directory will be " + ws + " not " + path);
+                                    String safePath = path.replace("'", "'\"'\"'");
+                                    starter.cmds().addAll(0, Arrays.asList("sh", "-c", "cd '" + safePath + "'; \"$@\"", "--"));
                                 }
                             }
                         }
