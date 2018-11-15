@@ -253,7 +253,7 @@ public class WithContainerStep extends AbstractStepImpl {
                                     prefix.add(path);
                                 } else {
                                     String safePath = path.replace("'", "'\"'\"'");
-                                    starter.cmds().addAll(0, Arrays.asList("sh", "-c", "cd '" + safePath + "'; \"$@\"", "--"));
+                                    starter.cmds().addAll(0, Arrays.asList("sh", "-c", "cd '" + safePath + "'; exec \"$@\"", "--"));
                                 }
                             }
                         }
