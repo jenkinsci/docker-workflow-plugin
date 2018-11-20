@@ -23,11 +23,8 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
-import java.util.AbstractMap.SimpleEntry;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.tools.ant.types.Commandline;
 
@@ -36,16 +33,19 @@ public final class DockerUtils {
         // utility class
     }
 
-    public static Map<String, String> parseBuildArgs(String commandLine) {
+    public static Map<String, String> parseBuildArgs(final Dockerfile dockerfile, final String commandLine) {
         // this also accounts for quote, escapes, ...
         Commandline parsed = new Commandline(commandLine);
         Map<String, String> result = new HashMap<>();
+        if (dockerfile != null) {
+            result.putAll(dockerfile.getArgs());
+        }
 
         String[] arguments = parsed.getArguments();
         for (int i = 0; i < arguments.length; i++) {
             String arg = arguments[i];
             if (arg.equals("--build-arg")) {
-                if (arguments.length < i + 1) {
+                if (arguments.length <= i + 1) {
                     throw new IllegalArgumentException("Missing parameter for --build-arg: " + commandLine);
                 }
                 String keyVal = arguments[i+1];
@@ -62,20 +62,4 @@ public final class DockerUtils {
         }
         return result;
     }
-
-    public static SimpleEntry<String, String> splitArgs(String argString) {
-        //TODO: support complex single/double quotation marks
-        Pattern p = Pattern.compile("^['\"]?(\\w+)=(.*?)['\"]?$");
-
-        Matcher matcher = p.matcher(argString.trim());
-        if (!matcher.matches()) {
-            throw new IllegalArgumentException("Illegal --build-arg parameter syntax: " + argString);
-        }
-
-        String key = matcher.group(1);
-        String value = matcher.group(2);
-
-        return new SimpleEntry<>(key, value);
-    }
-
 }
