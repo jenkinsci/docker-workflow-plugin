@@ -29,27 +29,32 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jenkinsci.plugins.docker.commons.credentials.KeyMaterial;
 import org.jenkinsci.plugins.docker.commons.credentials.KeyMaterialFactory;
-import org.jenkinsci.plugins.workflow.steps.AbstractStepExecutionImpl;
-import org.jenkinsci.plugins.workflow.steps.BodyExecutionCallback;
 import org.jenkinsci.plugins.workflow.steps.EnvironmentExpander;
+import org.jenkinsci.plugins.workflow.steps.GeneralNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 
-/** @deprecated only here for binary compatibility */
-@Deprecated
-abstract class AbstractEndpointStepExecution extends AbstractStepExecutionImpl {
+abstract class AbstractEndpointStepExecution2 extends GeneralNonBlockingStepExecution {
 
     private static final long serialVersionUID = 1;
 
-    protected KeyMaterialFactory newKeyMaterialFactory() throws IOException, InterruptedException {
-        throw new AssertionError();
+    protected AbstractEndpointStepExecution2(StepContext context) {
+        super(context);
     }
+
+    protected abstract KeyMaterialFactory newKeyMaterialFactory() throws IOException, InterruptedException;
 
     @Override public final boolean start() throws Exception {
-        throw new AssertionError();
+        run(this::doStart);
+        return false;
     }
 
-    @Override public final void stop(Throwable cause) throws Exception {
-        // should not need to do anything special
+    private void doStart() throws Exception {
+        KeyMaterialFactory keyMaterialFactory = newKeyMaterialFactory();
+        KeyMaterial material = keyMaterialFactory.materialize();
+        getContext().newBodyInvoker().
+                withContext(EnvironmentExpander.merge(getContext().get(EnvironmentExpander.class), new Expander(material))).
+                withCallback(new Callback(material)).
+                start();
     }
 
     private static class Expander extends EnvironmentExpander {
@@ -67,7 +72,7 @@ abstract class AbstractEndpointStepExecution extends AbstractStepExecutionImpl {
 
     }
 
-    private static class Callback extends BodyExecutionCallback.TailCall {
+    private class Callback extends TailCall {
 
         private static final long serialVersionUID = 1;
         private final KeyMaterial material;
@@ -80,7 +85,7 @@ abstract class AbstractEndpointStepExecution extends AbstractStepExecutionImpl {
             try {
                 material.close();
             } catch (IOException x) {
-                Logger.getLogger(AbstractEndpointStepExecution.class.getName()).log(Level.WARNING, null, x);
+                Logger.getLogger(AbstractEndpointStepExecution2.class.getName()).log(Level.WARNING, null, x);
             }
         }
 

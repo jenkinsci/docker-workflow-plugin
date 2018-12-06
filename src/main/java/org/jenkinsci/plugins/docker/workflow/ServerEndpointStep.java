@@ -23,20 +23,22 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
-import com.google.inject.Inject;
+import com.google.common.collect.ImmutableSet;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.model.Job;
 import java.io.IOException;
+import java.util.Set;
 import javax.annotation.Nonnull;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerServerEndpoint;
 import org.jenkinsci.plugins.docker.commons.credentials.KeyMaterialFactory;
-import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
-import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
-import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
+import org.jenkinsci.plugins.workflow.steps.Step;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
+import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-public class ServerEndpointStep extends AbstractStepImpl {
+public class ServerEndpointStep extends Step {
     
     private final @Nonnull DockerServerEndpoint server;
 
@@ -49,25 +51,36 @@ public class ServerEndpointStep extends AbstractStepImpl {
         return server;
     }
 
-    public static class Execution extends AbstractEndpointStepExecution {
+    @Override public StepExecution start(StepContext context) throws Exception {
+        return new Execution2(this, context);
+    }
+
+    private static final class Execution2 extends AbstractEndpointStepExecution2 {
 
         private static final long serialVersionUID = 1;
 
-        @Inject(optional=true) private transient ServerEndpointStep step;
-        @StepContextParameter private transient Job<?,?> job;
-        @StepContextParameter private transient FilePath workspace;
+        private transient final ServerEndpointStep step;
+
+        Execution2(ServerEndpointStep step, StepContext context) {
+            super(context);
+            this.step = step;
+        }
 
         @Override protected KeyMaterialFactory newKeyMaterialFactory() throws IOException, InterruptedException {
-            return step.server.newKeyMaterialFactory(job, workspace.getChannel());
+            return step.server.newKeyMaterialFactory(getContext().get(Job.class), getContext().get(FilePath.class).getChannel());
         }
 
     }
 
-    @Extension public static class DescriptorImpl extends AbstractStepDescriptorImpl {
+    /** @deprecated only here for binary compatibility */
+    @Deprecated
+    public static class Execution extends AbstractEndpointStepExecution {
 
-        public DescriptorImpl() {
-            super(Execution.class);
-        }
+        private static final long serialVersionUID = 1;
+
+    }
+
+    @Extension public static class DescriptorImpl extends StepDescriptor {
 
         @Override public String getFunctionName() {
             return "withDockerServer";
@@ -85,8 +98,11 @@ public class ServerEndpointStep extends AbstractStepImpl {
             return true;
         }
 
-        // TODO allow DockerServerEndpoint fields to be inlined, as in RegistryEndpointStep, so Docker.groovy can say simply: script.withDockerServer(uri: uri, credentialsId: credentialsId) {…}
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return ImmutableSet.of(Job.class, FilePath.class);
+        }
 
+        // TODO allow DockerServerEndpoint fields to be inlined, as in RegistryEndpointStep, so Docker.groovy can say simply: script.withDockerServer(uri: uri, credentialsId: credentialsId) {…}
     }
 
 }

@@ -23,7 +23,7 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
-import com.google.inject.Inject;
+import com.google.common.collect.ImmutableSet;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -43,14 +44,14 @@ import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 import org.jenkinsci.plugins.docker.commons.credentials.KeyMaterialFactory;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 import org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable;
-import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
-import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.Step;
-import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
+import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
-public class RegistryEndpointStep extends AbstractStepImpl {
+public class RegistryEndpointStep extends Step {
     
     private final @Nonnull DockerRegistryEndpoint registry;
     private @CheckForNull String toolName;
@@ -72,29 +73,39 @@ public class RegistryEndpointStep extends AbstractStepImpl {
         this.toolName = Util.fixEmpty(toolName);
     }
 
-    public static class Execution extends AbstractEndpointStepExecution {
+    @Override public StepExecution start(StepContext context) throws Exception {
+        return new Execution2(this, context);
+    }
+
+    private static final class Execution2 extends AbstractEndpointStepExecution2 {
 
         private static final long serialVersionUID = 1;
 
-        @Inject(optional=true) private transient RegistryEndpointStep step;
-        @StepContextParameter private transient Job<?,?> job;
-        @StepContextParameter private transient FilePath workspace;
-        @StepContextParameter private transient Launcher launcher;
-        @StepContextParameter private transient TaskListener listener;
-        @StepContextParameter private transient Node node;
-        @StepContextParameter private transient EnvVars envVars;
+        private transient RegistryEndpointStep step;
+
+        Execution2(RegistryEndpointStep step, StepContext context) {
+            super(context);
+            this.step = step;
+        }
 
         @Override protected KeyMaterialFactory newKeyMaterialFactory() throws IOException, InterruptedException {
-            return step.registry.newKeyMaterialFactory(job, workspace, launcher, envVars, listener, DockerTool.getExecutable(step.toolName, node, listener, envVars));
+            TaskListener listener = getContext().get(TaskListener.class);
+            EnvVars envVars = getContext().get(EnvVars.class);
+            String executable = DockerTool.getExecutable(step.toolName, getContext().get(Node.class), listener, envVars);
+            return step.registry.newKeyMaterialFactory(getContext().get(Job.class), getContext().get(FilePath.class), getContext().get(Launcher.class), envVars, listener, executable);
         }
 
     }
 
-    @Extension public static class DescriptorImpl extends AbstractStepDescriptorImpl {
+    /** @deprecated only here for binary compatibility */
+    @Deprecated
+    public static class Execution extends AbstractEndpointStepExecution {
 
-        public DescriptorImpl() {
-            super(Execution.class);
-        }
+        private static final long serialVersionUID = 1;
+
+    }
+
+    @Extension public static class DescriptorImpl extends StepDescriptor {
 
         @Override public String getFunctionName() {
             return "withDockerRegistry";
@@ -133,6 +144,11 @@ public class RegistryEndpointStep extends AbstractStepImpl {
                 throw new IllegalArgumentException("must specify url/credentialsId (or registry)");
             }
             return super.newInstance(arguments);
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return ImmutableSet.of(TaskListener.class, EnvVars.class, Node.class, Job.class, FilePath.class, Launcher.class);
         }
 
     }

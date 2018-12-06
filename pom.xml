@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>3.23</version>
+        <version>3.29</version>
         <relativePath />
     </parent>
     <artifactId>docker-workflow</artifactId>
@@ -33,7 +33,7 @@
         <changelist>-SNAPSHOT</changelist>
         <jenkins.version>2.60.3</jenkins.version>
         <java.level>8</java.level>
-        <workflow-step-api-plugin.version>2.9</workflow-step-api-plugin.version>
+        <workflow-step-api-plugin.version>2.17-rc491.f7bec8d9dc29</workflow-step-api-plugin.version> <!-- TODO https://github.com/jenkinsci/workflow-step-api-plugin/pull/38 -->
         <workflow-support-plugin.version>2.12</workflow-support-plugin.version>
         <workflow-cps-plugin.version>2.25</workflow-cps-plugin.version>
     </properties>
