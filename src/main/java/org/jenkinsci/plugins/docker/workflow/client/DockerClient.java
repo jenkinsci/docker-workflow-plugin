@@ -115,7 +115,11 @@ public class DockerClient {
             argb.add("-w", workdir);
         }
         for (Map.Entry<String, String> volume : volumes.entrySet()) {
-            argb.add("-v", volume.getKey() + ":" + volume.getValue() + ":rw,z");
+            String volumeModeString = ":rw,z";
+            if (System.getProperty("os.name").contains("windows")){
+                volumeModeString = ":rw";
+            }
+            argb.add("-v", volume.getKey() + ":" + volume.getValue() + volumeModeString);
         }
         for (String containerId : volumesFromContainers) {
             argb.add("--volumes-from", containerId);
