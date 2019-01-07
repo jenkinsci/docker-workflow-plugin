@@ -199,7 +199,7 @@ class Docker implements Serializable {
             docker.script.sh(script: "docker port ${id} ${port}", returnStdout: true).trim()
         }
         
-        public String inspect(string format = "") {
+        public String inspect(String format = "") {
         	if (format != "") {
         		docker.script.sh(script: "docker inspect ${id} --format ${format}", returnStdout: true).trim()        	                  
         	} else {
