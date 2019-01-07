@@ -198,6 +198,15 @@ class Docker implements Serializable {
         public String port(int port) {
             docker.script.sh(script: "docker port ${id} ${port}", returnStdout: true).trim()
         }
+        
+        public String inspect(string format = "") {
+        	if (format != "") {
+        		docker.script.sh(script: "docker inspect ${id} --format ${format}", returnStdout: true).trim()        	                  
+        	} else {
+        		docker.script.sh(script: "docker inspect ${id}", returnStdout: true).trim()        	      
+        	}
+        }
+
     }
 
 }
