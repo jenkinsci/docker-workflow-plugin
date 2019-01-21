@@ -26,9 +26,10 @@ package org.jenkinsci.plugins.docker.workflow;
 import com.google.inject.Inject;
 import hudson.Extension;
 import hudson.FilePath;
-import hudson.model.Job;
 import java.io.IOException;
 import javax.annotation.Nonnull;
+
+import hudson.model.Run;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerServerEndpoint;
 import org.jenkinsci.plugins.docker.commons.credentials.KeyMaterialFactory;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
@@ -54,11 +55,11 @@ public class ServerEndpointStep extends AbstractStepImpl {
         private static final long serialVersionUID = 1;
 
         @Inject(optional=true) private transient ServerEndpointStep step;
-        @StepContextParameter private transient Job<?,?> job;
+        @StepContextParameter private transient Run run;
         @StepContextParameter private transient FilePath workspace;
 
         @Override protected KeyMaterialFactory newKeyMaterialFactory() throws IOException, InterruptedException {
-            return step.server.newKeyMaterialFactory(job, workspace.getChannel());
+            return step.server.newKeyMaterialFactory(run, workspace.getChannel());
         }
 
     }
