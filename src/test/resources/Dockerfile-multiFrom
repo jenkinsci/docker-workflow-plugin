@@ -1,0 +1,6 @@
+FROM node:carbon AS base
+WORKDIR /app
+FROM base AS dependencies
+FROM dependencies AS build
+FROM node:8.9-alpine AS release
+CMD ["sh"]

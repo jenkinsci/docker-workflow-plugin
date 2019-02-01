@@ -30,20 +30,20 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 
 public final class Dockerfile {
 
     private static final String ARG = "ARG";
     private static final String FROM = "FROM ";
+    private static final String AS = " AS ";
 
     private FilePath dockerfilePath;
     private LinkedList<String> froms;
-    private Map<String,String> args;
+    private Map<String, String> args;
 
-    @DataBoundConstructor public Dockerfile(FilePath dockerfilePath) throws IOException, InterruptedException {
+    @DataBoundConstructor
+    public Dockerfile(FilePath dockerfilePath) throws IOException, InterruptedException {
         this.dockerfilePath = dockerfilePath;
         this.froms = new LinkedList<>();
         this.args = new HashMap<>();
@@ -59,6 +59,7 @@ public final class Dockerfile {
     }
 
     private void parse() throws IOException, InterruptedException {
+        Set<String> fromAliases = new HashSet<>();
         InputStream is = dockerfilePath.read();
         try {
             // encoding probably irrelevant since image/tag names must be ASCII
@@ -77,7 +78,17 @@ public final class Dockerfile {
                     }
 
                     if (line.startsWith(FROM)) {
-                        froms.add(line.substring(5));
+                        String from = line.substring(5).trim();
+                        String alias = "";
+                        int indexAs = from.toUpperCase().lastIndexOf(AS);
+                        if (indexAs > 0) {
+                            alias = from.substring(indexAs + 4).trim();
+                            from = from.substring(0, indexAs).trim();
+                        }
+                        if (!fromAliases.contains(from)) {
+                            froms.add(from);
+                        }
+                        fromAliases.add(alias);
                         continue;
                     }
                 }
