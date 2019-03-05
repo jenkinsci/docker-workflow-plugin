@@ -28,17 +28,40 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
+import com.google.common.collect.ImmutableSet;
+import hudson.Launcher;
+import hudson.LauncherDecorator;
+import hudson.model.Computer;
+import hudson.model.Item;
+import hudson.model.Node;
+import hudson.model.User;
+import hudson.security.ACL;
+import hudson.security.ACLContext;
+import jenkins.model.Jenkins;
+import jenkins.security.QueueItemAuthenticatorConfiguration;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.SnippetizerTester;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.jenkinsci.plugins.workflow.steps.StepConfigTester;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.steps.*;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.MockAuthorizationStrategy;
+import org.jvnet.hudson.test.MockQueueItemAuthenticator;
+import org.jvnet.hudson.test.TestExtension;
+import org.kohsuke.stapler.DataBoundConstructor;
+
+import javax.annotation.Nonnull;
+import java.io.Serializable;
+import java.util.Collections;
+import java.util.Set;
 
 public class RegistryEndpointStepTest {
 
@@ -83,4 +106,114 @@ public class RegistryEndpointStepTest {
         }
     }
 
+    @Test
+    public void stepExecutionWithCredentials() throws Exception {
+        IdCredentials registryCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "registryCreds", null, "me", "pass");
+        CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), registryCredentials);
+
+        WorkflowJob p = r.createProject(WorkflowJob.class, "prj");
+        p.setDefinition(new CpsFlowDefinition(
+                "node {\n" +
+                        "  mockDockerLoginWithEcho {\n" +
+                        "    withDockerRegistry(url: 'https://my-reg:1234', credentialsId: 'registryCreds') {\n" +
+                        "       echo 'config would be set up to connect to https://my-reg:1234'\n" +
+                        "    }\n" +
+                        "  }\n" +
+                        "}", true));
+        WorkflowRun b = r.buildAndAssertSuccess(p);
+        r.assertLogContains("docker login -u me -p pass https://my-reg:1234", r.assertBuildStatusSuccess(r.waitForCompletion(b)));
+        r.assertLogContains("config would be set up to connect to https://my-reg:1234", b);
+    }
+
+    @Test
+    public void stepExecutionWithCredentialsAndQueueItemAuthenticator() throws Exception {
+
+        r.getInstance().setSecurityRealm(r.createDummySecurityRealm());
+        MockAuthorizationStrategy auth = new MockAuthorizationStrategy()
+                .grant(Jenkins.READ).everywhere().to("alice")
+                .grant(Computer.BUILD).everywhere().to("alice")
+                .grant(Item.CONFIGURE).everywhere().to("alice");
+        r.getInstance().setAuthorizationStrategy(auth);
+
+        IdCredentials registryCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "registryCreds", null, "me", "pass");
+        CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), registryCredentials);
+
+        WorkflowJob p = r.createProject(WorkflowJob.class, "prj");
+        p.setDefinition(new CpsFlowDefinition(
+                "node {\n" +
+                        "  mockDockerLoginWithEcho {\n" +
+                        "    withDockerRegistry(url: 'https://my-reg:1234', credentialsId: 'registryCreds') {\n" +
+                        "       echo 'config would be set up to connect to https://my-reg:1234'\n" +
+                        "    }\n" +
+                        "  }\n" +
+                        "}", true));
+
+        QueueItemAuthenticatorConfiguration.get().getAuthenticators().replace(new MockQueueItemAuthenticator(
+                Collections.singletonMap(p.getName(), User.getById("alice", true).impersonate())));
+
+        WorkflowRun b;
+        try (ACLContext as = ACL.as(User.getById("alice", false))) {
+            b = r.buildAndAssertSuccess(p);
+        }
+        r.assertLogContains("docker login -u me -p pass https://my-reg:1234", b);
+        r.assertLogContains("config would be set up to connect to https://my-reg:1234", b);
+    }
+
+    public static class MockLauncherWithEchoStep extends Step {
+        
+        @DataBoundConstructor
+        public MockLauncherWithEchoStep() {}
+
+        @Override
+        public StepExecution start(StepContext stepContext) {
+            return new Execution(this, stepContext);
+        }
+
+        public static class Execution extends StepExecution {
+            private static final long serialVersionUID = 1;
+
+            private final transient MockLauncherWithEchoStep step;
+
+            Execution(MockLauncherWithEchoStep step, StepContext context) {
+                super(context);
+                this.step = step;
+            }
+            
+            @Override public boolean start() throws Exception {
+                getContext().newBodyInvoker().
+                        withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator())).
+                        withCallback(BodyExecutionCallback.wrap(getContext())).
+                        start();
+                return false;
+            }
+
+            @Override
+            public void stop(@Nonnull Throwable throwable) {
+                
+            }
+        }
+        private static class Decorator extends LauncherDecorator implements Serializable {
+            private static final long serialVersionUID = 1;
+            @Override public Launcher decorate(Launcher launcher, Node node) {
+                return launcher.decorateByPrefix("echo");
+            }
+        }
+        @TestExtension public static class DescriptorImpl extends StepDescriptor {
+
+            @Override
+            public Set<? extends Class<?>> getRequiredContext() {
+                return ImmutableSet.of(Launcher.class);
+            }
+
+            @Override public String getFunctionName() {
+                return "mockDockerLoginWithEcho";
+            }
+            @Override public String getDisplayName() {
+                return "Mock Docker Login with Echo";
+            }
+            @Override public boolean takesImplicitBlockArgument() {
+                return true;
+            }
+        }
+    }
 }

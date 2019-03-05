@@ -30,6 +30,14 @@ import com.cloudbees.plugins.credentials.domains.Domain;
 import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
+
+import hudson.model.Computer;
+import hudson.model.Item;
+import hudson.model.User;
+import hudson.security.ACL;
+import hudson.security.ACLContext;
+import jenkins.model.Jenkins;
+import jenkins.security.QueueItemAuthenticatorConfiguration;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerServerCredentials;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerServerEndpoint;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -46,6 +54,8 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.BuildWatcher;
+import org.jvnet.hudson.test.MockAuthorizationStrategy;
+import org.jvnet.hudson.test.MockQueueItemAuthenticator;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
 
 public class ServerEndpointStepTest {
@@ -97,6 +107,58 @@ public class ServerEndpointStepTest {
                 WorkflowJob p = story.j.jenkins.getItemByFullName("prj", WorkflowJob.class);
                 WorkflowRun b = p.getLastBuild();
                 story.j.assertLogContains("would be connecting to tcp://host:1234", story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
+            }
+        });
+    }
+
+    @Test public void stepExecutionWithCredentials() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                IdCredentials serverCredentials = new DockerServerCredentials(CredentialsScope.GLOBAL, "serverCreds", null, "clientKey", "clientCertificate", "serverCaCertificate");
+                CredentialsProvider.lookupStores(story.j.jenkins).iterator().next().addCredentials(Domain.global(), serverCredentials);
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                        "node {\n" +
+                                "  withDockerServer(server: [uri: 'tcp://host:1234', credentialsId: 'serverCreds']) {\n" +
+                                "    sh 'echo would be connecting to $DOCKER_HOST'\n" +
+                                "  }\n" +
+                                "}", true));
+                WorkflowRun b = story.j.buildAndAssertSuccess(p);
+                story.j.assertLogContains("would be connecting to tcp://host:1234", b);
+            }
+        });
+    }
+    
+    @Test public void stepExecutionWithCredentialsAndQueueItemAuthenticator() {
+        story.addStep(new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                story.j.getInstance().setSecurityRealm(story.j.createDummySecurityRealm());
+                MockAuthorizationStrategy auth = new MockAuthorizationStrategy()
+                        .grant(Jenkins.READ).everywhere().to("alice")
+                        .grant(Computer.BUILD).everywhere().to("alice")
+                        .grant(Item.CONFIGURE).everywhere().to("alice");
+                story.j.getInstance().setAuthorizationStrategy(auth);
+                
+                IdCredentials serverCredentials = new DockerServerCredentials(CredentialsScope.GLOBAL, "serverCreds", null, "clientKey", "clientCertificate", "serverCaCertificate");
+                CredentialsProvider.lookupStores(story.j.jenkins).iterator().next().addCredentials(Domain.global(), serverCredentials);
+                
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                        "node {\n" +
+                                "  withDockerServer(server: [uri: 'tcp://host:1234', credentialsId: 'serverCreds']) {\n" +
+                                "    sh 'echo would be connecting to $DOCKER_HOST'\n" +
+                                "  }\n" +
+                                "}", true));
+
+                QueueItemAuthenticatorConfiguration.get().getAuthenticators().replace(new MockQueueItemAuthenticator(
+                        Collections.singletonMap(p.getName(), User.getById("alice", true).impersonate())));
+
+                WorkflowRun b;
+                try (ACLContext as = ACL.as(User.getById("alice", false))) {
+                    b = story.j.buildAndAssertSuccess(p);
+                }
+                story.j.assertLogContains("would be connecting to tcp://host:1234", b);
             }
         });
     }
