@@ -46,6 +46,7 @@ import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.steps.*;
 
+import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeNotWindows;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -108,6 +109,8 @@ public class RegistryEndpointStepTest {
 
     @Test
     public void stepExecutionWithCredentials() throws Exception {
+        assumeNotWindows();
+        
         IdCredentials registryCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "registryCreds", null, "me", "pass");
         CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), registryCredentials);
 
@@ -127,6 +130,7 @@ public class RegistryEndpointStepTest {
 
     @Test
     public void stepExecutionWithCredentialsAndQueueItemAuthenticator() throws Exception {
+        assumeNotWindows();
 
         r.getInstance().setSecurityRealm(r.createDummySecurityRealm());
         MockAuthorizationStrategy auth = new MockAuthorizationStrategy()

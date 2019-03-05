@@ -114,6 +114,7 @@ public class ServerEndpointStepTest {
     @Test public void stepExecutionWithCredentials() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
+                assumeNotWindows();
                 IdCredentials serverCredentials = new DockerServerCredentials(CredentialsScope.GLOBAL, "serverCreds", null, "clientKey", "clientCertificate", "serverCaCertificate");
                 CredentialsProvider.lookupStores(story.j.jenkins).iterator().next().addCredentials(Domain.global(), serverCredentials);
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
@@ -133,6 +134,7 @@ public class ServerEndpointStepTest {
         story.addStep(new Statement() {
             @Override
             public void evaluate() throws Throwable {
+                assumeNotWindows();
                 story.j.getInstance().setSecurityRealm(story.j.createDummySecurityRealm());
                 MockAuthorizationStrategy auth = new MockAuthorizationStrategy()
                         .grant(Jenkins.READ).everywhere().to("alice")
