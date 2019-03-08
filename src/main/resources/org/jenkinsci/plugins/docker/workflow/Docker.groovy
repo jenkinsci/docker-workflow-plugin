@@ -86,6 +86,8 @@ class Docker implements Serializable {
                 def arg = parsedArgs[i]
                 if ((arg == '-f' || arg.startsWith('--file')) && i < (parsedArgs.length - 1)) {
                     dockerfile = arg.startsWith('--file=') ? arg.split('=')[1] : parsedArgs[i+1]
+                    // Trim leading and trailing quotes
+                    dockerfile = dockerfile.replaceAll('''^'|'$|^"|"$''', "")
                     break
                 }
             }
