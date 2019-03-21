@@ -59,6 +59,7 @@ import javax.annotation.Nonnull;
 
 import hudson.util.VersionNumber;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.jenkinsci.plugins.docker.commons.fingerprint.DockerFingerprints;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
@@ -243,6 +244,7 @@ public class WithContainerStep extends AbstractStepImpl {
                         throw new IOException(x);
                     }
                     List<String> prefix = new ArrayList<>(Arrays.asList(executable, "exec"));
+                    List<Boolean> masksPrefixList = new ArrayList<>(Arrays.asList(false, false));
                     if (ws != null) {
                         FilePath cwd = starter.pwd();
                         if (cwd != null) {
@@ -250,7 +252,9 @@ public class WithContainerStep extends AbstractStepImpl {
                             if (!path.equals(ws)) {
                                 if (hasWorkdir) {
                                     prefix.add("--workdir");
+                                    masksPrefixList.add(false);
                                     prefix.add(path);
+                                    masksPrefixList.add(false);
                                 } else {
                                     launcher.getListener().getLogger().println("Docker version is older than 17.12, working directory will be " + ws + " not " + path);
                                 }
@@ -271,19 +275,34 @@ public class WithContainerStep extends AbstractStepImpl {
                     if (hasEnv) {
                         for (String e : envReduced) {
                             prefix.add("--env");
+                            masksPrefixList.add(false);
                             prefix.add(e);
+                            masksPrefixList.add(true);
                         }
                         prefix.add(container);
+                        masksPrefixList.add(false);
                     } else {
                         prefix.add(container);
+                        masksPrefixList.add(false);
                         prefix.add("env");
+                        masksPrefixList.add(false);
                         prefix.addAll(envReduced);
+                        masksPrefixList.addAll(envReduced.stream()
+                                                         .map(v -> true)
+                                                         .collect(Collectors.toList()));
                     }
 
                     // Adapted from decorateByPrefix:
                     starter.cmds().addAll(0, prefix);
                     if (starter.masks() != null) {
                         boolean[] masks = new boolean[starter.masks().length + prefix.size()];
+                        boolean[] masksPrefix = new boolean[masksPrefixList.size()];
+
+                        for (int i = 0; i < masksPrefix.length; i++) {
+                            masksPrefix[i] = masksPrefixList.get(i);
+                        }
+
+                        System.arraycopy(masksPrefix, 0, masks, 0, masksPrefix.length);
                         System.arraycopy(starter.masks(), 0, masks, prefix.size(), starter.masks().length);
                         starter.masks(masks);
                     }
