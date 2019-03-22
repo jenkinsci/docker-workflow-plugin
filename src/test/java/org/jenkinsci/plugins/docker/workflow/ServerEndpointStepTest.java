@@ -122,10 +122,14 @@ public class ServerEndpointStepTest {
                         "node {\n" +
                                 "  withDockerServer(server: [uri: 'tcp://host:1234', credentialsId: 'serverCreds']) {\n" +
                                 "    sh 'echo would be connecting to $DOCKER_HOST'\n" +
+                                "    sh 'echo DOCKER_TLS_VERIFY=$DOCKER_TLS_VERIFY'\n" +
+                                "    sh 'echo DOCKER_CERT_PATH=$DOCKER_CERT_PATH is not empty'\n" +
                                 "  }\n" +
                                 "}", true));
                 WorkflowRun b = story.j.buildAndAssertSuccess(p);
                 story.j.assertLogContains("would be connecting to tcp://host:1234", b);
+                story.j.assertLogContains("DOCKER_TLS_VERIFY=1", b);
+                story.j.assertLogNotContains("DOCKER_CERT_PATH= is not empty", b);
             }
         });
     }
@@ -150,6 +154,8 @@ public class ServerEndpointStepTest {
                         "node {\n" +
                                 "  withDockerServer(server: [uri: 'tcp://host:1234', credentialsId: 'serverCreds']) {\n" +
                                 "    sh 'echo would be connecting to $DOCKER_HOST'\n" +
+                                "    sh 'echo DOCKER_TLS_VERIFY=$DOCKER_TLS_VERIFY'\n" +
+                                "    sh 'echo DOCKER_CERT_PATH=$DOCKER_CERT_PATH is not empty'\n" +
                                 "  }\n" +
                                 "}", true));
 
@@ -161,6 +167,8 @@ public class ServerEndpointStepTest {
                     b = story.j.buildAndAssertSuccess(p);
                 }
                 story.j.assertLogContains("would be connecting to tcp://host:1234", b);
+                story.j.assertLogContains("DOCKER_TLS_VERIFY=1", b);
+                story.j.assertLogNotContains("DOCKER_CERT_PATH= is not empty", b);
             }
         });
     }

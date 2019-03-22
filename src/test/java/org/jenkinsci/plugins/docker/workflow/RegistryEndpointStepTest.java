@@ -110,22 +110,20 @@ public class RegistryEndpointStepTest {
     @Test
     public void stepExecutionWithCredentials() throws Exception {
         assumeNotWindows();
-        
+
         IdCredentials registryCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "registryCreds", null, "me", "pass");
         CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), registryCredentials);
 
         WorkflowJob p = r.createProject(WorkflowJob.class, "prj");
         p.setDefinition(new CpsFlowDefinition(
                 "node {\n" +
-                        "  mockDockerLoginWithEcho {\n" +
+                        "  mockDockerWithEcho {\n" +
                         "    withDockerRegistry(url: 'https://my-reg:1234', credentialsId: 'registryCreds') {\n" +
-                        "       echo 'config would be set up to connect to https://my-reg:1234'\n" +
                         "    }\n" +
                         "  }\n" +
                         "}", true));
         WorkflowRun b = r.buildAndAssertSuccess(p);
         r.assertLogContains("docker login -u me -p pass https://my-reg:1234", r.assertBuildStatusSuccess(r.waitForCompletion(b)));
-        r.assertLogContains("config would be set up to connect to https://my-reg:1234", b);
     }
 
     @Test
@@ -145,9 +143,8 @@ public class RegistryEndpointStepTest {
         WorkflowJob p = r.createProject(WorkflowJob.class, "prj");
         p.setDefinition(new CpsFlowDefinition(
                 "node {\n" +
-                        "  mockDockerLoginWithEcho {\n" +
+                        "  mockDockerWithEcho {\n" +
                         "    withDockerRegistry(url: 'https://my-reg:1234', credentialsId: 'registryCreds') {\n" +
-                        "       echo 'config would be set up to connect to https://my-reg:1234'\n" +
                         "    }\n" +
                         "  }\n" +
                         "}", true));
@@ -160,7 +157,6 @@ public class RegistryEndpointStepTest {
             b = r.buildAndAssertSuccess(p);
         }
         r.assertLogContains("docker login -u me -p pass https://my-reg:1234", b);
-        r.assertLogContains("config would be set up to connect to https://my-reg:1234", b);
     }
 
     public static class MockLauncherWithEchoStep extends Step {
