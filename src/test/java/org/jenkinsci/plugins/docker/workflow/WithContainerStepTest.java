@@ -239,10 +239,13 @@ public class WithContainerStepTest {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
-                        "  withDockerContainer(image:'docker', args:'-v /var/run/docker.sock:/var/run/docker.sock --user root') {\n" +
+                        "  withDockerContainer(image:'docker',\n" +
+                        "                      args:'-v /var/run/docker.sock:/var/run/docker.sock --user root') {\n" +
                         "    env.TEST_PWD = 'pwd12345'\n" +
-                        "    withDockerContainer(image:'docker', args:'-v /var/run/docker.sock:/var/run/docker.sock --user root') {\n" +
-                        "      withDockerContainer(image:'docker', args:'-v /var/run/docker.sock:/var/run/docker.sock --user root') {\n" +
+                        "    withDockerContainer(image:'docker',\n" +
+                        "                        args:'-v /var/run/docker.sock:/var/run/docker.sock --user root') {\n" +
+                        "      withDockerContainer(image:'docker',\n" +
+                        "                        args:'-v /var/run/docker.sock:/var/run/docker.sock --user root') {\n" +
                         "        sh 'echo test'\n" +
                         "      }\n" +
                         "    }\n" +
