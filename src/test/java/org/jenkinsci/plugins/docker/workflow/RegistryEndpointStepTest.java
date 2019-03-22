@@ -117,7 +117,7 @@ public class RegistryEndpointStepTest {
         WorkflowJob p = r.createProject(WorkflowJob.class, "prj");
         p.setDefinition(new CpsFlowDefinition(
                 "node {\n" +
-                        "  mockDockerWithEcho {\n" +
+                        "  mockDockerLoginWithEcho {\n" +
                         "    withDockerRegistry(url: 'https://my-reg:1234', credentialsId: 'registryCreds') {\n" +
                         "    }\n" +
                         "  }\n" +
@@ -143,7 +143,7 @@ public class RegistryEndpointStepTest {
         WorkflowJob p = r.createProject(WorkflowJob.class, "prj");
         p.setDefinition(new CpsFlowDefinition(
                 "node {\n" +
-                        "  mockDockerWithEcho {\n" +
+                        "  mockDockerLoginWithEcho {\n" +
                         "    withDockerRegistry(url: 'https://my-reg:1234', credentialsId: 'registryCreds') {\n" +
                         "    }\n" +
                         "  }\n" +
