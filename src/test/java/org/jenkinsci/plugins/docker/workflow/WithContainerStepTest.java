@@ -27,10 +27,14 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SecretBytes;
 import com.cloudbees.plugins.credentials.domains.Domain;
+import com.google.common.collect.ImmutableSet;
 import hudson.Launcher;
 import hudson.model.FileParameterValue;
 import hudson.model.Result;
+import hudson.model.TaskListener;
 import hudson.tools.ToolProperty;
+import hudson.util.ArgumentListBuilder;
+import hudson.util.Secret;
 import java.io.File;
 import java.util.Collections;
 import java.util.logging.Level;
@@ -309,7 +313,6 @@ public class WithContainerStepTest {
         });
     }
 
-    @Ignore("TODO reproducible")
     @Issue("JENKINS-56674")
     @Test public void envMasking() {
         story.then(r -> {
@@ -318,25 +321,41 @@ public class WithContainerStepTest {
             p.setDefinition(new CpsFlowDefinition(
                 "node {\n" +
                 "  withDockerContainer('ubuntu') {\n" +
-                "    stepWithLauncher()\n" +
+                "    stepWithLauncher false\n" +
+                "    stepWithLauncher true\n" +
                 "  }\n" +
                 "}", true));
             WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
             story.j.assertLogContains("hello from some step", b);
+            story.j.assertLogContains("goodbye from ******** step", b);
+            story.j.assertLogContains("goodbye from mystery step", b);
             story.j.assertLogNotContains("s3cr3t", b);
         });
     }
     public static final class StepWithLauncher extends Step {
-        @DataBoundConstructor public StepWithLauncher() {}
+        public final boolean masking;
+        @DataBoundConstructor public StepWithLauncher(boolean masking) {
+            this.masking = masking;
+        }
         @Override public StepExecution start(StepContext context) throws Exception {
-            return new Execution(context);
+            return new Execution(context, masking);
         }
         private static final class Execution extends SynchronousNonBlockingStepExecution<Void> {
-            Execution(StepContext context) {
+            private final boolean masking;
+            Execution(StepContext context, boolean masking) {
                 super(context);
+                this.masking = masking;
             }
             @Override protected Void run() throws Exception {
-                if (getContext().get(Launcher.class).launch().envs("SENSITIVE=s3cr3t").cmds("echo", "hello", "from", "some", "step").join() != 0) {
+                Launcher.ProcStarter ps = getContext().get(Launcher.class).launch();
+                ps.envs("SENSITIVE=s3cr3t");
+                if (masking) {
+                    ps.cmds(new ArgumentListBuilder("echo", "goodbye", "from").addMasked(Secret.fromString("mystery")).add("step"));
+                } else {
+                    ps.cmds("echo", "hello", "from", "some", "step");
+                }
+                ps.stdout(getContext().get(TaskListener.class));
+                if (ps.join() != 0) {
                     throw new IOException("failed to run echo");
                 }
                 return null;
@@ -347,7 +366,7 @@ public class WithContainerStepTest {
                 return "stepWithLauncher";
             }
             @Override public Set<? extends Class<?>> getRequiredContext() {
-                return Collections.singleton(Launcher.class);
+                return ImmutableSet.of(Launcher.class, TaskListener.class);
             }
         }
     }

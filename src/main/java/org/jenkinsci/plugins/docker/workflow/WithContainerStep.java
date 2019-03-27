@@ -292,20 +292,23 @@ public class WithContainerStep extends AbstractStepImpl {
                                                          .collect(Collectors.toList()));
                     }
 
+                    boolean[] originalMasks = starter.masks();
+                    if (originalMasks == null) {
+                        originalMasks = new boolean[starter.cmds().size()];
+                    }
+
                     // Adapted from decorateByPrefix:
                     starter.cmds().addAll(0, prefix);
-                    if (starter.masks() != null) {
-                        boolean[] masks = new boolean[starter.masks().length + prefix.size()];
-                        boolean[] masksPrefix = new boolean[masksPrefixList.size()];
 
-                        for (int i = 0; i < masksPrefix.length; i++) {
-                            masksPrefix[i] = masksPrefixList.get(i);
-                        }
-
-                        System.arraycopy(masksPrefix, 0, masks, 0, masksPrefix.length);
-                        System.arraycopy(starter.masks(), 0, masks, prefix.size(), starter.masks().length);
-                        starter.masks(masks);
+                    boolean[] masks = new boolean[originalMasks.length + prefix.size()];
+                    boolean[] masksPrefix = new boolean[masksPrefixList.size()];
+                    for (int i = 0; i < masksPrefix.length; i++) {
+                        masksPrefix[i] = masksPrefixList.get(i);
                     }
+                    System.arraycopy(masksPrefix, 0, masks, 0, masksPrefix.length);
+                    System.arraycopy(originalMasks, 0, masks, prefix.size(), originalMasks.length);
+                    starter.masks(masks);
+
                     return super.launch(starter);
                 }
                 @Override public void kill(Map<String,String> modelEnvVars) throws IOException, InterruptedException {
