@@ -239,35 +239,6 @@ public class WithContainerStepTest {
         });
     }
 
-    @Issue("JENKINS-56674")
-    @Test public void testEnv() throws Exception {
-        story.addStep(new Statement() {
-            @Override
-            public void evaluate() throws Throwable {
-                DockerTestUtil.assumeDocker();
-                DockerTestUtil.assumeNotWindows();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
-                p.setDefinition(new CpsFlowDefinition(
-                    "node {\n" +
-                        "  withDockerContainer(image:'docker',\n" +
-                        "                      args:'-v /var/run/docker.sock:/var/run/docker.sock --user root') {\n" +
-                        "    env.TEST_PWD = 'pwd12345'\n" +
-                        "    withDockerContainer(image:'docker',\n" +
-                        "                        args:'-v /var/run/docker.sock:/var/run/docker.sock --user root') {\n" +
-                        "      withDockerContainer(image:'docker',\n" +
-                        "                          args:'-v /var/run/docker.sock:/var/run/docker.sock --user root') {\n" +
-                        "        sh 'echo test'\n" +
-                        "      }\n" +
-                        "    }\n" +
-                        "  }\n" +
-                        "}", true));
-                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-                story.j.assertLogContains("docker exec --env ********", b);
-                story.j.assertLogNotContains("pwd12345", b);
-            }
-        });
-    }
-
     @Issue("JENKINS-27152")
     @Test public void configFile() throws Exception {
         story.addStep(new Statement() {
