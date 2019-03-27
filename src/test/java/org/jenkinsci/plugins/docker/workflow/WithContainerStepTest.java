@@ -226,13 +226,13 @@ public class WithContainerStepTest {
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                     "  withDockerContainer('ubuntu') {\n" +
-                    "    withCredentials([[$class: 'FileBinding', credentialsId: 'secretfile', variable: 'FILE']]) {\n" +
-                    "      sh 'cat $FILE'\n" +
+                    "    withCredentials([file(credentialsId: 'secretfile', variable: 'FILE')]) {\n" +
+                    "      sh 'cat \"$FILE\"'\n" +
                     "    }\n" +
                     "  }\n" +
-                    "  withCredentials([[$class: 'FileBinding', credentialsId: 'secretfile', variable: 'FILE']]) {\n" +
+                    "  withCredentials([file(credentialsId: 'secretfile', variable: 'FILE')]) {\n" +
                     "    withDockerContainer('ubuntu') {\n" +
-                    "      sh 'tr \"a-z\" \"A-Z\" < $FILE'\n" +
+                    "      sh 'tr \"a-z\" \"A-Z\" < \"$FILE\"'\n" +
                     "    }\n" +
                     "  }\n" +
                     "}", true));
@@ -257,12 +257,12 @@ public class WithContainerStepTest {
                     "node {\n" +
                     "  withDockerContainer('ubuntu') {\n" +
                         "  wrap([$class: 'ConfigFileBuildWrapper', managedFiles: [[fileId: '" + config.id + "', variable: 'FILE']]]) {\n" +
-                        "    sh 'cat $FILE'\n" +
+                        "    sh 'cat \"$FILE\"'\n" +
                         "  }\n" +
                     "  }\n" +
                     "  wrap([$class: 'ConfigFileBuildWrapper', managedFiles: [[fileId: '" + config.id + "', variable: 'FILE']]]) {\n" +
                     "    withDockerContainer('ubuntu') {\n" +
-                    "      sh 'tr \"a-z\" \"A-Z\" < $FILE'\n" +
+                    "      sh 'tr \"a-z\" \"A-Z\" < \"$FILE\"'\n" +
                     "    }\n" +
                     "  }\n" +
                     "}", true));
