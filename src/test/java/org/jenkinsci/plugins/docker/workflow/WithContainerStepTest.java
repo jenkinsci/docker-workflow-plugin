@@ -27,6 +27,7 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SecretBytes;
 import com.cloudbees.plugins.credentials.domains.Domain;
+import hudson.Launcher;
 import hudson.model.FileParameterValue;
 import hudson.model.Result;
 import hudson.tools.ToolProperty;
@@ -35,6 +36,8 @@ import java.util.Collections;
 import java.util.logging.Level;
 
 import hudson.util.VersionNumber;
+import java.io.IOException;
+import java.util.Set;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.Matchers;
@@ -48,7 +51,12 @@ import org.jenkinsci.plugins.plaincredentials.impl.FileCredentialsImpl;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepConfigTester;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
+import org.jenkinsci.plugins.workflow.steps.StepExecution;
+import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import org.junit.Assume;
 import org.junit.ClassRule;
@@ -61,6 +69,8 @@ import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.LoggerRule;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
+import org.jvnet.hudson.test.TestExtension;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 public class WithContainerStepTest {
 
@@ -297,6 +307,49 @@ public class WithContainerStepTest {
                 story.j.assertLogContains("ran OK", b);
             }
         });
+    }
+
+    @Ignore("TODO reproducible")
+    @Issue("JENKINS-56674")
+    @Test public void envMasking() {
+        story.then(r -> {
+            DockerTestUtil.assumeDocker();
+            WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+            p.setDefinition(new CpsFlowDefinition(
+                "node {\n" +
+                "  withDockerContainer('ubuntu') {\n" +
+                "    stepWithLauncher()\n" +
+                "  }\n" +
+                "}", true));
+            WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+            story.j.assertLogContains("hello from some step", b);
+            story.j.assertLogNotContains("s3cr3t", b);
+        });
+    }
+    public static final class StepWithLauncher extends Step {
+        @DataBoundConstructor public StepWithLauncher() {}
+        @Override public StepExecution start(StepContext context) throws Exception {
+            return new Execution(context);
+        }
+        private static final class Execution extends SynchronousNonBlockingStepExecution<Void> {
+            Execution(StepContext context) {
+                super(context);
+            }
+            @Override protected Void run() throws Exception {
+                if (getContext().get(Launcher.class).launch().envs("SENSITIVE=s3cr3t").cmds("echo", "hello", "from", "some", "step").join() != 0) {
+                    throw new IOException("failed to run echo");
+                }
+                return null;
+            }
+        }
+        @TestExtension("envMasking") public static final class DescriptorImpl extends StepDescriptor {
+            @Override public String getFunctionName() {
+                return "stepWithLauncher";
+            }
+            @Override public Set<? extends Class<?>> getRequiredContext() {
+                return Collections.singleton(Launcher.class);
+            }
+        }
     }
 
 }
