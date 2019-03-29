@@ -27,14 +27,21 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SecretBytes;
 import com.cloudbees.plugins.credentials.domains.Domain;
+import com.google.common.collect.ImmutableSet;
+import hudson.Launcher;
 import hudson.model.FileParameterValue;
 import hudson.model.Result;
+import hudson.model.TaskListener;
 import hudson.tools.ToolProperty;
+import hudson.util.ArgumentListBuilder;
+import hudson.util.Secret;
 import java.io.File;
 import java.util.Collections;
 import java.util.logging.Level;
 
 import hudson.util.VersionNumber;
+import java.io.IOException;
+import java.util.Set;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.Matchers;
@@ -48,7 +55,12 @@ import org.jenkinsci.plugins.plaincredentials.impl.FileCredentialsImpl;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepConfigTester;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
+import org.jenkinsci.plugins.workflow.steps.StepExecution;
+import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import org.junit.Assume;
 import org.junit.ClassRule;
@@ -61,6 +73,8 @@ import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.LoggerRule;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
+import org.jvnet.hudson.test.TestExtension;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 public class WithContainerStepTest {
 
@@ -212,13 +226,13 @@ public class WithContainerStepTest {
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                     "  withDockerContainer('ubuntu') {\n" +
-                    "    withCredentials([[$class: 'FileBinding', credentialsId: 'secretfile', variable: 'FILE']]) {\n" +
-                    "      sh 'cat $FILE'\n" +
+                    "    withCredentials([file(credentialsId: 'secretfile', variable: 'FILE')]) {\n" +
+                    "      sh 'cat \"$FILE\"'\n" +
                     "    }\n" +
                     "  }\n" +
-                    "  withCredentials([[$class: 'FileBinding', credentialsId: 'secretfile', variable: 'FILE']]) {\n" +
+                    "  withCredentials([file(credentialsId: 'secretfile', variable: 'FILE')]) {\n" +
                     "    withDockerContainer('ubuntu') {\n" +
-                    "      sh 'tr \"a-z\" \"A-Z\" < $FILE'\n" +
+                    "      sh 'tr \"a-z\" \"A-Z\" < \"$FILE\"'\n" +
                     "    }\n" +
                     "  }\n" +
                     "}", true));
@@ -243,12 +257,12 @@ public class WithContainerStepTest {
                     "node {\n" +
                     "  withDockerContainer('ubuntu') {\n" +
                         "  wrap([$class: 'ConfigFileBuildWrapper', managedFiles: [[fileId: '" + config.id + "', variable: 'FILE']]]) {\n" +
-                        "    sh 'cat $FILE'\n" +
+                        "    sh 'cat \"$FILE\"'\n" +
                         "  }\n" +
                     "  }\n" +
                     "  wrap([$class: 'ConfigFileBuildWrapper', managedFiles: [[fileId: '" + config.id + "', variable: 'FILE']]]) {\n" +
                     "    withDockerContainer('ubuntu') {\n" +
-                    "      sh 'tr \"a-z\" \"A-Z\" < $FILE'\n" +
+                    "      sh 'tr \"a-z\" \"A-Z\" < \"$FILE\"'\n" +
                     "    }\n" +
                     "  }\n" +
                     "}", true));
@@ -297,6 +311,64 @@ public class WithContainerStepTest {
                 story.j.assertLogContains("ran OK", b);
             }
         });
+    }
+
+    @Issue("JENKINS-56674")
+    @Test public void envMasking() {
+        story.then(r -> {
+            DockerTestUtil.assumeDocker();
+            WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+            p.setDefinition(new CpsFlowDefinition(
+                "node {\n" +
+                "  withDockerContainer('ubuntu') {\n" +
+                "    stepWithLauncher false\n" +
+                "    stepWithLauncher true\n" +
+                "  }\n" +
+                "}", true));
+            WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+            story.j.assertLogContains("hello from some step", b);
+            story.j.assertLogContains("goodbye from ******** step", b);
+            story.j.assertLogContains("goodbye from mystery step", b);
+            story.j.assertLogNotContains("s3cr3t", b);
+        });
+    }
+    public static final class StepWithLauncher extends Step {
+        public final boolean masking;
+        @DataBoundConstructor public StepWithLauncher(boolean masking) {
+            this.masking = masking;
+        }
+        @Override public StepExecution start(StepContext context) throws Exception {
+            return new Execution(context, masking);
+        }
+        private static final class Execution extends SynchronousNonBlockingStepExecution<Void> {
+            private final boolean masking;
+            Execution(StepContext context, boolean masking) {
+                super(context);
+                this.masking = masking;
+            }
+            @Override protected Void run() throws Exception {
+                Launcher.ProcStarter ps = getContext().get(Launcher.class).launch();
+                ps.envs("SENSITIVE=s3cr3t");
+                if (masking) {
+                    ps.cmds(new ArgumentListBuilder("echo", "goodbye", "from").addMasked(Secret.fromString("mystery")).add("step"));
+                } else {
+                    ps.cmds("echo", "hello", "from", "some", "step");
+                }
+                ps.stdout(getContext().get(TaskListener.class));
+                if (ps.join() != 0) {
+                    throw new IOException("failed to run echo");
+                }
+                return null;
+            }
+        }
+        @TestExtension("envMasking") public static final class DescriptorImpl extends StepDescriptor {
+            @Override public String getFunctionName() {
+                return "stepWithLauncher";
+            }
+            @Override public Set<? extends Class<?>> getRequiredContext() {
+                return ImmutableSet.of(Launcher.class, TaskListener.class);
+            }
+        }
     }
 
 }
