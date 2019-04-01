@@ -34,17 +34,25 @@ import hudson.LauncherDecorator;
 import hudson.model.Computer;
 import hudson.model.Item;
 import hudson.model.Node;
+import hudson.model.Result;
 import hudson.model.User;
 import hudson.security.ACL;
 import hudson.security.ACLContext;
 import jenkins.model.Jenkins;
 import jenkins.security.QueueItemAuthenticatorConfiguration;
+import org.acegisecurity.Authentication;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.SnippetizerTester;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.jenkinsci.plugins.workflow.steps.*;
+import org.jenkinsci.plugins.workflow.steps.BodyExecutionCallback;
+import org.jenkinsci.plugins.workflow.steps.BodyInvoker;
+import org.jenkinsci.plugins.workflow.steps.Step;
+import org.jenkinsci.plugins.workflow.steps.StepConfigTester;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
+import org.jenkinsci.plugins.workflow.steps.StepExecution;
 
 import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeNotWindows;
 import static org.junit.Assert.assertEquals;
@@ -61,7 +69,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
 import java.io.Serializable;
-import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 public class RegistryEndpointStepTest {
@@ -132,31 +141,42 @@ public class RegistryEndpointStepTest {
 
         r.getInstance().setSecurityRealm(r.createDummySecurityRealm());
         MockAuthorizationStrategy auth = new MockAuthorizationStrategy()
-                .grant(Jenkins.READ).everywhere().to("alice")
-                .grant(Computer.BUILD).everywhere().to("alice")
+                .grant(Jenkins.READ).everywhere().to("alice", "bob")
+                .grant(Computer.BUILD).everywhere().to("alice", "bob")
+                // Item.CONFIGURE implies Credentials.USE_ITEM, which is what CredentialsProvider.findCredentialById
+                // uses when determining whether to include item-scope credentials in the search.
                 .grant(Item.CONFIGURE).everywhere().to("alice");
         r.getInstance().setAuthorizationStrategy(auth);
 
         IdCredentials registryCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "registryCreds", null, "me", "pass");
         CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), registryCredentials);
 
-        WorkflowJob p = r.createProject(WorkflowJob.class, "prj");
-        p.setDefinition(new CpsFlowDefinition(
-                "node {\n" +
-                        "  mockDockerLoginWithEcho {\n" +
-                        "    withDockerRegistry(url: 'https://my-reg:1234', credentialsId: 'registryCreds') {\n" +
-                        "    }\n" +
-                        "  }\n" +
-                        "}", true));
+        String script = "node {\n" +
+                "  mockDockerLoginWithEcho {\n" +
+                "    withDockerRegistry(url: 'https://my-reg:1234', credentialsId: 'registryCreds') {\n" +
+                "    }\n" +
+                "  }\n" +
+                "}";
+        WorkflowJob p1 = r.createProject(WorkflowJob.class, "prj1");
+        p1.setDefinition(new CpsFlowDefinition(script, true));
+        WorkflowJob p2 = r.createProject(WorkflowJob.class, "prj2");
+        p2.setDefinition(new CpsFlowDefinition(script, true));
 
-        QueueItemAuthenticatorConfiguration.get().getAuthenticators().replace(new MockQueueItemAuthenticator(
-                Collections.singletonMap(p.getName(), User.getById("alice", true).impersonate())));
+        Map<String, Authentication> jobsToAuths = new HashMap<>();
+        jobsToAuths.put(p1.getFullName(), User.getById("alice", true).impersonate());
+        jobsToAuths.put(p2.getFullName(), User.getById("bob", true).impersonate());
+        QueueItemAuthenticatorConfiguration.get().getAuthenticators().replace(new MockQueueItemAuthenticator(jobsToAuths));
 
-        WorkflowRun b;
+        // Alice has Credentials.USE_ITEM permission and should be able to use the credential.
         try (ACLContext as = ACL.as(User.getById("alice", false))) {
-            b = r.buildAndAssertSuccess(p);
+            WorkflowRun b = r.buildAndAssertSuccess(p1);
+            r.assertLogContains("docker login -u me -p pass https://my-reg:1234", b);
         }
-        r.assertLogContains("docker login -u me -p pass https://my-reg:1234", b);
+
+        // Bob does not have Credentials.USE_ITEM permission and should not be able to use the credential.
+        try (ACLContext as = ACL.as(User.getById("bob", false))) {
+            r.assertBuildStatus(Result.FAILURE, p2.scheduleBuild2(0));
+        }
     }
 
     public static class MockLauncherWithEchoStep extends Step {

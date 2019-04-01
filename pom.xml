@@ -53,7 +53,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>docker-commons</artifactId>
-            <version>1.14-rc171.bc6d2dea6b49</version> <!-- TODO https://github.com/jenkinsci/docker-commons-plugin/pull/68 -->
+            <version>1.14-rc173.c6a4b50fd1db</version> <!-- TODO https://github.com/jenkinsci/docker-commons-plugin/pull/74 -->
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
