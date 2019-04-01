@@ -168,15 +168,11 @@ public class RegistryEndpointStepTest {
         QueueItemAuthenticatorConfiguration.get().getAuthenticators().replace(new MockQueueItemAuthenticator(jobsToAuths));
 
         // Alice has Credentials.USE_ITEM permission and should be able to use the credential.
-        try (ACLContext as = ACL.as(User.getById("alice", false))) {
-            WorkflowRun b = r.buildAndAssertSuccess(p1);
-            r.assertLogContains("docker login -u me -p pass https://my-reg:1234", b);
-        }
+        WorkflowRun b1 = r.buildAndAssertSuccess(p1);
+        r.assertLogContains("docker login -u me -p pass https://my-reg:1234", b1);
 
         // Bob does not have Credentials.USE_ITEM permission and should not be able to use the credential.
-        try (ACLContext as = ACL.as(User.getById("bob", false))) {
-            r.assertBuildStatus(Result.FAILURE, p2.scheduleBuild2(0));
-        }
+        r.assertBuildStatus(Result.FAILURE, p2.scheduleBuild2(0));
     }
 
     public static class MockLauncherWithEchoStep extends Step {

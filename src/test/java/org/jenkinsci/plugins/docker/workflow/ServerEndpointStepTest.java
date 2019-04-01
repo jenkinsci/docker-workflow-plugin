@@ -169,20 +169,16 @@ public class ServerEndpointStepTest {
             QueueItemAuthenticatorConfiguration.get().getAuthenticators().replace(new MockQueueItemAuthenticator(jobsToAuths));
 
             // Alice has Credentials.USE_ITEM permission and should be able to use the credential.
-            try (ACLContext as = ACL.as(User.getById("alice", false))) {
-                WorkflowRun b = story.j.buildAndAssertSuccess(p1);
-                story.j.assertLogContains("would be connecting to tcp://host:1234", b);
-                story.j.assertLogContains("DOCKER_TLS_VERIFY=1", b);
-                story.j.assertLogNotContains("DOCKER_CERT_PATH= is not empty", b);
-            }
+            WorkflowRun b1 = story.j.buildAndAssertSuccess(p1);
+            story.j.assertLogContains("would be connecting to tcp://host:1234", b1);
+            story.j.assertLogContains("DOCKER_TLS_VERIFY=1", b1);
+            story.j.assertLogNotContains("DOCKER_CERT_PATH= is not empty", b1);
 
             // Bob does not have Credentials.USE_ITEM permission and should not be able to use the credential.
-            try (ACLContext as = ACL.as(User.getById("bob", false))) {
-                WorkflowRun b = story.j.buildAndAssertSuccess(p2);
-                story.j.assertLogContains("would be connecting to tcp://host:1234", b);
-                story.j.assertLogContains("DOCKER_TLS_VERIFY=\n", b);
-                story.j.assertLogContains("DOCKER_CERT_PATH= is not empty", b);
-            }
+            WorkflowRun b2 = story.j.buildAndAssertSuccess(p2);
+            story.j.assertLogContains("would be connecting to tcp://host:1234", b2);
+            story.j.assertLogContains("DOCKER_TLS_VERIFY=\n", b2);
+            story.j.assertLogContains("DOCKER_CERT_PATH= is not empty", b2);
         });
     }
 
