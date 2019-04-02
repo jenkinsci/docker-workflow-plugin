@@ -30,6 +30,16 @@ import com.cloudbees.plugins.credentials.domains.Domain;
 import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
+
+import hudson.model.Computer;
+import hudson.model.Item;
+import hudson.model.User;
+import hudson.security.ACL;
+import hudson.security.ACLContext;
+import java.util.HashMap;
+import jenkins.model.Jenkins;
+import jenkins.security.QueueItemAuthenticatorConfiguration;
+import org.acegisecurity.Authentication;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerServerCredentials;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerServerEndpoint;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -46,6 +56,8 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.BuildWatcher;
+import org.jvnet.hudson.test.MockAuthorizationStrategy;
+import org.jvnet.hudson.test.MockQueueItemAuthenticator;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
 
 public class ServerEndpointStepTest {
@@ -98,6 +110,75 @@ public class ServerEndpointStepTest {
                 WorkflowRun b = p.getLastBuild();
                 story.j.assertLogContains("would be connecting to tcp://host:1234", story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
             }
+        });
+    }
+
+    @Test public void stepExecutionWithCredentials() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                assumeNotWindows();
+                IdCredentials serverCredentials = new DockerServerCredentials(CredentialsScope.GLOBAL, "serverCreds", null, "clientKey", "clientCertificate", "serverCaCertificate");
+                CredentialsProvider.lookupStores(story.j.jenkins).iterator().next().addCredentials(Domain.global(), serverCredentials);
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                        "node {\n" +
+                                "  withDockerServer(server: [uri: 'tcp://host:1234', credentialsId: 'serverCreds']) {\n" +
+                                "    sh 'echo would be connecting to $DOCKER_HOST'\n" +
+                                "    sh 'echo DOCKER_TLS_VERIFY=$DOCKER_TLS_VERIFY'\n" +
+                                "    sh 'echo DOCKER_CERT_PATH=$DOCKER_CERT_PATH is not empty'\n" +
+                                "  }\n" +
+                                "}", true));
+                WorkflowRun b = story.j.buildAndAssertSuccess(p);
+                story.j.assertLogContains("would be connecting to tcp://host:1234", b);
+                story.j.assertLogContains("DOCKER_TLS_VERIFY=1", b);
+                story.j.assertLogNotContains("DOCKER_CERT_PATH= is not empty", b);
+            }
+        });
+    }
+    
+    @Test public void stepExecutionWithCredentialsAndQueueItemAuthenticator() throws Exception {
+        assumeNotWindows();
+        story.then(r -> {
+            story.j.getInstance().setSecurityRealm(story.j.createDummySecurityRealm());
+            MockAuthorizationStrategy auth = new MockAuthorizationStrategy()
+                    .grant(Jenkins.READ).everywhere().to("alice", "bob")
+                    .grant(Computer.BUILD).everywhere().to("alice", "bob")
+                    // Item.CONFIGURE implies Credentials.USE_ITEM, which is what CredentialsProvider.findCredentialById
+                    // uses when determining whether to include item-scope credentials in the search.
+                    .grant(Item.CONFIGURE).everywhere().to("alice");
+            story.j.getInstance().setAuthorizationStrategy(auth);
+
+            IdCredentials serverCredentials = new DockerServerCredentials(CredentialsScope.GLOBAL, "serverCreds", null, "clientKey", "clientCertificate", "serverCaCertificate");
+            CredentialsProvider.lookupStores(story.j.jenkins).iterator().next().addCredentials(Domain.global(), serverCredentials);
+
+            String script = "node {\n" +
+                    "  withDockerServer(server: [uri: 'tcp://host:1234', credentialsId: 'serverCreds']) {\n" +
+                    "    sh 'echo would be connecting to $DOCKER_HOST'\n" +
+                    "    sh 'echo DOCKER_TLS_VERIFY=$DOCKER_TLS_VERIFY'\n" +
+                    "    sh 'echo DOCKER_CERT_PATH=$DOCKER_CERT_PATH is not empty'\n" +
+                    "  }\n" +
+                    "}";
+            WorkflowJob p1 = story.j.jenkins.createProject(WorkflowJob.class, "prj1");
+            p1.setDefinition(new CpsFlowDefinition(script, true));
+            WorkflowJob p2 = story.j.jenkins.createProject(WorkflowJob.class, "prj2");
+            p2.setDefinition(new CpsFlowDefinition(script, true));
+
+            Map<String, Authentication> jobsToAuths = new HashMap<>();
+            jobsToAuths.put(p1.getFullName(), User.getById("alice", true).impersonate());
+            jobsToAuths.put(p2.getFullName(), User.getById("bob", true).impersonate());
+            QueueItemAuthenticatorConfiguration.get().getAuthenticators().replace(new MockQueueItemAuthenticator(jobsToAuths));
+
+            // Alice has Credentials.USE_ITEM permission and should be able to use the credential.
+            WorkflowRun b1 = story.j.buildAndAssertSuccess(p1);
+            story.j.assertLogContains("would be connecting to tcp://host:1234", b1);
+            story.j.assertLogContains("DOCKER_TLS_VERIFY=1", b1);
+            story.j.assertLogNotContains("DOCKER_CERT_PATH= is not empty", b1);
+
+            // Bob does not have Credentials.USE_ITEM permission and should not be able to use the credential.
+            WorkflowRun b2 = story.j.buildAndAssertSuccess(p2);
+            story.j.assertLogContains("would be connecting to tcp://host:1234", b2);
+            story.j.assertLogContains("DOCKER_TLS_VERIFY=\n", b2);
+            story.j.assertLogContains("DOCKER_CERT_PATH= is not empty", b2);
         });
     }
 
