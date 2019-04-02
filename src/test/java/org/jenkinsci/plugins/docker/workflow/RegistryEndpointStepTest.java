@@ -28,17 +28,50 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
+import com.google.common.collect.ImmutableSet;
+import hudson.Launcher;
+import hudson.LauncherDecorator;
+import hudson.model.Computer;
+import hudson.model.Item;
+import hudson.model.Node;
+import hudson.model.Result;
+import hudson.model.User;
+import hudson.security.ACL;
+import hudson.security.ACLContext;
+import jenkins.model.Jenkins;
+import jenkins.security.QueueItemAuthenticatorConfiguration;
+import org.acegisecurity.Authentication;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.SnippetizerTester;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.steps.BodyExecutionCallback;
+import org.jenkinsci.plugins.workflow.steps.BodyInvoker;
+import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepConfigTester;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
+import org.jenkinsci.plugins.workflow.steps.StepExecution;
+
+import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeNotWindows;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.MockAuthorizationStrategy;
+import org.jvnet.hudson.test.MockQueueItemAuthenticator;
+import org.jvnet.hudson.test.TestExtension;
+import org.kohsuke.stapler.DataBoundConstructor;
+
+import javax.annotation.Nonnull;
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 public class RegistryEndpointStepTest {
 
@@ -83,4 +116,120 @@ public class RegistryEndpointStepTest {
         }
     }
 
+    @Test
+    public void stepExecutionWithCredentials() throws Exception {
+        assumeNotWindows();
+
+        IdCredentials registryCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "registryCreds", null, "me", "pass");
+        CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), registryCredentials);
+
+        WorkflowJob p = r.createProject(WorkflowJob.class, "prj");
+        p.setDefinition(new CpsFlowDefinition(
+                "node {\n" +
+                        "  mockDockerLoginWithEcho {\n" +
+                        "    withDockerRegistry(url: 'https://my-reg:1234', credentialsId: 'registryCreds') {\n" +
+                        "    }\n" +
+                        "  }\n" +
+                        "}", true));
+        WorkflowRun b = r.buildAndAssertSuccess(p);
+        r.assertLogContains("docker login -u me -p pass https://my-reg:1234", r.assertBuildStatusSuccess(r.waitForCompletion(b)));
+    }
+
+    @Test
+    public void stepExecutionWithCredentialsAndQueueItemAuthenticator() throws Exception {
+        assumeNotWindows();
+
+        r.getInstance().setSecurityRealm(r.createDummySecurityRealm());
+        MockAuthorizationStrategy auth = new MockAuthorizationStrategy()
+                .grant(Jenkins.READ).everywhere().to("alice", "bob")
+                .grant(Computer.BUILD).everywhere().to("alice", "bob")
+                // Item.CONFIGURE implies Credentials.USE_ITEM, which is what CredentialsProvider.findCredentialById
+                // uses when determining whether to include item-scope credentials in the search.
+                .grant(Item.CONFIGURE).everywhere().to("alice");
+        r.getInstance().setAuthorizationStrategy(auth);
+
+        IdCredentials registryCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "registryCreds", null, "me", "pass");
+        CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), registryCredentials);
+
+        String script = "node {\n" +
+                "  mockDockerLoginWithEcho {\n" +
+                "    withDockerRegistry(url: 'https://my-reg:1234', credentialsId: 'registryCreds') {\n" +
+                "    }\n" +
+                "  }\n" +
+                "}";
+        WorkflowJob p1 = r.createProject(WorkflowJob.class, "prj1");
+        p1.setDefinition(new CpsFlowDefinition(script, true));
+        WorkflowJob p2 = r.createProject(WorkflowJob.class, "prj2");
+        p2.setDefinition(new CpsFlowDefinition(script, true));
+
+        Map<String, Authentication> jobsToAuths = new HashMap<>();
+        jobsToAuths.put(p1.getFullName(), User.getById("alice", true).impersonate());
+        jobsToAuths.put(p2.getFullName(), User.getById("bob", true).impersonate());
+        QueueItemAuthenticatorConfiguration.get().getAuthenticators().replace(new MockQueueItemAuthenticator(jobsToAuths));
+
+        // Alice has Credentials.USE_ITEM permission and should be able to use the credential.
+        WorkflowRun b1 = r.buildAndAssertSuccess(p1);
+        r.assertLogContains("docker login -u me -p pass https://my-reg:1234", b1);
+
+        // Bob does not have Credentials.USE_ITEM permission and should not be able to use the credential.
+        r.assertBuildStatus(Result.FAILURE, p2.scheduleBuild2(0));
+    }
+
+    public static class MockLauncherWithEchoStep extends Step {
+        
+        @DataBoundConstructor
+        public MockLauncherWithEchoStep() {}
+
+        @Override
+        public StepExecution start(StepContext stepContext) {
+            return new Execution(this, stepContext);
+        }
+
+        public static class Execution extends StepExecution {
+            private static final long serialVersionUID = 1;
+
+            private final transient MockLauncherWithEchoStep step;
+
+            Execution(MockLauncherWithEchoStep step, StepContext context) {
+                super(context);
+                this.step = step;
+            }
+            
+            @Override public boolean start() throws Exception {
+                getContext().newBodyInvoker().
+                        withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator())).
+                        withCallback(BodyExecutionCallback.wrap(getContext())).
+                        start();
+                return false;
+            }
+
+            @Override
+            public void stop(@Nonnull Throwable throwable) {
+                
+            }
+        }
+        private static class Decorator extends LauncherDecorator implements Serializable {
+            private static final long serialVersionUID = 1;
+            @Override public Launcher decorate(Launcher launcher, Node node) {
+                return launcher.decorateByPrefix("echo");
+            }
+        }
+        @TestExtension public static class DescriptorImpl extends StepDescriptor {
+
+            @Override
+            public Set<? extends Class<?>> getRequiredContext() {
+                return ImmutableSet.of(Launcher.class);
+            }
+
+            @Override public String getFunctionName() {
+                return "mockDockerLoginWithEcho";
+            }
+            @Override public String getDisplayName() {
+                return "Mock Docker Login with Echo";
+            }
+            @Override public boolean takesImplicitBlockArgument() {
+                return true;
+            }
+        }
+    }
 }

@@ -97,6 +97,8 @@
             <p>
                 Runs <code>docker pull</code>.
                 Not necessary before <code>run</code>, <code>withRun</code>, or <code>inside</code>.
+                However, if the image is cached locally, then that image will be used, even if there is a newer version available upstream.
+                This can lead to strange behaviour if agents have different versions of the image and the image is given a floating tag like <code>latest</code> which does not permanently refer to a specific revision.
             </p>
         </dd>
         <dt><code>Image.imageName()</code></dt>

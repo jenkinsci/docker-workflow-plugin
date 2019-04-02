@@ -29,8 +29,8 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
-import hudson.model.Job;
 import hudson.model.Node;
+import hudson.model.Run;
 import hudson.model.TaskListener;
 import java.io.IOException;
 import java.util.Collections;
@@ -92,7 +92,7 @@ public class RegistryEndpointStep extends Step {
             TaskListener listener = getContext().get(TaskListener.class);
             EnvVars envVars = getContext().get(EnvVars.class);
             String executable = DockerTool.getExecutable(step.toolName, getContext().get(Node.class), listener, envVars);
-            return step.registry.newKeyMaterialFactory(getContext().get(Job.class), getContext().get(FilePath.class), getContext().get(Launcher.class), envVars, listener, executable);
+            return step.registry.newKeyMaterialFactory(getContext().get(Run.class), getContext().get(FilePath.class), getContext().get(Launcher.class), envVars, listener, executable);
         }
 
     }
@@ -148,7 +148,7 @@ public class RegistryEndpointStep extends Step {
 
         @SuppressWarnings("unchecked")
         @Override public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(TaskListener.class, EnvVars.class, Node.class, Job.class, FilePath.class, Launcher.class);
+            return ImmutableSet.of(TaskListener.class, EnvVars.class, Node.class, Run.class, FilePath.class, Launcher.class);
         }
 
     }

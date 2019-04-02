@@ -26,7 +26,7 @@ package org.jenkinsci.plugins.docker.workflow;
 import com.google.common.collect.ImmutableSet;
 import hudson.Extension;
 import hudson.FilePath;
-import hudson.model.Job;
+import hudson.model.Run;
 import java.io.IOException;
 import java.util.Set;
 import javax.annotation.Nonnull;
@@ -67,7 +67,7 @@ public class ServerEndpointStep extends Step {
         }
 
         @Override protected KeyMaterialFactory newKeyMaterialFactory() throws IOException, InterruptedException {
-            return step.server.newKeyMaterialFactory(getContext().get(Job.class), getContext().get(FilePath.class).getChannel());
+            return step.server.newKeyMaterialFactory(getContext().get(Run.class), getContext().get(FilePath.class).getChannel());
         }
 
     }
@@ -99,7 +99,7 @@ public class ServerEndpointStep extends Step {
         }
 
         @Override public Set<? extends Class<?>> getRequiredContext() {
-            return ImmutableSet.of(Job.class, FilePath.class);
+            return ImmutableSet.of(Run.class, FilePath.class);
         }
 
         // TODO allow DockerServerEndpoint fields to be inlined, as in RegistryEndpointStep, so Docker.groovy can say simply: script.withDockerServer(uri: uri, credentialsId: credentialsId) {…}
