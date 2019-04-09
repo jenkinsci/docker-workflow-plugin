@@ -31,9 +31,10 @@
     <properties>
         <revision>1.19</revision>
         <changelist>-SNAPSHOT</changelist>
-        <jenkins.version>2.60.3</jenkins.version>
+        <jenkins.version>2.121.1</jenkins.version>
         <java.level>8</java.level>
-        <workflow-step-api-plugin.version>2.18</workflow-step-api-plugin.version>
+        <useBeta>true</useBeta>
+        <workflow-step-api-plugin.version>2.20-rc517.251dd3bdb066</workflow-step-api-plugin.version> <!-- TODO https://github.com/jenkinsci/workflow-step-api-plugin/pull/43 -->
         <workflow-support-plugin.version>2.12</workflow-support-plugin.version>
         <workflow-cps-plugin.version>2.25</workflow-cps-plugin.version>
     </properties>
@@ -130,4 +131,13 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.jenkins-ci.plugins</groupId>
+                <artifactId>structs</artifactId>
+                <version>1.18-rc266.794506c68411</version> <!-- TODO https://github.com/jenkinsci/structs-plugin/pull/43 -->
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 </project>
