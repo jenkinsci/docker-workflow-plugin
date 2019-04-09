@@ -109,6 +109,7 @@ public class WithContainerStep extends AbstractStepImpl {
         new DockerClient(launcher, node, toolName).stop(launcherEnv, container);
     }
 
+    // TODO switch to GeneralNonBlockingStepExecution
     public static class Execution extends AbstractStepExecutionImpl {
 
         private static final long serialVersionUID = 1;

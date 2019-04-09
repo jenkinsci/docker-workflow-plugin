@@ -33,7 +33,7 @@
         <changelist>-SNAPSHOT</changelist>
         <jenkins.version>2.60.3</jenkins.version>
         <java.level>8</java.level>
-        <workflow-step-api-plugin.version>2.9</workflow-step-api-plugin.version>
+        <workflow-step-api-plugin.version>2.18</workflow-step-api-plugin.version>
         <workflow-support-plugin.version>2.12</workflow-support-plugin.version>
         <workflow-cps-plugin.version>2.25</workflow-cps-plugin.version>
     </properties>
