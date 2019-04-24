@@ -276,7 +276,7 @@ public class DockerClient {
     private LaunchResult launch(@Nonnull EnvVars launchEnv, boolean quiet, FilePath pwd, @Nonnull String... args) throws IOException, InterruptedException {
         return launch(launchEnv, quiet, pwd, new ArgumentListBuilder(args));
     }
-    private LaunchResult launch(@CheckForNull @Nonnull EnvVars launchEnv, boolean quiet, FilePath pwd, @Nonnull ArgumentListBuilder args) throws IOException, InterruptedException {
+    private LaunchResult launch(@Nonnull EnvVars launchEnv, boolean quiet, FilePath pwd, @Nonnull ArgumentListBuilder args) throws IOException, InterruptedException {
         // Prepend the docker command
         args.prepend(DockerTool.getExecutable(toolName, node, launcher.getListener(), launchEnv));
 
