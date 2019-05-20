@@ -181,7 +181,7 @@ public class WithContainerStep extends AbstractStepImpl {
                 volumes.put(tmp, tmp);
             }
 
-            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
+            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), dockerClient.whatAmI(), /* expected to hang until killed */ "cat");
             final List<String> ps = dockerClient.listProcess(env, container);
             if (!ps.contains("cat")) {
                 listener.error(

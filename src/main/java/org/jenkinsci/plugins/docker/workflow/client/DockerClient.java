@@ -100,10 +100,11 @@ public class DockerClient {
      * @param volumesFromContainers Mounts all volumes from the given containers.
      * @param containerEnv Environment variables to set in container.
      * @param user The <strong>uid:gid</strong> to execute the container command as. Use {@link #whoAmI()}.
+     * @param groups The group membership to execuate the containeras. Use {@link #whatAmI()}.
      * @param command The command to execute in the image container being run.
      * @return The container ID.
      */
-    public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, @Nonnull String... command) throws IOException, InterruptedException {
+    public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, @Nonnull List<String> groups, @Nonnull String... command) throws IOException, InterruptedException {
         ArgumentListBuilder argb = new ArgumentListBuilder();
 
         argb.add("run", "-t", "-d", "-u", user);
@@ -111,6 +112,11 @@ public class DockerClient {
             argb.addTokenized(args);
         }
         
+        if(groups != null) {
+            for(String group : groups) {
+                argb.add("--group-add", group);
+            }
+        }
         if (workdir != null) {
             argb.add("-w", workdir);
         }
@@ -315,6 +321,19 @@ public class DockerClient {
         final String charsetName = Charset.defaultCharset().name();
         return String.format("%s:%s", userId.toString(charsetName).trim(), groupId.toString(charsetName).trim());
 
+    }
+
+    /**
+     * What groups does this user belong to.
+     *
+     * @return a List of String containing the group IDs.
+     */
+    public List<String> whatAmI() throws IOException, InterruptedException {
+        ByteArrayOutputStream groups = new ByteArrayOutputStream();
+        launcher.launch().cmds("id","-G").quiet(true).stdout(groups).start().joinWithTimeout(CLIENT_TIMEOUT, TimeUnit.SECONDS, launcher.getListener());
+
+        final String charsetName = Charset.defaultCharset().name();
+        return Arrays.asList(groups.toString(charsetName).trim().split(" "));
     }
 
     /**
