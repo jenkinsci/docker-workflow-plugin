@@ -220,7 +220,7 @@ public class DockerClient {
         return fieldValue;
     }
     
-    private @CheckForNull Date getCreatedDate(@Nonnull EnvVars launchEnv, @Nonnull String objectId) throws InterruptedException {
+    private @CheckForNull Date getCreatedDate(@Nonnull EnvVars launchEnv, @Nonnull String objectId) throws IOException, InterruptedException {
         String createdString = inspect(launchEnv, objectId, "json .Created");
         if (createdString == null) {
             return null;
