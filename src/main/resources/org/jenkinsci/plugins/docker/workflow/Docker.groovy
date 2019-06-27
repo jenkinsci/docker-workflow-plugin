@@ -79,6 +79,7 @@ class Docker implements Serializable {
         node {
             def parsedArgs = args.split(/ (?=([^"']*["'][^"']*["'])*[^"']*$)/)
             def dir = parsedArgs[-1] ?: '.'
+            def pull = false
 
             // Detect custom Dockerfile:
             def dockerfile = "${dir}/Dockerfile"
@@ -86,8 +87,25 @@ class Docker implements Serializable {
                 def arg = parsedArgs[i]
                 if ((arg == '-f' || arg.startsWith('--file')) && i < (parsedArgs.length - 1)) {
                     dockerfile = arg.startsWith('--file=') ? arg.split('=')[1] : parsedArgs[i+1]
-                    break
                 }
+                else if(arg == '--pull') {
+                    pull = true
+                    args = args.replaceAll('--pull', '')
+                }
+            }
+
+            def filetext = script.readFile dockerfile
+            def lastFrom = ""
+            for (line in filetext.split("\n")) {
+                if (line.startsWith("FROM ")) {
+                    lastFrom = line.substring(5)
+                }
+            }
+
+            if (pull) {
+                script.sh "docker pull ${lastFrom}"
+            } else {
+                script.sh "docker inspect ${lastFrom} >> /dev/null || docker pull ${lastFrom}"
             }
 
             def commandLine = "docker build -t ${image} ${args}"
