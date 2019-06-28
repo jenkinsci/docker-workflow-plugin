@@ -392,7 +392,6 @@ public class DockerDSLTest {
                 DockerClient client = new DockerClient(new Launcher.LocalLauncher(StreamTaskListener.NULL), null, null);
                 String descendantImageId1 = client.inspect(new EnvVars(), "hello-world-stuff-arguments", ".Id");
                 story.j.assertLogContains("built hello-world-stuff-arguments", b);
-                story.j.assertLogContains(" --pull ", b);
                 story.j.assertLogNotContains(" --no-cache ", b);
                 story.j.assertLogContains(descendantImageId1.replaceFirst("^sha256:", "").substring(0, 12), b);
                 story.j.assertLogContains(" --build-arg stuff4=build4 ", b);

@@ -102,10 +102,12 @@ class Docker implements Serializable {
                 }
             }
 
-            if (pull) {
-                script.sh "docker pull ${lastFrom}"
-            } else {
-                script.sh "docker inspect ${lastFrom} >> /dev/null || docker pull ${lastFrom}"
+            if (!lastFrom.equals("scratch")) {
+                if (pull) {
+                    script.sh "docker pull ${lastFrom}"
+                } else {
+                    script.sh "docker inspect ${lastFrom} >> /dev/null || docker pull ${lastFrom}"
+                }
             }
 
             def commandLine = "docker build -t ${image} ${args}"
