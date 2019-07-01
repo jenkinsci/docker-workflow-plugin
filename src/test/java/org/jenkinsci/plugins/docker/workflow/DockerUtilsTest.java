@@ -23,7 +23,9 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
+import hudson.EnvVars;
 import hudson.FilePath;
+import hudson.slaves.EnvironmentVariablesNodeProperty;
 import org.hamcrest.collection.IsCollectionWithSize;
 import org.hamcrest.core.IsCollectionContaining;
 import org.hamcrest.core.IsEqual;
@@ -31,6 +33,7 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.jvnet.hudson.test.JenkinsRule;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,6 +42,8 @@ import java.util.Map;
 public class DockerUtilsTest {
 
     @Rule public final ExpectedException exception = ExpectedException.none();
+
+    @Rule public JenkinsRule j = new JenkinsRule();
 
     @Test public void parseBuildArgs() throws IOException, InterruptedException {
 
@@ -104,6 +109,24 @@ public class DockerUtilsTest {
 
         exception.expect(IllegalArgumentException.class);
         DockerUtils.parseBuildArgs(null, commangLine);
+    }
+
+    @Test public void parseBuildArgWithKeyOnlyAndEnvVariable() throws IOException, InterruptedException {
+
+        EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
+        EnvVars env = prop.getEnvVars();
+
+        final String json_arg = "EXAMPLE_JSON";
+        final String json_value = "{\"http-basic\":{\"repo.example.org\":{\"username\":\"some-api-user\",\"password\":\"generatedapipasswordorsomeothersecret\"}}}";
+
+        env.put("EXAMPLE_JSON", json_value);
+        j.jenkins.getGlobalNodeProperties().add(prop);
+
+        final String commangLine = "docker build -t hello-world --build-arg "+json_arg;
+        Map<String, String> buildArgs = DockerUtils.parseBuildArgs(null, commangLine, env);
+
+        Assert.assertThat(buildArgs.keySet(), IsCollectionWithSize.hasSize(1));
+        Assert.assertThat(buildArgs.keySet(), IsCollectionContaining.hasItems(json_arg));
     }
 
     @Test public void parseInvalidBuildArgWithKeyOnly() throws IOException, InterruptedException {

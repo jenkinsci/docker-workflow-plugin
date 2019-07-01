@@ -96,7 +96,7 @@ public class FromFingerprintStep extends AbstractStepImpl {
         @Override protected Void run() throws Exception {
             FilePath dockerfilePath = workspace.child(step.dockerfile);
             Dockerfile dockerfile = new Dockerfile(dockerfilePath);
-            Map<String, String> buildArgs = DockerUtils.parseBuildArgs(dockerfile, step.commandLine);
+            Map<String, String> buildArgs = DockerUtils.parseBuildArgs(dockerfile, step.commandLine, env);
             String fromImage = dockerfile.getFroms().getLast();
 
             if (dockerfile.getFroms().isEmpty()) {

@@ -23,6 +23,8 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
+import hudson.EnvVars;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,6 +36,12 @@ public final class DockerUtils {
     }
 
     public static Map<String, String> parseBuildArgs(final Dockerfile dockerfile, final String commandLine) {
+        EnvVars emptyEnvVars = new EnvVars();
+        Map<String, String> result = parseBuildArgs(dockerfile, commandLine, emptyEnvVars);
+        return result;
+    }
+
+    public static Map<String, String> parseBuildArgs(final Dockerfile dockerfile, final String commandLine, final EnvVars env) {
         // this also accounts for quote, escapes, ...
         Commandline parsed = new Commandline(commandLine);
         Map<String, String> result = new HashMap<>();
@@ -52,12 +60,19 @@ public final class DockerUtils {
 
                 String parts[] = keyVal.split("=", 2);
                 if (parts.length != 2) {
-                    throw new IllegalArgumentException("Illegal syntax for --build-arg " + keyVal + ", need KEY=VALUE");
+                    // check if we have an environment variable with the very same name
+                    if (env.get(parts[0]) != null) {
+                        String key = parts[0];
+                        String value = "";
+                        result.put(key, value);
+                    } else {
+                        throw new IllegalArgumentException("Illegal syntax for --build-arg " + keyVal + ", either need KEY=VALUE or a corrsponding variable KEY on environment.");
+                    }
+                } else {
+                    String key = parts[0];
+                    String value = parts[1];
+                    result.put(key, value);
                 }
-                String key = parts[0];
-                String value = parts[1];
-
-                result.put(key, value);
             }
         }
         return result;
