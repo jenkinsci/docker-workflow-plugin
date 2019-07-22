@@ -25,10 +25,7 @@ package org.jenkinsci.plugins.docker.workflow;
 
 import hudson.EnvVars;
 import hudson.Launcher.LocalLauncher;
-import hudson.model.Fingerprint;
 import hudson.util.StreamTaskListener;
-import org.jenkinsci.plugins.docker.commons.fingerprint.DockerDescendantFingerprintFacet;
-import org.jenkinsci.plugins.docker.commons.fingerprint.DockerFingerprints;
 import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -39,7 +36,6 @@ import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
 
 import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeDocker;
-import static org.junit.Assert.assertNotNull;
 
 public class FromFingerprintStepTest {
     @Rule public RestartableJenkinsRule story = new RestartableJenkinsRule();
@@ -126,10 +122,6 @@ public class FromFingerprintStepTest {
                 String ancestorImageId = client.inspect(new EnvVars(), fromImage, ".Id");
                 story.j.assertLogContains("built from-with-arg", b);
                 story.j.assertLogContains(ancestorImageId.replaceFirst("^sha256:", "").substring(0, 12), b);
-                Fingerprint f = DockerFingerprints.of(ancestorImageId);
-                assertNotNull(f);
-                DockerDescendantFingerprintFacet descendantFacet = f.getFacet(DockerDescendantFingerprintFacet.class);
-                assertNotNull(descendantFacet);
             }
         });
     }

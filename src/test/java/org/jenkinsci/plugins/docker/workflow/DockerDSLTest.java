@@ -283,50 +283,15 @@ public class DockerDSLTest {
                     "}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
                 DockerClient client = new DockerClient(new Launcher.LocalLauncher(StreamTaskListener.NULL), null, null);
-                String ancestorImageId = client.inspect(new EnvVars(), "hello-world", ".Id");
+
                 String descendantImageId1 = client.inspect(new EnvVars(), "hello-world-stuff", ".Id");
                 story.j.assertLogContains("built hello-world-stuff", b);
                 story.j.assertLogContains(descendantImageId1.replaceFirst("^sha256:", "").substring(0, 12), b);
-                Fingerprint f = DockerFingerprints.of(ancestorImageId);
-                assertNotNull(f);
-                DockerDescendantFingerprintFacet descendantFacet = f.getFacet(DockerDescendantFingerprintFacet.class);
-                assertNotNull(descendantFacet);
-                assertEquals(Fingerprint.RangeSet.fromString("1", false), descendantFacet.getRangeSet(p));
-                assertEquals(ancestorImageId, descendantFacet.getImageId());
-                assertEquals(Collections.singleton(descendantImageId1), descendantFacet.getDescendantImageIds());
-                f = DockerFingerprints.of(descendantImageId1);
-                assertNotNull(f);
-                DockerAncestorFingerprintFacet ancestorFacet = f.getFacet(DockerAncestorFingerprintFacet.class);
-                assertNotNull(ancestorFacet);
-                assertEquals(Fingerprint.RangeSet.fromString("1", false), ancestorFacet.getRangeSet(p));
-                assertEquals(Collections.singleton(ancestorImageId), ancestorFacet.getAncestorImageIds());
-                assertEquals(descendantImageId1, ancestorFacet.getImageId());
+
                 b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
                 String descendantImageId2 = client.inspect(new EnvVars(), "hello-world-stuff", ".Id");
                 story.j.assertLogContains("built hello-world-stuff", b);
                 story.j.assertLogContains(descendantImageId2.replaceFirst("^sha256:", "").substring(0, 12), b);
-                f = DockerFingerprints.of(ancestorImageId);
-                assertNotNull(f);
-                descendantFacet = f.getFacet(DockerDescendantFingerprintFacet.class);
-                assertNotNull(descendantFacet);
-                assertEquals(Fingerprint.RangeSet.fromString("1-2", false), descendantFacet.getRangeSet(p));
-                assertEquals(ancestorImageId, descendantFacet.getImageId());
-                assertEquals(new HashSet<String>(Arrays.asList(descendantImageId1, descendantImageId2)), descendantFacet.getDescendantImageIds());
-                f = DockerFingerprints.of(descendantImageId1);
-                assertNotNull(f);
-                ancestorFacet = f.getFacet(DockerAncestorFingerprintFacet.class);
-                assertNotNull(ancestorFacet);
-                assertEquals(Fingerprint.RangeSet.fromString("1", false), ancestorFacet.getRangeSet(p));
-                assertEquals(Collections.singleton(ancestorImageId), ancestorFacet.getAncestorImageIds());
-                assertEquals(descendantImageId1, ancestorFacet.getImageId());
-                f = DockerFingerprints.of(descendantImageId2);
-                assertNotNull(f);
-                ancestorFacet = f.getFacet(DockerAncestorFingerprintFacet.class);
-                assertNotNull(ancestorFacet);
-                assertEquals(Fingerprint.RangeSet.fromString("2", false), ancestorFacet.getRangeSet(p));
-                assertEquals(Collections.singleton(ancestorImageId), ancestorFacet.getAncestorImageIds());
-                assertEquals(descendantImageId2, ancestorFacet.getImageId());
-                assertEquals(Collections.singleton("hello-world"), DockerImageExtractor.getDockerImagesUsedByJobFromAll(p));
             }
         });
     }
