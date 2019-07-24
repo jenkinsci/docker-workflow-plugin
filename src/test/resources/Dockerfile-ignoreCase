@@ -1,0 +1,4 @@
+# Dockerfile with FROM ARGs and default values
+ARG REGISTRY_URL
+arg TAG=latest
+from ${REGISTRY_URL}hello-world:${TAG}

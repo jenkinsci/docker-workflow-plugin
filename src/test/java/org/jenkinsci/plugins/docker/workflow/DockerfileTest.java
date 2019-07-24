@@ -49,6 +49,13 @@ public class DockerfileTest {
         Assert.assertThat(dockerfile.getArgs().keySet(), IsCollectionWithSize.hasSize(2));
         Assert.assertThat(dockerfile.getArgs().keySet(), IsCollectionContaining.hasItems("REGISTRY_URL", "TAG"));
     }
+    
+    @Test public void parseDockerfileIgnoreCase() throws IOException, InterruptedException {
+    	FilePath dockerFilePath = new FilePath(new File("src/test/resources/Dockerfile-lowercaseFrom")); 
+    	Dockerfile dockerfile = new Dockerfile(dockerFilePath);
+    	Assert.assertThat(dockerfile.getFroms().getLast(), IsEqual.equalTo("${REGISTRY_URL}hello-world:${TAG}"));
+    	Assert.assertThat(dockerfile.getArgs().keySet(), IsCollectionWithSize.hasSize(2));
+    }
 }
 
 
