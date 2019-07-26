@@ -77,19 +77,6 @@ class Docker implements Serializable {
 
     public Image build(String image, String args = '.') {
         node {
-            def parsedArgs = args.split(/ (?=([^"']*["'][^"']*["'])*[^"']*$)/)
-            def dir = parsedArgs[-1] ?: '.'
-
-            // Detect custom Dockerfile:
-            def dockerfile = "${dir}/Dockerfile"
-            for (int i=0; i<parsedArgs.length; i++) {
-                def arg = parsedArgs[i]
-                if ((arg == '-f' || arg.startsWith('--file')) && i < (parsedArgs.length - 1)) {
-                    dockerfile = arg.startsWith('--file=') ? arg.split('=')[1] : parsedArgs[i+1]
-                    break
-                }
-            }
-
             def commandLine = "docker build -t ${image} ${args}"
 
             script.sh commandLine
