@@ -44,7 +44,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 /**
- * @deprecated Per discussion here: https://github.com/jenkinsci/docker-workflow-plugin/pull/149#issuecomment-451305522
+ * @deprecated Fingerprints produced by this step are not used anywhere, and the parsing code has major limitations. See https://github.com/jenkinsci/docker-workflow-plugin/pull/149#issuecomment-451305522 and https://groups.google.com/d/msg/jenkinsci-dev/k13SfZcBWVg/iQghmCQrEAAJ
  */
 @Deprecated
 public class FromFingerprintStep extends AbstractStepImpl {
