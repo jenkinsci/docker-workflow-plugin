@@ -25,14 +25,10 @@ package org.jenkinsci.plugins.docker.workflow;
 
 import hudson.EnvVars;
 import hudson.Launcher;
-import hudson.model.Fingerprint;
 import hudson.tools.ToolProperty;
 import hudson.util.StreamTaskListener;
 import hudson.util.VersionNumber;
 import org.apache.commons.io.FileUtils;
-import org.jenkinsci.plugins.docker.commons.DockerImageExtractor;
-import org.jenkinsci.plugins.docker.commons.fingerprint.DockerFingerprints;
-import org.jenkinsci.plugins.docker.commons.fingerprint.DockerRunFingerprintFacet;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -56,7 +52,6 @@ import java.util.TreeSet;
 import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeDocker;
 import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeNotWindows;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeTrue;
 
 public class DockerDSLTest {
@@ -128,16 +123,6 @@ public class DockerDSLTest {
                 WorkflowRun b = p.getLastBuild();
                 story.j.assertLogContains("Require method GET POST OPTIONS", story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
                 story.j.assertLogContains("the answer is 42", b);
-                DockerClient client = new DockerClient(new Launcher.LocalLauncher(StreamTaskListener.NULL), null, null);
-                String httpdIID = client.inspect(new EnvVars(), "httpd:2.4.12", ".Id");
-                Fingerprint f = DockerFingerprints.of(httpdIID);
-                assertNotNull(f);
-                DockerRunFingerprintFacet facet = f.getFacet(DockerRunFingerprintFacet.class);
-                assertNotNull(facet);
-                assertEquals(1, facet.records.size());
-                assertNotNull(facet.records.get(0).getContainerName());
-                assertEquals(Fingerprint.RangeSet.fromString("1", false), facet.getRangeSet(p));
-                assertEquals(Collections.singleton("httpd"), DockerImageExtractor.getDockerImagesUsedByJobFromAll(p));
             }
         });
     }
@@ -229,16 +214,6 @@ public class DockerDSLTest {
                 WorkflowRun b = p.getLastBuild();
                 story.j.assertLogContains("Require method GET POST OPTIONS", story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
                 story.j.assertLogContains("the answer is 42", b);
-                DockerClient client = new DockerClient(new Launcher.LocalLauncher(StreamTaskListener.NULL), null, null);
-                String httpdIID = client.inspect(new EnvVars(), "httpd:2.4.12", ".Id");
-                Fingerprint f = DockerFingerprints.of(httpdIID);
-                assertNotNull(f);
-                DockerRunFingerprintFacet facet = f.getFacet(DockerRunFingerprintFacet.class);
-                assertNotNull(facet);
-                assertEquals(1, facet.records.size());
-                assertNotNull(facet.records.get(0).getContainerName());
-                assertEquals(Fingerprint.RangeSet.fromString("1", false), facet.getRangeSet(p));
-                assertEquals(Collections.singleton("httpd"), DockerImageExtractor.getDockerImagesUsedByJobFromAll(p));
             }
         });
     }
@@ -253,12 +228,6 @@ public class DockerDSLTest {
                                 "  sh \"docker logs ${c.id}\"" +
                                 "}", true));
                 story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-                DockerClient client = new DockerClient(new Launcher.LocalLauncher(StreamTaskListener.NULL), null, null);
-                String mavenIID = client.inspect(new EnvVars(), "maven:3.3.9-jdk-8", ".Id");
-                Fingerprint f = DockerFingerprints.of(mavenIID);
-                assertNotNull(f);
-                DockerRunFingerprintFacet facet = f.getFacet(DockerRunFingerprintFacet.class);
-                assertNotNull(facet);
             }
         });
     }
