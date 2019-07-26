@@ -23,38 +23,22 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
-import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeDocker;
-
-import hudson.util.VersionNumber;
-import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import hudson.EnvVars;
 import hudson.Launcher;
 import hudson.model.Fingerprint;
 import hudson.tools.ToolProperty;
 import hudson.util.StreamTaskListener;
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.TreeSet;
+import hudson.util.VersionNumber;
 import org.apache.commons.io.FileUtils;
 import org.jenkinsci.plugins.docker.commons.DockerImageExtractor;
-import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
-import org.jenkinsci.plugins.docker.commons.fingerprint.DockerAncestorFingerprintFacet;
-import org.jenkinsci.plugins.docker.commons.fingerprint.DockerDescendantFingerprintFacet;
 import org.jenkinsci.plugins.docker.commons.fingerprint.DockerFingerprints;
 import org.jenkinsci.plugins.docker.commons.fingerprint.DockerRunFingerprintFacet;
+import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
+import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
-
-import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeNotWindows;
-import static org.junit.Assert.*;
-import static org.junit.Assume.*;
-
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -62,6 +46,18 @@ import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Set;
+import java.util.TreeSet;
+
+import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeDocker;
+import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeNotWindows;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assume.assumeTrue;
 
 public class DockerDSLTest {
 
