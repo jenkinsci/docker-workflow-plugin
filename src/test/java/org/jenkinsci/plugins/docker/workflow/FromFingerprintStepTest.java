@@ -25,7 +25,10 @@ package org.jenkinsci.plugins.docker.workflow;
 
 import hudson.EnvVars;
 import hudson.Launcher.LocalLauncher;
+import hudson.model.Fingerprint;
 import hudson.util.StreamTaskListener;
+import org.jenkinsci.plugins.docker.commons.fingerprint.DockerDescendantFingerprintFacet;
+import org.jenkinsci.plugins.docker.commons.fingerprint.DockerFingerprints;
 import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -36,77 +39,27 @@ import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
 
 import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeDocker;
+import static org.junit.Assert.assertNotNull;
 
 public class FromFingerprintStepTest {
     @Rule public RestartableJenkinsRule story = new RestartableJenkinsRule();
 
-    private static final String HELLO_WORLD_IMAGE = "hello-world";
-    private static final String BUSYBOX_IMAGE = "busybox";
+    private static final String BUSYBOX_IMAGE = "quay.io/prometheus/busybox:latest";
 
-    /**
-     * Test quotation marks in --build-arg parameters
-     */
-    @Test public void buildWithFROMArgs() throws Exception {
-        String dockerfile = "" +
-            "ARG IMAGE_TO_UPDATE\\n" +
-            "FROM ${IMAGE_TO_UPDATE}\\n";
-
-        assertBuild("prj-simple",
-            script(dockerfile, "--build-arg IMAGE_TO_UPDATE=hello-world:latest"), HELLO_WORLD_IMAGE);
-
-        assertBuild("prj-singlequotes-in-build-arg---aroundValue",
-            script(dockerfile, "--build-arg IMAGE_TO_UPDATE=\\'hello-world:latest\\'"), HELLO_WORLD_IMAGE);
-
-        assertBuild("prj-dobulequotes-in-build-arg---aroundValue",
-            script(dockerfile, "--build-arg IMAGE_TO_UPDATE=\"hello-world:latest\""), HELLO_WORLD_IMAGE);
-
-        assertBuild("prj-singlequotes-in-build-arg---aroundAll",
-            script(dockerfile, "--build-arg \\'IMAGE_TO_UPDATE=hello-world:latest\\'"), HELLO_WORLD_IMAGE);
-
-        assertBuild("prj-doublequotes-in-build-arg---aroundAll",
-            script(dockerfile, "--build-arg \"IMAGE_TO_UPDATE=hello-world:latest\""), HELLO_WORLD_IMAGE);
-    }
-
-    @Test public void buildWithDefaultArgsFromDockerfile() throws Exception {
-        String dockerfile = ""+
-            "ARG REGISTRY_URL\\n" +
-            "ARG TAG=latest\\n" +
-            "FROM ${REGISTRY_URL}busybox:${TAG}\\n";
-
-        assertBuild("prj-with-default-arg-from-dockerfile",
-            script(dockerfile, ""), BUSYBOX_IMAGE);
-
-        assertBuild("prj-override-empty-value",
-            script(dockerfile, "--build-arg REGISTRY_URL="), BUSYBOX_IMAGE);
-
-        assertBuild("prj-with-override-value",
-            script(dockerfile, "--build-arg TAG=1.27.1"), BUSYBOX_IMAGE+":1.27.1");
-
-        assertBuild("prj-with-override-value2",
-            script(dockerfile, "--build-arg TAG=1.26"), BUSYBOX_IMAGE+":1.26");
-    }
-
-    @Test public void buildOverridingRegistry() throws Exception {
-        String quayDockerfile = ""+
-            "ARG REGISTRY_URL\\n" +
-            "ARG TAG=latest\\n" +
-            "FROM ${REGISTRY_URL}prometheus/busybox:${TAG}\\n";
-
-        assertBuild("prj-override-registry",
-            script(quayDockerfile, "--build-arg REGISTRY_URL=\\'quay.io/\\'"), "quay.io/prometheus/busybox");
-    }
-
-    private static String script(String dockerfile, String buildArg) {
-        String fullBuildArgs = buildArg + " buildWithFROMArgs";
+    @Test public void build() throws Exception {
+        String dockerFile = "" + 
+            "FROM "+ BUSYBOX_IMAGE +"\\n" +
+            "RUN echo 1";
 
         String script = "node {\n" +
             "  sh 'mkdir buildWithFROMArgs'\n" +
-            "  writeFile file: 'buildWithFROMArgs/Dockerfile', text: '" + dockerfile + "'\n" +
-            "  def built = docker.build 'from-with-arg', '" + fullBuildArgs + "'\n" +
+            "  writeFile file: 'Dockerfile', text: '" + dockerFile + "'\n" +
+            "  def built = docker.build('my-tag') \n" +
+            "  dockerFingerprintFrom dockerfile: 'Dockerfile', image: 'my-tag' \n" +
             "  echo \"built ${built.id}\"\n" +
             "}";
 
-        return script;
+        assertBuild("build", script, BUSYBOX_IMAGE);
     }
 
     private void assertBuild(final String projectName, final String pipelineCode, final String fromImage) throws Exception {
@@ -120,8 +73,11 @@ public class FromFingerprintStepTest {
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
                 DockerClient client = new DockerClient(new LocalLauncher(StreamTaskListener.NULL), null, null);
                 String ancestorImageId = client.inspect(new EnvVars(), fromImage, ".Id");
-                story.j.assertLogContains("built from-with-arg", b);
                 story.j.assertLogContains(ancestorImageId.replaceFirst("^sha256:", "").substring(0, 12), b);
+                Fingerprint f = DockerFingerprints.of(ancestorImageId);
+                assertNotNull(f);
+                DockerDescendantFingerprintFacet descendantFacet = f.getFacet(DockerDescendantFingerprintFacet.class);
+                assertNotNull(descendantFacet);
             }
         });
     }
