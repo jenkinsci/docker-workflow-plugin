@@ -23,38 +23,18 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
-import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeDocker;
-
-import hudson.util.VersionNumber;
-import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import hudson.EnvVars;
 import hudson.Launcher;
-import hudson.model.Fingerprint;
 import hudson.tools.ToolProperty;
 import hudson.util.StreamTaskListener;
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.TreeSet;
+import hudson.util.VersionNumber;
 import org.apache.commons.io.FileUtils;
-import org.jenkinsci.plugins.docker.commons.DockerImageExtractor;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
-import org.jenkinsci.plugins.docker.commons.fingerprint.DockerAncestorFingerprintFacet;
-import org.jenkinsci.plugins.docker.commons.fingerprint.DockerDescendantFingerprintFacet;
-import org.jenkinsci.plugins.docker.commons.fingerprint.DockerFingerprints;
-import org.jenkinsci.plugins.docker.commons.fingerprint.DockerRunFingerprintFacet;
+import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
-
-import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeNotWindows;
-import static org.junit.Assert.*;
-import static org.junit.Assume.*;
-
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -62,6 +42,17 @@ import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Set;
+import java.util.TreeSet;
+
+import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeDocker;
+import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeNotWindows;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
 public class DockerDSLTest {
 
@@ -132,16 +123,6 @@ public class DockerDSLTest {
                 WorkflowRun b = p.getLastBuild();
                 story.j.assertLogContains("Require method GET POST OPTIONS", story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
                 story.j.assertLogContains("the answer is 42", b);
-                DockerClient client = new DockerClient(new Launcher.LocalLauncher(StreamTaskListener.NULL), null, null);
-                String httpdIID = client.inspect(new EnvVars(), "httpd:2.4.12", ".Id");
-                Fingerprint f = DockerFingerprints.of(httpdIID);
-                assertNotNull(f);
-                DockerRunFingerprintFacet facet = f.getFacet(DockerRunFingerprintFacet.class);
-                assertNotNull(facet);
-                assertEquals(1, facet.records.size());
-                assertNotNull(facet.records.get(0).getContainerName());
-                assertEquals(Fingerprint.RangeSet.fromString("1", false), facet.getRangeSet(p));
-                assertEquals(Collections.singleton("httpd"), DockerImageExtractor.getDockerImagesUsedByJobFromAll(p));
             }
         });
     }
@@ -233,16 +214,6 @@ public class DockerDSLTest {
                 WorkflowRun b = p.getLastBuild();
                 story.j.assertLogContains("Require method GET POST OPTIONS", story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
                 story.j.assertLogContains("the answer is 42", b);
-                DockerClient client = new DockerClient(new Launcher.LocalLauncher(StreamTaskListener.NULL), null, null);
-                String httpdIID = client.inspect(new EnvVars(), "httpd:2.4.12", ".Id");
-                Fingerprint f = DockerFingerprints.of(httpdIID);
-                assertNotNull(f);
-                DockerRunFingerprintFacet facet = f.getFacet(DockerRunFingerprintFacet.class);
-                assertNotNull(facet);
-                assertEquals(1, facet.records.size());
-                assertNotNull(facet.records.get(0).getContainerName());
-                assertEquals(Fingerprint.RangeSet.fromString("1", false), facet.getRangeSet(p));
-                assertEquals(Collections.singleton("httpd"), DockerImageExtractor.getDockerImagesUsedByJobFromAll(p));
             }
         });
     }
@@ -257,12 +228,6 @@ public class DockerDSLTest {
                                 "  sh \"docker logs ${c.id}\"" +
                                 "}", true));
                 story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-                DockerClient client = new DockerClient(new Launcher.LocalLauncher(StreamTaskListener.NULL), null, null);
-                String mavenIID = client.inspect(new EnvVars(), "maven:3.3.9-jdk-8", ".Id");
-                Fingerprint f = DockerFingerprints.of(mavenIID);
-                assertNotNull(f);
-                DockerRunFingerprintFacet facet = f.getFacet(DockerRunFingerprintFacet.class);
-                assertNotNull(facet);
             }
         });
     }
@@ -283,50 +248,15 @@ public class DockerDSLTest {
                     "}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
                 DockerClient client = new DockerClient(new Launcher.LocalLauncher(StreamTaskListener.NULL), null, null);
-                String ancestorImageId = client.inspect(new EnvVars(), "hello-world", ".Id");
+
                 String descendantImageId1 = client.inspect(new EnvVars(), "hello-world-stuff", ".Id");
                 story.j.assertLogContains("built hello-world-stuff", b);
                 story.j.assertLogContains(descendantImageId1.replaceFirst("^sha256:", "").substring(0, 12), b);
-                Fingerprint f = DockerFingerprints.of(ancestorImageId);
-                assertNotNull(f);
-                DockerDescendantFingerprintFacet descendantFacet = f.getFacet(DockerDescendantFingerprintFacet.class);
-                assertNotNull(descendantFacet);
-                assertEquals(Fingerprint.RangeSet.fromString("1", false), descendantFacet.getRangeSet(p));
-                assertEquals(ancestorImageId, descendantFacet.getImageId());
-                assertEquals(Collections.singleton(descendantImageId1), descendantFacet.getDescendantImageIds());
-                f = DockerFingerprints.of(descendantImageId1);
-                assertNotNull(f);
-                DockerAncestorFingerprintFacet ancestorFacet = f.getFacet(DockerAncestorFingerprintFacet.class);
-                assertNotNull(ancestorFacet);
-                assertEquals(Fingerprint.RangeSet.fromString("1", false), ancestorFacet.getRangeSet(p));
-                assertEquals(Collections.singleton(ancestorImageId), ancestorFacet.getAncestorImageIds());
-                assertEquals(descendantImageId1, ancestorFacet.getImageId());
+
                 b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
                 String descendantImageId2 = client.inspect(new EnvVars(), "hello-world-stuff", ".Id");
                 story.j.assertLogContains("built hello-world-stuff", b);
                 story.j.assertLogContains(descendantImageId2.replaceFirst("^sha256:", "").substring(0, 12), b);
-                f = DockerFingerprints.of(ancestorImageId);
-                assertNotNull(f);
-                descendantFacet = f.getFacet(DockerDescendantFingerprintFacet.class);
-                assertNotNull(descendantFacet);
-                assertEquals(Fingerprint.RangeSet.fromString("1-2", false), descendantFacet.getRangeSet(p));
-                assertEquals(ancestorImageId, descendantFacet.getImageId());
-                assertEquals(new HashSet<String>(Arrays.asList(descendantImageId1, descendantImageId2)), descendantFacet.getDescendantImageIds());
-                f = DockerFingerprints.of(descendantImageId1);
-                assertNotNull(f);
-                ancestorFacet = f.getFacet(DockerAncestorFingerprintFacet.class);
-                assertNotNull(ancestorFacet);
-                assertEquals(Fingerprint.RangeSet.fromString("1", false), ancestorFacet.getRangeSet(p));
-                assertEquals(Collections.singleton(ancestorImageId), ancestorFacet.getAncestorImageIds());
-                assertEquals(descendantImageId1, ancestorFacet.getImageId());
-                f = DockerFingerprints.of(descendantImageId2);
-                assertNotNull(f);
-                ancestorFacet = f.getFacet(DockerAncestorFingerprintFacet.class);
-                assertNotNull(ancestorFacet);
-                assertEquals(Fingerprint.RangeSet.fromString("2", false), ancestorFacet.getRangeSet(p));
-                assertEquals(Collections.singleton(ancestorImageId), ancestorFacet.getAncestorImageIds());
-                assertEquals(descendantImageId2, ancestorFacet.getImageId());
-                assertEquals(Collections.singleton("hello-world"), DockerImageExtractor.getDockerImagesUsedByJobFromAll(p));
             }
         });
     }
