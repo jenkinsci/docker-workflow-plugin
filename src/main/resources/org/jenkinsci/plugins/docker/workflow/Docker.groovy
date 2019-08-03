@@ -92,7 +92,7 @@ class Docker implements Serializable {
 
         private Image(Docker docker, String id) {
             this.docker = docker
-            this.id = id
+            this.id = new org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint(docker.script.env.DOCKER_REGISTRY_URL, null).imageName(id)
             this.parsedId = new ImageNameTokens(id)
         }
 
@@ -125,7 +125,7 @@ class Docker implements Serializable {
 
         public void pull() {
             docker.node {
-                docker.script.sh "docker pull ${imageName()}"
+                docker.script.sh "docker pull ${id}"
             }
         }
 
