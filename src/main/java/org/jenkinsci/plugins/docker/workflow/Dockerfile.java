@@ -70,13 +70,13 @@ public final class Dockerfile {
                     if (line.startsWith("#")) {
                         continue;
                     }
-                    if (line.startsWith(ARG)) {
+                    if (line.toUpperCase().startsWith(ARG)) {
                         String[] keyVal = parseDockerfileArg(line.substring(4));
                         args.put(keyVal[0], keyVal[1]);
                         continue;
                     }
 
-                    if (line.startsWith(FROM)) {
+                    if (line.toUpperCase().startsWith(FROM)) {
                         froms.add(line.substring(5));
                         continue;
                     }
