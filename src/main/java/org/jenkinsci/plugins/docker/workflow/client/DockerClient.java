@@ -82,8 +82,8 @@ public class DockerClient {
     private final Launcher launcher;
     private final @CheckForNull Node node;
     private final @CheckForNull String toolName;
-    private static Boolean isDockerInitialized = false;
-    private static Boolean isDockerOnWindows = false;
+    private Boolean isDockerInitialized = false;
+    private Boolean isDockerOnWindows = false;
 
     public DockerClient(@Nonnull Launcher launcher, @CheckForNull Node node, @CheckForNull String toolName) {
         this.launcher = launcher;
