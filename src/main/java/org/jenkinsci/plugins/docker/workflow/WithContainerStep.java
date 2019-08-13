@@ -183,9 +183,13 @@ public class WithContainerStep extends AbstractStepImpl {
                 volumes.put(tmp, tmp);
             }
 
-            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
+            String command = "cat";
+            if (dockerClient.isWindowsHost()) {
+                command = "sort.exe";
+            }
+            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ command);
             final List<String> ps = dockerClient.listProcess(env, container);
-            if (!ps.contains("cat")) {
+            if (!ps.contains(command)) {
                 listener.error(
                     "The container started but didn't run the expected command. " +
                         "Please double check your ENTRYPOINT does execute the command passed as docker run argument, " +

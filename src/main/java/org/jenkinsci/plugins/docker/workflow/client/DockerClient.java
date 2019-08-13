@@ -82,6 +82,8 @@ public class DockerClient {
     private final Launcher launcher;
     private final @CheckForNull Node node;
     private final @CheckForNull String toolName;
+    private static Boolean isDockerInitialized = false;
+    private static Boolean isDockerOnWindows = false;
 
     public DockerClient(@Nonnull Launcher launcher, @CheckForNull Node node, @CheckForNull String toolName) {
         this.launcher = launcher;
@@ -106,7 +108,14 @@ public class DockerClient {
     public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, @Nonnull String... command) throws IOException, InterruptedException {
         ArgumentListBuilder argb = new ArgumentListBuilder();
 
-        argb.add("run", "-t", "-d", "-u", user);
+        if (this.isWindowsHost()){
+            // user currently not supported under Windows
+            argb.add("run", "-t", "-d");
+        }
+        else {
+            argb.add("run", "-t", "-d", "-u", user);
+        }
+
         if (args != null) {
             argb.addTokenized(args);
         }
@@ -114,18 +123,29 @@ public class DockerClient {
         if (workdir != null) {
             argb.add("-w", workdir);
         }
-        for (Map.Entry<String, String> volume : volumes.entrySet()) {
-            argb.add("-v", volume.getKey() + ":" + volume.getValue() + ":rw,z");
+        if (this.isWindowsHost()){
+            // option "z" not supported under Windows
+            for (Map.Entry<String, String> volume : volumes.entrySet()) {
+                argb.add("-v", volume.getKey() + ":" + volume.getValue() + ":rw");
+            }
+        }
+        else {
+            for (Map.Entry<String, String> volume : volumes.entrySet()) {
+                argb.add("-v", volume.getKey() + ":" + volume.getValue() + ":rw,z");
+            }
         }
         for (String containerId : volumesFromContainers) {
             argb.add("--volumes-from", containerId);
         }
-        for (Map.Entry<String, String> variable : containerEnv.entrySet()) {
-            argb.add("-e");
-            argb.addMasked(variable.getKey()+"="+variable.getValue());
+        if (!this.isWindowsHost()){
+            // environment variables not currently supported
+            for (Map.Entry<String, String> variable : containerEnv.entrySet()) {
+                argb.add("-e");
+                argb.addMasked(variable.getKey()+"="+variable.getValue());
+            }
         }
         argb.add(image).add(command);
-
+            
         LaunchResult result = launch(launchEnv, false, null, argb);
         if (result.getStatus() == 0) {
             return result.getOut();
@@ -135,7 +155,14 @@ public class DockerClient {
     }
 
     public List<String> listProcess(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
-        LaunchResult result = launch(launchEnv, false, "top", containerId, "-eo", "pid,comm");
+        LaunchResult result;
+        if (this.isWindowsHost()){
+            // top deos not support parameters under Windows
+            result = launch(launchEnv, false, "top", containerId);
+        }
+        else {
+            result = launch(launchEnv, false, "top", containerId, "-eo", "pid,comm");
+        }
         if (result.getStatus() != 0) {
             throw new IOException(String.format("Failed to run top '%s'. Error: %s", containerId, result.getErr()));
         }
@@ -149,7 +176,10 @@ public class DockerClient {
                 if (stringTokenizer.countTokens() < 2) {
                     throw new IOException("Unexpected `docker top` output : "+line);
                 }
-                stringTokenizer.nextToken(); // PID
+                if (!this.isWindowsHost()){
+                    // tokenizer not needed under Windows due to missing columns
+                    stringTokenizer.nextToken(); // PID
+                }
                 processes.add(stringTokenizer.nextToken()); // COMMAND
             }
         }
@@ -250,6 +280,33 @@ public class DockerClient {
             return null;
         }
     }
+
+     /**
+     * Get the docker information to check whether Docker is running under Windows.
+     *
+     * @return Boolean true or false, depending on whethe the Docker instance is running on Windows or not..
+     */
+    public Boolean isWindowsHost() throws IOException, InterruptedException {
+        if (!this.isDockerInitialized) {
+            // Check output of "docker version"
+            LaunchResult result = launch(new EnvVars(), true, "version");
+            if (result.getStatus() == 0) {
+                String versionText = result.getOut();
+                // extract line starting with "OS/Arch:"
+                int Start = versionText.indexOf("OS/Arch:") + 8;
+                // extract substring until end of line
+                int End = versionText.indexOf("\n", Start);
+                if (Start >= 0 && End >= Start) {
+                    String host = versionText.substring(Start, End);
+                    this.isDockerOnWindows = host.contains("windows");
+                    this.isDockerInitialized = true;
+                }
+            }
+        }
+        return this.isDockerOnWindows;
+    }
+
+    
     
     private static final Pattern pattern = Pattern.compile("^(\\D+)(\\d+)\\.(\\d+)\\.(\\d+)(.*)");
     /**
