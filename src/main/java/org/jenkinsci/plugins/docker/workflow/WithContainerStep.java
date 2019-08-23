@@ -114,7 +114,7 @@ public class WithContainerStep extends AbstractStepImpl {
 
             LOGGER.log(Level.FINE, "reduced environment: {0}", envReduced);
             workspace.mkdirs(); // otherwise it may be owned by root when created for -v
-            String ws = workspace.getRemote();
+            String ws = getPath(workspace);
             toolName = step.toolName;
             DockerClient dockerClient = launcher.isUnix()
                 ? new DockerClient(launcher, node, toolName)
@@ -136,7 +136,7 @@ public class WithContainerStep extends AbstractStepImpl {
 
             FilePath tempDir = tempDir(workspace);
             tempDir.mkdirs();
-            String tmp = tempDir.getRemote();
+            String tmp = getPath(tempDir);
 
             Map<String, String> volumes = new LinkedHashMap<String, String>();
             Collection<String> volumesFromContainers = new LinkedHashSet<String>();
@@ -188,6 +188,15 @@ public class WithContainerStep extends AbstractStepImpl {
                     withCallback(new Callback(container, toolName)).
                     start();
             return false;
+        }
+
+        private String getPath(FilePath filePath)
+            throws IOException, InterruptedException {
+            if (launcher.isUnix()) {
+                return filePath.getRemote();
+            } else {
+                return filePath.toURI().getPath().substring(1).replace("\\", "/");
+            }
         }
 
         // TODO use 1.652 use WorkspaceList.tempDir
