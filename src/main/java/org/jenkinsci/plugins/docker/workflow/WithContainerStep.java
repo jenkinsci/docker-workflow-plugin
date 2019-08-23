@@ -266,10 +266,11 @@ public class WithContainerStep extends AbstractStepImpl {
                     Set<String> envReduced = new TreeSet<String>(Arrays.asList(starter.envs()));
                     envReduced.removeAll(Arrays.asList(envHost));
 
-                    // Remove PATH during `exec` as well.
+                    // Remove PATH and an empty var during `exec` as well.
                     Iterator<String> it = envReduced.iterator();
                     while (it.hasNext()) {
-                        if (it.next().startsWith("PATH=")) {
+                        String envItem = it.next();
+                        if (envItem.startsWith("PATH=") || envItem.startsWith("=")) {
                             it.remove();
                         }
                     }
