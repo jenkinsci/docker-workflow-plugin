@@ -69,8 +69,8 @@ public class DockerClientTest {
         Assert.assertEquals(dockerClient.inspect(launchEnv, "learn/tutorial", ".Id"), containerRecord.getImageId());
         Assert.assertTrue(containerRecord.getContainerName().length() > 0);
         Assert.assertTrue(containerRecord.getHost().length() > 0);
-        Assert.assertFalse(containerRecord.getCreated().before(createdEarliest));
-        Assert.assertFalse(containerRecord.getCreated().after(createdLatest));
+        Assert.assertTrue(containerRecord.getCreated() >= createdEarliest.getTime());
+        Assert.assertTrue(containerRecord.getCreated() <= createdLatest.getTime());
         Assert.assertEquals(Collections.<String>emptyList(), dockerClient.getVolumes(launchEnv, containerId));
 
         // Also test that the stop works and cleans up after itself
