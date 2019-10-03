@@ -76,6 +76,13 @@ public class DockerClient {
     @Restricted(NoExternalUse.class)
     public static int CLIENT_TIMEOUT = Integer.getInteger(DockerClient.class.getName() + ".CLIENT_TIMEOUT", 180); // TODO 2.4+ SystemProperties
 
+    /**
+     * Skip removal of container after a container has been stopped.
+     */
+    @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL", justification="mutable for scripts")
+    @Restricted(NoExternalUse.class)
+    public static boolean SKIP_RM_ON_STOP = Boolean.getBoolean(DockerClient.class.getName() + ".SKIP_RM_ON_STOP");
+
     // e.g. 2015-04-09T13:40:21.981801679Z
     public static final String DOCKER_DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
     
@@ -160,7 +167,8 @@ public class DockerClient {
      * Stop a container.
      * 
      * <p>                              
-     * Also removes ({@link #rm(EnvVars, String)}) the container.
+     * Also removes ({@link #rm(EnvVars, String)}) the container if property
+     * SKIP_RM_ON_STOP is unset or equals false.
      * 
      * @param launchEnv Docker client launch environment.
      * @param containerId The container ID.
@@ -170,7 +178,9 @@ public class DockerClient {
         if (result.getStatus() != 0) {
             throw new IOException(String.format("Failed to kill container '%s'.", containerId));
         }
-        rm(launchEnv, containerId);
+        if (!SKIP_RM_ON_STOP) {
+            rm(launchEnv, containerId);
+        }
     }
 
     /**
