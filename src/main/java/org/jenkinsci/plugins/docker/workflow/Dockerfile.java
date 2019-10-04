@@ -59,33 +59,26 @@ public final class Dockerfile {
     }
 
     private void parse() throws IOException, InterruptedException {
-        InputStream is = dockerfilePath.read();
-        try {
-            // encoding probably irrelevant since image/tag names must be ASCII
-            BufferedReader r = new BufferedReader(new InputStreamReader(is, "ISO-8859-1"));
-            try {
-                String line;
-                while ((line = r.readLine()) != null) {
-                    line = line.trim();
-                    if (line.startsWith("#")) {
-                        continue;
-                    }
-                    if (line.startsWith(ARG)) {
-                        String[] keyVal = parseDockerfileArg(line.substring(4));
-                        args.put(keyVal[0], keyVal[1]);
-                        continue;
-                    }
-
-                    if (line.startsWith(FROM)) {
-                        froms.add(line.substring(5));
-                        continue;
-                    }
+        // encoding probably irrelevant since image/tag names must be ASCII
+        try (InputStream is = dockerfilePath.read();
+             BufferedReader r = new BufferedReader(new InputStreamReader(is, "ISO-8859-1"))) {
+            String line;
+            while ((line = r.readLine()) != null) {
+                line = line.trim();
+                if (line.startsWith("#")) {
+                    continue;
                 }
-            } finally {
-                r.close();
+                if (line.startsWith(ARG)) {
+                    String[] keyVal = parseDockerfileArg(line.substring(4));
+                    args.put(keyVal[0], keyVal[1]);
+                    continue;
+                }
+
+                if (line.startsWith(FROM)) {
+                    froms.add(line.substring(5));
+                    continue;
+                }
             }
-        } finally {
-            is.close();
         }
     }
 
