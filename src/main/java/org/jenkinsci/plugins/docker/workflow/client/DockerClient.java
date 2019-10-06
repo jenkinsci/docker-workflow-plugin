@@ -105,8 +105,13 @@ public class DockerClient {
      */
     public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, @Nonnull String... command) throws IOException, InterruptedException {
         ArgumentListBuilder argb = new ArgumentListBuilder();
+        boolean iswin = !launcher.isUnix();
 
-        argb.add("run", "-t", "-d", "-u", user);
+        argb.add("run", "-t", "-d");
+        if (!iswin) {
+            argb.add("-u", user);
+        }
+
         if (args != null) {
             argb.addTokenized(args);
         }
@@ -115,7 +120,7 @@ public class DockerClient {
             argb.add("-w", workdir);
         }
         for (Map.Entry<String, String> volume : volumes.entrySet()) {
-            argb.add("-v", volume.getKey() + ":" + volume.getValue() + ":rw,z");
+            argb.add("-v", volume.getKey() + ":" + volume.getValue() + (iswin ? ":rw" : ":rw,z"));
         }
         for (String containerId : volumesFromContainers) {
             argb.add("--volumes-from", containerId);
@@ -135,7 +140,13 @@ public class DockerClient {
     }
 
     public List<String> listProcess(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
-        LaunchResult result = launch(launchEnv, false, "top", containerId, "-eo", "pid,comm");
+        LaunchResult result;
+        boolean iswin = !launcher.isUnix();
+        if (iswin) {
+            result = launch(launchEnv, false, "top", containerId);
+        } else {
+            result = launch(launchEnv, false, "top", containerId, "-eo", "pid,comm");
+        }
         if (result.getStatus() != 0) {
             throw new IOException(String.format("Failed to run top '%s'. Error: %s", containerId, result.getErr()));
         }
@@ -149,8 +160,12 @@ public class DockerClient {
                 if (stringTokenizer.countTokens() < 2) {
                     throw new IOException("Unexpected `docker top` output : "+line);
                 }
-                stringTokenizer.nextToken(); // PID
-                processes.add(stringTokenizer.nextToken()); // COMMAND
+                // Somehow docker top only displays the process list reliably when using 'pid,comm' so ignore pid if on linux
+                if (!iswin) {
+                    stringTokenizer.nextToken();
+                }
+                // Windows containers are started without the .exe suffix to cat but top returns cat.exe
+                processes.add(iswin ? stringTokenizer.nextToken().replace(".exe","") : stringTokenizer.nextToken()); // COMMAND
             }
         }
         return processes;
