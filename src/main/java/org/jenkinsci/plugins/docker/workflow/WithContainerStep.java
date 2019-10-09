@@ -24,7 +24,6 @@
 package org.jenkinsci.plugins.docker.workflow;
 
 import com.google.common.base.Optional;
-import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import com.google.inject.Inject;
 import hudson.AbortException;
 import hudson.EnvVars;
@@ -39,30 +38,21 @@ import hudson.model.Node;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.slaves.WorkspaceList;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.Serializable;
-import java.nio.charset.Charset;
+import hudson.util.VersionNumber;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.annotation.Nonnull;
-
-import hudson.util.VersionNumber;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import javax.annotation.CheckForNull;
 import org.jenkinsci.plugins.docker.commons.fingerprint.DockerFingerprints;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
+import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
+import org.jenkinsci.plugins.docker.workflow.client.WindowsDockerClient;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepExecutionImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
@@ -72,6 +62,17 @@ import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.Serializable;
+import java.nio.charset.Charset;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class WithContainerStep extends AbstractStepImpl {
     
@@ -111,7 +112,6 @@ public class WithContainerStep extends AbstractStepImpl {
 
     // TODO switch to GeneralNonBlockingStepExecution
     public static class Execution extends AbstractStepExecutionImpl {
-
         private static final long serialVersionUID = 1;
         @Inject(optional=true) private transient WithContainerStep step;
         @StepContextParameter private transient Launcher launcher;
@@ -125,6 +125,9 @@ public class WithContainerStep extends AbstractStepImpl {
         private String container;
         private String toolName;
 
+        public Execution() {
+        }
+
         @Override public boolean start() throws Exception {
             EnvVars envReduced = new EnvVars(env);
             EnvVars envHost = computer.getEnvironment();
@@ -136,9 +139,11 @@ public class WithContainerStep extends AbstractStepImpl {
 
             LOGGER.log(Level.FINE, "reduced environment: {0}", envReduced);
             workspace.mkdirs(); // otherwise it may be owned by root when created for -v
-            String ws = workspace.getRemote();
+            String ws = getPath(workspace);
             toolName = step.toolName;
-            DockerClient dockerClient = new DockerClient(launcher, node, toolName);
+            DockerClient dockerClient = launcher.isUnix()
+                ? new DockerClient(launcher, node, toolName)
+                : new WindowsDockerClient(launcher, node, toolName);
 
             VersionNumber dockerVersion = dockerClient.version();
             if (dockerVersion != null) {
@@ -146,6 +151,9 @@ public class WithContainerStep extends AbstractStepImpl {
                     throw new AbortException("The docker version is less than v1.7. Pipeline functions requiring 'docker exec' (e.g. 'docker.inside') or SELinux labeling will not work.");
                 } else if (dockerVersion.isOlderThan(new VersionNumber("1.8"))) {
                     listener.error("The docker version is less than v1.8. Running a 'docker.inside' from inside a container will not work.");
+                } else if (dockerVersion.isOlderThan(new VersionNumber("1.13"))) {
+                    if (!launcher.isUnix())
+                        throw new AbortException("The docker version is less than v1.13. Running a 'docker.inside' from inside a Windows container will not work.");
                 }
             } else {
                 listener.error("Failed to parse docker version. Please note there is a minimum docker version requirement of v1.7.");
@@ -153,7 +161,7 @@ public class WithContainerStep extends AbstractStepImpl {
 
             FilePath tempDir = tempDir(workspace);
             tempDir.mkdirs();
-            String tmp = tempDir.getRemote();
+            String tmp = getPath(tempDir);
 
             Map<String, String> volumes = new LinkedHashMap<String, String>();
             Collection<String> volumesFromContainers = new LinkedHashSet<String>();
@@ -166,7 +174,11 @@ public class WithContainerStep extends AbstractStepImpl {
                     // check if there is any volume which contains the directory
                     boolean found = false;
                     for (String vol : mountedVolumes) {
-                        if (dir.startsWith(vol)) {
+                        boolean dirStartsWithVol = launcher.isUnix()
+                            ? dir.startsWith(vol) // Linux
+                            : dir.toLowerCase().startsWith(vol.toLowerCase()); // Windows
+
+                        if (dirStartsWithVol) {
                             volumesFromContainers.add(containerId.get());
                             found = true;
                             break;
@@ -183,9 +195,10 @@ public class WithContainerStep extends AbstractStepImpl {
                 volumes.put(tmp, tmp);
             }
 
-            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ "cat");
+            String command = launcher.isUnix() ? "cat" : "cmd.exe";
+            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ command);
             final List<String> ps = dockerClient.listProcess(env, container);
-            if (!ps.contains("cat")) {
+            if (!ps.contains(command)) {
                 listener.error(
                     "The container started but didn't run the expected command. " +
                         "Please double check your ENTRYPOINT does execute the command passed as docker run argument, " +
@@ -200,6 +213,15 @@ public class WithContainerStep extends AbstractStepImpl {
                     withCallback(new Callback(container, toolName)).
                     start();
             return false;
+        }
+
+        private String getPath(FilePath filePath)
+            throws IOException, InterruptedException {
+            if (launcher.isUnix()) {
+                return filePath.getRemote();
+            } else {
+                return filePath.toURI().getPath().substring(1).replace("\\", "/");
+            }
         }
 
         // TODO use 1.652 use WorkspaceList.tempDir
