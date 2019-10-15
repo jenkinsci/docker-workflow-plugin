@@ -65,18 +65,11 @@ public final class Dockerfile {
             String line;
             while ((line = r.readLine()) != null) {
                 line = line.trim();
-                if (line.startsWith("#")) {
-                    continue;
-                }
                 if (line.startsWith(ARG)) {
                     String[] keyVal = parseDockerfileArg(line.substring(4));
                     args.put(keyVal[0], keyVal[1]);
-                    continue;
-                }
-
-                if (line.startsWith(FROM)) {
+                } else if (line.startsWith(FROM)) {
                     froms.add(line.substring(5));
-                    continue;
                 }
             }
         }
