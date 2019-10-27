@@ -23,7 +23,7 @@
  */
 package org.jenkinsci.plugins.docker.workflow.client;
 
-import com.google.common.base.Optional;
+import java.util.Optional;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.EnvVars;
 import hudson.FilePath;
@@ -82,11 +82,13 @@ public class DockerClient {
     private final Launcher launcher;
     private final @CheckForNull Node node;
     private final @CheckForNull String toolName;
+    private final DockerUniversalClient client;
 
     public DockerClient(@Nonnull Launcher launcher, @CheckForNull Node node, @CheckForNull String toolName) {
         this.launcher = launcher;
         this.node = node;
         this.toolName = toolName;
+        this.client = new DockerUniversalClient("unix://var/run/docker.sock");
     }
 
     /**
@@ -250,10 +252,11 @@ public class DockerClient {
     public @CheckForNull VersionNumber version() throws IOException, InterruptedException {
         LaunchResult result = launch(new EnvVars(), true, "-v");
         if (result.getStatus() == 0) {
-            return parseVersionNumber(result.getOut());
+            return new VersionNumber(client.getVersion());
         } else {
             return null;
         }
+
     }
     
     private static final Pattern pattern = Pattern.compile("^(\\D+)(\\d+)\\.(\\d+)\\.(\\d+)(.*)");
@@ -272,7 +275,9 @@ public class DockerClient {
             return new VersionNumber(String.format("%s.%s.%s", major, minor, maint));
         } else {
             return null;
-        }        
+        }
+
+
     }
 
     private LaunchResult launch(@Nonnull EnvVars launchEnv, boolean quiet, @Nonnull String... args) throws IOException, InterruptedException {
@@ -336,11 +341,11 @@ public class DockerClient {
      */
     public Optional<String> getContainerIdIfContainerized() throws IOException, InterruptedException {
         if (node == null) {
-            return Optional.absent();
+            return Optional.empty();
         }
         FilePath cgroupFile = node.createPath("/proc/self/cgroup");
         if (cgroupFile == null || !cgroupFile.exists()) {
-            return Optional.absent();
+            return Optional.empty();
         }
         return ControlGroup.getContainerId(cgroupFile);
     }
