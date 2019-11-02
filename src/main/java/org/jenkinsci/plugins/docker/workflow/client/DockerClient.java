@@ -339,7 +339,7 @@ public class DockerClient {
      * it isn't containerized.
      * @see <a href="http://stackoverflow.com/a/25729598/12916">Discussion</a>
      */
-    public Optional<String> getContainerIdIfContainerized() throws IOException, InterruptedException {
+    public com.google.common.base.Optional<String> getContainerIdIfContainerized() throws IOException, InterruptedException {
         if (node == null) {
             return Optional.empty();
         }

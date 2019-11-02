@@ -50,7 +50,7 @@ public final class DockerUtils {
                 }
                 String keyVal = arguments[i+1];
 
-                String parts[] = keyVal.split("=", 2);
+                String[] parts = keyVal.split("=", 2);
                 if (parts.length != 2) {
                     throw new IllegalArgumentException("Illegal syntax for --build-arg " + keyVal + ", need KEY=VALUE");
                 }
