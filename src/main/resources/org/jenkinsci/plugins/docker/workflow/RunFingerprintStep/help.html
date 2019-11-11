@@ -1,4 +1,9 @@
 <div>
-    Normally used implicitly by method calls on the <code>docker</code> global variable.
     Records the fact that a Docker image was used by this build.
+
+    <strong>Deprecated:</strong> Fingerprints produced by this step are not used anywhere, and the parsing code has major limitations. 
+    See https://github.com/jenkinsci/docker-workflow-plugin/pull/149#issuecomment-451305522 and https://groups.google.com/d/msg/jenkinsci-dev/k13SfZcBWVg/iQghmCQrEAAJ
+
+    If are a user of the Docker Traceability plugin you need to call this Step manually during the build. The mentioned limitations
+    will limit the useability of this step for this purpose.
 </div>
