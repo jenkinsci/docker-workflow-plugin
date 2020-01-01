@@ -53,6 +53,7 @@ import org.jenkinsci.plugins.docker.commons.fingerprint.DockerFingerprints;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import org.jenkinsci.plugins.docker.workflow.client.WindowsDockerClient;
+import org.jenkinsci.plugins.docker.workflow.client.WindowsLinuxDockerClient;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepExecutionImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
@@ -141,9 +142,18 @@ public class WithContainerStep extends AbstractStepImpl {
             workspace.mkdirs(); // otherwise it may be owned by root when created for -v
             String ws = getPath(workspace);
             toolName = step.toolName;
-            DockerClient dockerClient = launcher.isUnix()
-                ? new DockerClient(launcher, node, toolName)
-                : new WindowsDockerClient(launcher, node, toolName);
+            DockerClient dockerClient;
+            
+            if (launcher.isUnix()) {
+                dockerClient = new DockerClient(launcher, node, toolName);
+            }
+            else {
+                dockerClient = new WindowsDockerClient(launcher, node, toolName);
+                String os = dockerClient.inspect(new EnvVars(), step.image, ".Os");
+                if (os != null && os.equals("linux")) {
+                    dockerClient = new WindowsLinuxDockerClient(launcher, node, toolName);
+                }
+            }
 
             VersionNumber dockerVersion = dockerClient.version();
             if (dockerVersion != null) {
@@ -195,7 +205,7 @@ public class WithContainerStep extends AbstractStepImpl {
                 volumes.put(tmp, tmp);
             }
 
-            String command = launcher.isUnix() ? "cat" : "cmd.exe";
+            String command = dockerClient.runCommand();
             container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ command);
             final List<String> ps = dockerClient.listProcess(env, container);
             if (!ps.contains(command)) {
@@ -209,7 +219,7 @@ public class WithContainerStep extends AbstractStepImpl {
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
             ImageAction.add(step.image, run);
             getContext().newBodyInvoker().
-                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws, toolName, dockerVersion))).
+                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws, toolName, dockerVersion, dockerClient.needToContainerizePath()))).
                     withCallback(new Callback(container, toolName)).
                     start();
             return false;
@@ -247,14 +257,16 @@ public class WithContainerStep extends AbstractStepImpl {
         private final @CheckForNull String toolName;
         private final boolean hasEnv;
         private final boolean hasWorkdir;
+        private final boolean needToContainerizePath;
 
-        Decorator(String container, EnvVars envHost, String ws, String toolName, VersionNumber dockerVersion) {
+        Decorator(String container, EnvVars envHost, String ws, String toolName, VersionNumber dockerVersion, boolean needToContainerizePath) {
             this.container = container;
             this.envHost = Util.mapToEnv(envHost);
             this.ws = ws;
             this.toolName = toolName;
             this.hasEnv = dockerVersion != null && dockerVersion.compareTo(new VersionNumber("1.13.0")) >= 0;
             this.hasWorkdir = dockerVersion != null && dockerVersion.compareTo(new VersionNumber("17.12")) >= 0;
+            this.needToContainerizePath = needToContainerizePath;
         }
 
         @Override public Launcher decorate(final Launcher launcher, final Node node) {
@@ -332,6 +344,14 @@ public class WithContainerStep extends AbstractStepImpl {
                     System.arraycopy(masksPrefix, 0, masks, 0, masksPrefix.length);
                     System.arraycopy(originalMasks, 0, masks, prefix.size(), originalMasks.length);
                     starter.masks(masks);
+
+                    if (needToContainerizePath && ws != null) {
+                        String wsTrimmed = ws.replaceAll("[/\\\\]+$", "");
+                        List<String> cmds = starter.cmds();
+                        for (int i=0; i<cmds.size(); i++) {
+                            cmds.set(i, DockerClient.containerizePath(cmds.get(i), wsTrimmed));
+                        }
+                    }
 
                     return super.launch(starter);
                 }

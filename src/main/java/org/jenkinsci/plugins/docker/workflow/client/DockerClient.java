@@ -378,4 +378,113 @@ public class DockerClient {
         }
         return Arrays.asList(volumes.replace("\\", "/").split("\\n"));
     }
+
+    public String runCommand() {
+        return "cat";
+    }
+
+    public boolean needToContainerizePath() {
+        return false;
+    }
+
+    public String containerizePathIfNeeded(String path, String prefix) {
+        if (needToContainerizePath())
+            return DockerClient.containerizePath(path, prefix);
+
+        return path;
+    }
+
+    public static String containerizePath(String path, String prefix)
+    {
+        StringBuffer result = new StringBuffer();
+        char[] pathChars = path.toCharArray();
+        char[] prefixChars = (prefix == null) ? null : prefix.toCharArray();
+
+        for (int i = 0; i < pathChars.length; i++)
+        {
+            char currentChar = pathChars[i];
+            if (currentChar == ':' && i > 0 && i < pathChars.length - 1) 
+            {
+                char previousChar = pathChars[i - 1];
+                if ((previousChar >= 'a' && previousChar <= 'z') || (previousChar >= 'A' && previousChar <= 'Z'))
+                {
+                    char nextChar = pathChars[i + 1];
+                    if (nextChar == '/' || nextChar == '\\')
+                    {
+                        char nextNextChar = (i < pathChars.length - 2) ? pathChars[i + 2] : ' ';
+                        if (nextNextChar != '/')
+                        {
+                            if (prefix == null || checkPrefix(pathChars, i - 1, prefixChars))
+                            {
+                                result.setCharAt(i - 1, '/');
+                                result.append(Character.toLowerCase(previousChar));
+                                result.append('/');
+                                i++;
+                                i++;
+
+                                boolean done = false;
+                                for ( ; i < pathChars.length; i++)
+                                {
+                                    currentChar = pathChars[i];
+                                    switch (currentChar)
+                                    {
+                                        case '\\':
+                                            result.append('/');
+                                            break;
+
+                                        case '?':
+                                        case '<':
+                                        case '>':
+                                        case ':':
+                                        case '*':
+                                        case '|':
+                                        case '"':
+                                        case '\'':
+                                            result.append(currentChar);
+                                            done = true;
+                                            break;
+                                        
+                                        default:
+                                            result.append(currentChar);
+                                            break;
+                                    }
+
+                                    if (done)
+                                        break;
+                                }
+                                
+                                continue;
+                            }
+                        }
+                    }
+                }
+            }
+
+            result.append(currentChar);
+        }
+
+        return result.toString();
+    }
+
+    private static boolean checkPrefix(char[] pathChars, int index, char[] prefixChars)
+    {
+        if (index + prefixChars.length > pathChars.length)
+            return false;
+
+        for (int i = 0; i < prefixChars.length; i++)
+        {
+            char pathChar = pathChars[index + i];
+            if (pathChar == '\\')
+                pathChar = '/';
+
+            char prefixChar = prefixChars[i];
+            if (prefixChar == '\\')
+                prefixChar = '/';
+
+            if (pathChar != prefixChar)
+                return false;
+        }
+
+        return true;
+    }
 }
