@@ -206,7 +206,6 @@ public class WithContainerStep extends AbstractStepImpl {
                         "Alternatively you can force image entrypoint to be disabled by adding option `--entrypoint=''`.");
             }
 
-            DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
             ImageAction.add(step.image, run);
             getContext().newBodyInvoker().
                     withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws, toolName, dockerVersion))).
