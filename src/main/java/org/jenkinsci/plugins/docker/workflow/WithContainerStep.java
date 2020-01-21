@@ -197,15 +197,22 @@ public class WithContainerStep extends AbstractStepImpl {
 
             String command = launcher.isUnix() ? "cat" : "cmd.exe";
             container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ command);
-            final List<String> ps = dockerClient.listProcess(env, container);
+            List<String> ps = dockerClient.listProcess(env, container);
+            LOGGER.log(Level.FINE, "ps: " + ps);
             if (!ps.contains(command)) {
-                listener.error(
-                    "The container started but didn't run the expected command. " +
-                        "Please double check your ENTRYPOINT does execute the command passed as docker run argument, " +
-                        "as required by official docker images (see https://github.com/docker-library/official-images#consistency for entrypoint consistency requirements).\n" +
-                        "Alternatively you can force image entrypoint to be disabled by adding option `--entrypoint=''`.");
+                //retry once as the 'cat' command might not be called yet, because the entrypoint can take time to process
+                listener.getLogger().println("Retrying the command, as the 'cat' command might not be called yet...");
+                Thread.sleep(2000);
+                ps = dockerClient.listProcess(env, container);
+                LOGGER.log(Level.FINE, "ps: " + ps);
+                if (!ps.contains(command)) {
+                    listener.error(
+                                   "The container started but didn't run the expected command. " +
+                                   "Please double check your ENTRYPOINT does execute the command passed as docker run argument, " +
+                                   "as required by official docker images (see https://github.com/docker-library/official-images#consistency for entrypoint consistency requirements).\n" +
+                                   "Alternatively you can force image entrypoint to be disabled by adding option `--entrypoint=''`.");
+                }
             }
-
             DockerFingerprints.addRunFacet(dockerClient.getContainerRecord(env, container), run);
             ImageAction.add(step.image, run);
             getContext().newBodyInvoker().
