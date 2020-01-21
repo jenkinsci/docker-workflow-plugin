@@ -144,6 +144,7 @@ public class DockerClient {
         if (result.getStatus() != 0) {
             throw new IOException(String.format("Failed to run top '%s'. Error: %s", containerId, result.getErr()));
         }
+        LOGGER.log(Level.FINE, "result: " + result.getOut());
         List<String> processes = new ArrayList<>();
         try (Reader r = new StringReader(result.getOut());
              BufferedReader in = new BufferedReader(r)) {
