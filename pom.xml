@@ -36,6 +36,7 @@
         <workflow-step-api-plugin.version>2.18</workflow-step-api-plugin.version>
         <workflow-support-plugin.version>2.12</workflow-support-plugin.version>
         <workflow-cps-plugin.version>2.25</workflow-cps-plugin.version>
+        <pipeline-model-definition-plugin.version>1.5.1-SNAPSHOT</pipeline-model-definition-plugin.version> <!-- TODO https://github.com/jenkinsci/pipeline-model-definition-plugin/pull/372 -->
     </properties>
     <repositories>
         <repository>
@@ -85,6 +86,16 @@
             <artifactId>workflow-step-api</artifactId>
             <version>${workflow-step-api-plugin.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.jenkinsci.plugins</groupId>
+            <artifactId>pipeline-model-extensions</artifactId>
+            <version>${pipeline-model-definition-plugin.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>cloudbees-folder</artifactId>
+            <version>6.1.0</version>
+        </dependency>
         <dependency> <!-- SemaphoreStep -->
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-support</artifactId>
@@ -127,6 +138,13 @@
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>config-file-provider</artifactId>
             <version>2.10.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkinsci.plugins</groupId>
+            <artifactId>pipeline-model-definition</artifactId>
+            <version>${pipeline-model-definition-plugin.version}</version>
+            <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
     </dependencies>
