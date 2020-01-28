@@ -218,7 +218,7 @@ public class WithContainerStepTest {
             @Override public void evaluate() throws Throwable {
                 DockerTestUtil.assumeDocker();
                 File f = tmp.newFile("some-file");
-                FileUtils.write(f, "some-content");
+                FileUtils.write(f, "some-content\n");
                 FileItem fi = new FileParameterValue.FileItemImpl(f);
                 FileCredentialsImpl fc = new FileCredentialsImpl(CredentialsScope.GLOBAL, "secretfile", "", fi, fi.getName(), (SecretBytes) null);
                 CredentialsProvider.lookupStores(story.j.jenkins).iterator().next().addCredentials(Domain.global(), fc);
