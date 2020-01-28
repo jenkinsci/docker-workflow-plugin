@@ -25,11 +25,13 @@
 
 package org.jenkinsci.plugins.docker.workflow.declarative
 
+import jenkins.model.Jenkins
 import org.jenkinsci.plugins.pipeline.modeldefinition.SyntheticStageNames
-import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
 import org.jenkinsci.plugins.workflow.cps.CpsScript
 
 class DockerPipelineScript extends AbstractDockerPipelineScript<DockerPipeline> {
+
+    static Class Utils = Jenkins.get().pluginManager.getPlugin('pipeline-model-definition').classLoader.loadClass('org.jenkinsci.plugins.pipeline.modeldefinition.Utils')
 
     DockerPipelineScript(CpsScript s, DockerPipeline a) {
         super(s, a)

@@ -26,7 +26,7 @@
 package org.jenkinsci.plugins.docker.workflow.declarative
 
 import hudson.FilePath
-import org.jenkinsci.plugins.pipeline.modeldefinition.agent.AbstractDockerAgent
+import jenkins.model.Jenkins
 import org.jenkinsci.plugins.pipeline.modeldefinition.agent.DeclarativeAgentScript
 import org.jenkinsci.plugins.workflow.cps.CpsScript
 
@@ -53,12 +53,12 @@ abstract class AbstractDockerPipelineScript<A extends AbstractDockerAgent<A>> ex
         }
     }
 
-    protected LabelScript getLabelScript() {
+    protected DeclarativeAgentScript getLabelScript() {
         String targetLabel = DeclarativeDockerUtils.getLabel(describable.label)
-        Label l = (Label) Label.DescriptorImpl.instanceForName("label", [label: targetLabel])
+        def l = Jenkins.get().getDescriptorByName('org.jenkinsci.plugins.pipeline.modeldefinition.agent.impl.Label').instanceForName("label", [label: targetLabel])
         l.copyFlags(describable)
         l.customWorkspace = describable.customWorkspace
-        return (LabelScript) l.getScript(script)
+        return (DeclarativeAgentScript) l.getScript(script)
     }
 
     protected Closure configureRegistry(Closure body) {
