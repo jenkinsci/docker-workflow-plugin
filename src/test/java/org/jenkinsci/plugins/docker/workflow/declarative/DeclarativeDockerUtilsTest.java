@@ -40,6 +40,7 @@ import org.junit.Test;
 
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeDocker;
 import static org.junit.Assert.assertThat;
 
 /**
