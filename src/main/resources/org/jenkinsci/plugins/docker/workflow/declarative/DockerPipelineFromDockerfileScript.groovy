@@ -23,7 +23,7 @@
  */
 
 
-package org.jenkinsci.plugins.pipeline.modeldefinition.agent.impl
+package org.jenkinsci.plugins.docker.workflow.declarative
 
 import org.jenkinsci.plugins.pipeline.modeldefinition.SyntheticStageNames
 import org.jenkinsci.plugins.pipeline.modeldefinition.Utils

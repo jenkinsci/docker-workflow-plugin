@@ -23,12 +23,11 @@
  */
 
 
-package org.jenkinsci.plugins.pipeline.modeldefinition.agent.impl
+package org.jenkinsci.plugins.docker.workflow.declarative
 
 import hudson.FilePath
 import org.jenkinsci.plugins.pipeline.modeldefinition.agent.AbstractDockerAgent
 import org.jenkinsci.plugins.pipeline.modeldefinition.agent.DeclarativeAgentScript
-import org.jenkinsci.plugins.pipeline.modeldefinition.agent.DeclarativeDockerUtils
 import org.jenkinsci.plugins.workflow.cps.CpsScript
 
 abstract class AbstractDockerPipelineScript<A extends AbstractDockerAgent<A>> extends DeclarativeAgentScript<A> {

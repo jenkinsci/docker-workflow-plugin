@@ -23,7 +23,7 @@
  *
  */
 
-package org.jenkinsci.plugins.pipeline.modeldefinition.config.GlobalConfig
+package org.jenkinsci.plugins.docker.workflow.declarative.GlobalConfig
 
 
 def f = namespace(lib.FormTagLib)

@@ -23,7 +23,7 @@
  *
  */
 
-package org.jenkinsci.plugins.pipeline.modeldefinition.config.FolderConfig
+package org.jenkinsci.plugins.docker.workflow.declarative.FolderConfig
 
 
 def f = namespace(lib.FormTagLib)
