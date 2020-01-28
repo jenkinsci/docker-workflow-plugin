@@ -33,7 +33,7 @@
         <changelist>-SNAPSHOT</changelist>
         <jenkins.version>2.150.3</jenkins.version>
         <java.level>8</java.level>
-        <pipeline-model-definition-plugin.version>1.5.1-SNAPSHOT</pipeline-model-definition-plugin.version> <!-- TODO https://github.com/jenkinsci/pipeline-model-definition-plugin/pull/372 -->
+        <pipeline-model-definition-plugin.version>1.5.1-rc1757.11984679b9a1</pipeline-model-definition-plugin.version> <!-- TODO https://github.com/jenkinsci/pipeline-model-definition-plugin/pull/372 -->
     </properties>
     <repositories>
         <repository>
