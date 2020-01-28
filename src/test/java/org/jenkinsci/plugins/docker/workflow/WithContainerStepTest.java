@@ -41,6 +41,7 @@ import java.util.logging.Level;
 
 import hudson.util.VersionNumber;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.Set;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
@@ -180,8 +181,16 @@ public class WithContainerStepTest {
                     "    sh \"sleep 5; ps -e -o pid,command | egrep '${pwd tmp: true}/durable-.+/script.sh' | fgrep -v grep | sort -n | tr -s ' ' | cut -d ' ' -f2 | xargs kill -9\"\n" +
                     "  }\n" +
                     "}", true));
-                WorkflowRun b = story.j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
-                story.j.assertLogContains("script returned exit code -1", b);
+                Field hci = BourneShellScript.class.getDeclaredField("HEARTBEAT_CHECK_INTERVAL");
+                hci.setAccessible(true);
+                int orig = (int) hci.get(null);
+                hci.set(null, 5);
+                try {
+                    WorkflowRun b = story.j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0).get());
+                    story.j.assertLogContains("script returned exit code -1", b);
+                } finally {
+                    hci.set(null, orig);
+                }
             }
         });
     }
@@ -218,7 +227,7 @@ public class WithContainerStepTest {
             @Override public void evaluate() throws Throwable {
                 DockerTestUtil.assumeDocker();
                 File f = tmp.newFile("some-file");
-                FileUtils.write(f, "some-content");
+                FileUtils.write(f, "some-content\n");
                 FileItem fi = new FileParameterValue.FileItemImpl(f);
                 FileCredentialsImpl fc = new FileCredentialsImpl(CredentialsScope.GLOBAL, "secretfile", "", fi, fi.getName(), (SecretBytes) null);
                 CredentialsProvider.lookupStores(story.j.jenkins).iterator().next().addCredentials(Domain.global(), fc);
