@@ -49,7 +49,7 @@ import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.ToolInstallations;
 
 /**
- * Adapted from {@code org.jenkinsci.plugins.pipeline.modeldefinition.generator.DirectiveGeneratorTest}.
+ * Adapted from {@link org.jenkinsci.plugins.pipeline.modeldefinition.generator.DirectiveGeneratorTest}.
  */
 public class DockerDirectiveGeneratorTest {
 
