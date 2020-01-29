@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-import org.jenkinsci.plugins.pipeline.modeldefinition.agent.DeclarativeDockerUtils
+import org.jenkinsci.plugins.docker.workflow.declarative.DeclarativeDockerUtils
 
 echo "Docker Label is: ${DeclarativeDockerUtils.getLabel('other-label')}"
 echo "Registry URL is: ${DeclarativeDockerUtils.getRegistryUrl('https://other.registry')}"
