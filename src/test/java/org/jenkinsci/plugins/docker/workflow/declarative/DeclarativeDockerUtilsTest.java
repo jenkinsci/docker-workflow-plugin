@@ -67,7 +67,7 @@ public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
     public void plainSystemConfig() throws Exception {
         GlobalConfig.get().setDockerLabel("config_docker");
         GlobalConfig.get().setRegistry(new DockerRegistryEndpoint("https://docker.registry", globalCred.getId()));
-        expect("declarativeDockerConfig")
+        expect("org/jenkinsci/plugins/docker/workflow/declarative/declarativeDockerConfig")
                 .logContains("Docker Label is: config_docker",
                         "Registry URL is: https://docker.registry",
                         "Registry Creds ID is: " + globalCred.getId()).go();
@@ -86,7 +86,7 @@ public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
         Folder folder = j.createProject(Folder.class);
         getFolderStore(folder).addCredentials(Domain.global(), folderCred);
         folder.addProperty(new FolderConfig("folder_docker", "https://folder.registry", folderCred.getId()));
-        expect("declarativeDockerConfig")
+        expect("org/jenkinsci/plugins/docker/workflow/declarative/declarativeDockerConfig")
                 .inFolder(folder)
                 .runFromRepo(false)
                 .logContains("Docker Label is: folder_docker",
@@ -100,7 +100,7 @@ public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
         getFolderStore(folder).addCredentials(Domain.global(), folderCred);
         getFolderStore(folder).addCredentials(Domain.global(), grandParentCred);
         folder.addProperty(new FolderConfig("folder_docker", "https://folder.registry", folderCred.getId()));
-        expect("declarativeDockerConfigWithOverride")
+        expect("org/jenkinsci/plugins/docker/workflow/declarative/declarativeDockerConfigWithOverride")
                 .inFolder(folder)
                 .runFromRepo(false)
                 .logContains("Docker Label is: other-label",
@@ -115,7 +115,7 @@ public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
         Folder folder = j.createProject(Folder.class);
         getFolderStore(folder).addCredentials(Domain.global(), folderCred);
         folder.addProperty(new FolderConfig("folder_docker", "https://folder.registry", folderCred.getId()));
-        expect("declarativeDockerConfig")
+        expect("org/jenkinsci/plugins/docker/workflow/declarative/declarativeDockerConfig")
                 .inFolder(folder)
                 .runFromRepo(false)
                 .logContains("Docker Label is: folder_docker",
@@ -132,7 +132,7 @@ public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
         getFolderStore(grandParent).addCredentials(Domain.global(), grandParentCred);
         grandParent.addProperty(new FolderConfig("parent_docker", "https://parent.registry", grandParentCred.getId()));
         Folder parent = grandParent.createProject(Folder.class, "testParent"); //Can be static since grandParent should be unique
-        expect("declarativeDockerConfig")
+        expect("org/jenkinsci/plugins/docker/workflow/declarative/declarativeDockerConfig")
                 .inFolder(parent)
                 .runFromRepo(false)
                 .logContains("Docker Label is: parent_docker",
@@ -149,7 +149,7 @@ public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
         getFolderStore(parent).addCredentials(Domain.global(), folderCred);
         parent.addProperty(new FolderConfig("folder_docker", "https://folder.registry", folderCred.getId()));
 
-        expect("declarativeDockerConfig")
+        expect("org/jenkinsci/plugins/docker/workflow/declarative/declarativeDockerConfig")
                 .inFolder(parent)
                 .runFromRepo(false)
                 .logContains("Docker Label is: folder_docker",
@@ -172,7 +172,7 @@ public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
         GlobalConfig.get().setDockerLabel("thisone");
         GlobalConfig.get().setRegistry(null);
 
-        expect("agent/agentDockerEnvTest").runFromRepo(false).logContains("Running on assumed Docker agent").go();
+        expect("org/jenkinsci/plugins/docker/workflow/declarative/agentDockerEnvTest").runFromRepo(false).logContains("Running on assumed Docker agent").go();
 
     }
 
@@ -188,7 +188,7 @@ public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
         GlobalConfig.get().setDockerLabel("thisone");
         GlobalConfig.get().setRegistry(null);
 
-        expect("agent/agentDockerEnvSpecLabel").runFromRepo(false).logContains("Running on assumed Docker agent").go();
+        expect("org/jenkinsci/plugins/docker/workflow/declarative/agentDockerEnvSpecLabel").runFromRepo(false).logContains("Running on assumed Docker agent").go();
 
     }
 
