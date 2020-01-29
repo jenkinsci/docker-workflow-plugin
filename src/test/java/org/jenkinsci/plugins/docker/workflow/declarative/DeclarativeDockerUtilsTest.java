@@ -34,13 +34,13 @@ import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import hudson.ExtensionList;
 import hudson.model.Slave;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
+import org.jenkinsci.plugins.docker.workflow.DockerTestUtil;
 import org.jenkinsci.plugins.pipeline.modeldefinition.AbstractModelDefTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeDocker;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -162,7 +162,7 @@ public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
 
     @Test
     public void runsOnCorrectSlave() throws Exception {
-        assumeDocker();
+        DockerTestUtil.assumeDocker();
         Slave s = j.createOnlineSlave();
         s.setLabelString("notthis");
         env(s).put("DOCKER_INDICATOR", "WRONG").set();
@@ -178,7 +178,7 @@ public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
 
     @Test
     public void runsOnSpecifiedSlave() throws Exception {
-        assumeDocker();
+        DockerTestUtil.assumeDocker();
         Slave s = j.createOnlineSlave();
         s.setLabelString("thisspec");
         env(s).put("DOCKER_INDICATOR", "SPECIFIED").set();
