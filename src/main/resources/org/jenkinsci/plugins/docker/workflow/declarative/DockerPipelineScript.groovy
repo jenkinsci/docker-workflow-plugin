@@ -31,6 +31,7 @@ import org.jenkinsci.plugins.workflow.cps.CpsScript
 
 class DockerPipelineScript extends AbstractDockerPipelineScript<DockerPipeline> {
 
+    // TODO revert reflection in daad17b90ed0 when we can depend directly on pipeline-model-definition
     static Class Utils = Jenkins.get().pluginManager.getPlugin('pipeline-model-definition').classLoader.loadClass('org.jenkinsci.plugins.pipeline.modeldefinition.Utils')
 
     DockerPipelineScript(CpsScript s, DockerPipeline a) {

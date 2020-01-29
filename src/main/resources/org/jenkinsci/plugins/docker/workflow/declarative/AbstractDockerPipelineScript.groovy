@@ -55,6 +55,7 @@ abstract class AbstractDockerPipelineScript<A extends AbstractDockerAgent<A>> ex
 
     protected DeclarativeAgentScript getLabelScript() {
         String targetLabel = DeclarativeDockerUtils.getLabel(describable.label)
+        // TODO revert reflection in daad17b90ed0 when we can depend directly on pipeline-model-definition
         def l = Jenkins.get().getDescriptorByName('org.jenkinsci.plugins.pipeline.modeldefinition.agent.impl.Label').instanceForName("label", [label: targetLabel])
         l.copyFlags(describable)
         l.customWorkspace = describable.customWorkspace
