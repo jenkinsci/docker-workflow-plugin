@@ -24,12 +24,14 @@
 
 package org.jenkinsci.plugins.docker.workflow.declarative;
 
+import hudson.model.Result;
 import hudson.model.Slave;
 import org.jenkinsci.plugins.docker.workflow.DockerTestUtil;
 import org.jenkinsci.plugins.pipeline.modeldefinition.AbstractModelDefTest;
 import static org.jenkinsci.plugins.pipeline.modeldefinition.AbstractModelDefTest.j;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.jvnet.hudson.test.Issue;
 
 /**
  * Adapted from {@link org.jenkinsci.plugins.pipeline.modeldefinition.BasicModelDefTest}.
@@ -51,6 +53,16 @@ public class DockerBasicModelDefTest extends AbstractModelDefTest {
 
         expect("dockerGlobalVariable")
                 .logContains("[Pipeline] { (foo)", "image: ubuntu")
+                .go();
+    }
+
+    @Issue("JENKINS-40226")
+    @Test
+    public void failureBeforeStages() throws Exception {
+        // This should fail whether we've got Docker available or not. Hopefully.
+        expect(Result.FAILURE, "failureBeforeStages")
+                .logContains("Dockerfile failed")
+                .logNotContains("This should never happen")
                 .go();
     }
 
