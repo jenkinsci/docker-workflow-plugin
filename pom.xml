@@ -160,4 +160,20 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemProperties combine.children="append">
+                        <property>
+                            <!-- TODO copied from pipeline-model-definition; better to docker pull images before invoking timeout -->
+                            <name>jenkins.test.timeout</name>
+                            <value>600</value>
+                        </property>
+                    </systemProperties>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
