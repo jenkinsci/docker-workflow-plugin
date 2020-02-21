@@ -28,6 +28,7 @@ import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import hudson.Launcher;
 import hudson.util.StreamTaskListener;
 import hudson.util.VersionNumber;
+import org.jenkinsci.plugins.docker.workflow.client.WindowsDockerClient;
 import org.junit.Assume;
 
 import java.io.IOException;
@@ -44,7 +45,7 @@ public class DockerTestUtil {
     public static void assumeDocker() throws Exception {
         assumeDocker(new VersionNumber(DEFAULT_MINIMUM_VERSION));
     }
-    
+
     public static void assumeDocker(VersionNumber minimumVersion) throws Exception {
         Launcher.LocalLauncher localLauncher = new Launcher.LocalLauncher(StreamTaskListener.NULL);
         try {

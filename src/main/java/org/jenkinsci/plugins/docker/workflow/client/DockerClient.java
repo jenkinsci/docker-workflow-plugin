@@ -240,7 +240,9 @@ public class DockerClient {
             throw new IOException(String.format("Error parsing created date '%s' for object '%s'.", s, objectId), e);
         }
     }
-
+    public String getConfig() throws IOException, InterruptedException {
+        return launch(new EnvVars(), true, "version").getOut();
+    }
     /**
      * Get the docker version.
      *

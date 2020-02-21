@@ -13,6 +13,8 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Collections;
 
+import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeNotWindows;
+
 public class WindowsDockerClientTest {
 
     private DockerClient dockerClient;
@@ -28,7 +30,8 @@ public class WindowsDockerClientTest {
     }
 
     @Test
-    public void test_run() throws IOException, InterruptedException {
+    public void test_run() throws Exception {
+        assumeNotWindows();
         EnvVars launchEnv = DockerTestUtil.newDockerLaunchEnv();
         String containerId = dockerClient.run(
             launchEnv,

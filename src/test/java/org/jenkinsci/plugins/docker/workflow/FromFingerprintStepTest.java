@@ -39,6 +39,7 @@ import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
 
 import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeDocker;
+import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeNotWindows;
 import static org.junit.Assert.assertNotNull;
 
 public class FromFingerprintStepTest {
@@ -66,7 +67,7 @@ public class FromFingerprintStepTest {
         story.addStep(new Statement() {
             @Override
             public void evaluate() throws Throwable {
-                assumeDocker();
+                assumeNotWindows();
 
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, projectName);
                 p.setDefinition(new CpsFlowDefinition(pipelineCode, true));

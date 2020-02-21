@@ -78,6 +78,8 @@ import org.jvnet.hudson.test.RestartableJenkinsRule;
 import org.jvnet.hudson.test.TestExtension;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeNotWindows;
+
 public class WithContainerStepTest {
 
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
@@ -101,7 +103,7 @@ public class WithContainerStepTest {
     @Test public void basics() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                DockerTestUtil.assumeDocker();
+                assumeNotWindows();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
@@ -120,9 +122,12 @@ public class WithContainerStepTest {
     @Test public void hungDaemon() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                DockerTestUtil.assumeDocker();
+                assumeNotWindows();
                 Process proc = new ProcessBuilder("sudo", "pgrep", "dockerd").inheritIO().start();
                 proc.waitFor(15, TimeUnit.SECONDS);
+                while (proc.isAlive()){
+                    proc.waitFor(5, TimeUnit.SECONDS);
+                }
                 Assume.assumeThat("we are in an interactive environment and can pause dockerd", proc.exitValue(), Matchers.is(0));
                 logging.record("org.jenkinsci.plugins.workflow.support.concurrent.Timeout", Level.FINE); // TODO use Timeout.class when workflow-support 2.13+
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
@@ -159,7 +164,7 @@ public class WithContainerStepTest {
     @Test public void stop() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                DockerTestUtil.assumeDocker();
+                assumeNotWindows();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
@@ -179,7 +184,7 @@ public class WithContainerStepTest {
     @Test public void death() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                DockerTestUtil.assumeDocker();
+                assumeNotWindows();
                 logging.record(BourneShellScript.class, Level.FINE);
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
@@ -205,7 +210,7 @@ public class WithContainerStepTest {
     @Test public void restart() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                DockerTestUtil.assumeDocker();
+                assumeNotWindows();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
@@ -232,7 +237,7 @@ public class WithContainerStepTest {
     @Test public void fileCredentials() throws Exception {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                DockerTestUtil.assumeDocker();
+                assumeNotWindows();
                 File f = tmp.newFile("some-file");
                 FileUtils.write(f, "some-content\n");
                 FileItem fi = new FileParameterValue.FileItemImpl(f);
@@ -263,7 +268,7 @@ public class WithContainerStepTest {
     @Test public void configFile() throws Exception {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                DockerTestUtil.assumeDocker();
+                assumeNotWindows();
                 ConfigProvider configProvider = story.j.jenkins.getExtensionList(ConfigProvider.class).get(CustomConfig.CustomConfigProvider.class);
                 String id = configProvider.getProviderId() + "myfile";
                 Config config = new CustomConfig(id, "My File", "", "some-content");
@@ -293,6 +298,7 @@ public class WithContainerStepTest {
     @Test public void cd() throws Exception {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
+                assumeNotWindows();
                 DockerTestUtil.assumeDocker(new VersionNumber("17.12"));
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
@@ -315,7 +321,7 @@ public class WithContainerStepTest {
     @Test public void wheezy() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                DockerTestUtil.assumeDocker();
+                assumeNotWindows();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
@@ -332,7 +338,7 @@ public class WithContainerStepTest {
     @Issue("JENKINS-56674")
     @Test public void envMasking() {
         story.then(r -> {
-            DockerTestUtil.assumeDocker();
+            assumeNotWindows();
             WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
             p.setDefinition(new CpsFlowDefinition(
                 "node {\n" +

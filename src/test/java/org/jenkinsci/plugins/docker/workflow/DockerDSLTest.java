@@ -49,8 +49,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
 
-import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeDocker;
-import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeNotWindows;
+import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
@@ -62,7 +61,7 @@ public class DockerDSLTest {
     @Test public void firstDoNoHarm() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                assumeDocker();
+                assumeNotWindows();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition("semaphore 'wait'", true));
                 WorkflowRun b = p.scheduleBuild2(0).waitForStart();
@@ -104,7 +103,7 @@ public class DockerDSLTest {
     @Test public void inside() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                assumeDocker();
+                assumeNotWindows();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "def r = docker.image('httpd:2.4.12').inside {\n" +
@@ -131,7 +130,7 @@ public class DockerDSLTest {
     @Test public void entrypoint() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                assumeDocker();
+                assumeNotWindows();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
                         "docker.image('maven:3.5.3-jdk-8').inside {\n" +
@@ -175,7 +174,7 @@ public class DockerDSLTest {
     @Test public void runArgs() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                assumeDocker();
+                assumeNotWindows();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
@@ -195,7 +194,7 @@ public class DockerDSLTest {
     @Test public void withRun() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                assumeDocker();
+                assumeNotWindows();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "def r = docker.image('httpd:2.4.12').withRun {c ->\n" +
@@ -221,7 +220,7 @@ public class DockerDSLTest {
     @Test public void withRunCommand() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                assumeDocker();
+                assumeNotWindows();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                         " docker.image('maven:3.3.9-jdk-8').withRun(\"--entrypoint mvn\", \"-version\") {c ->\n" +
@@ -235,7 +234,7 @@ public class DockerDSLTest {
     @Test public void build() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                assumeDocker();
+                assumeNotWindows();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
@@ -264,6 +263,7 @@ public class DockerDSLTest {
     @Test public void buildWithMultiStage() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
+                assumeNotWindows();
                 assumeDocker(new VersionNumber("17.05"));
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
@@ -305,7 +305,7 @@ public class DockerDSLTest {
     @Test public void buildArguments() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                assumeDocker();
+                assumeNotWindows();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                         "node {\n" +
@@ -334,7 +334,7 @@ public class DockerDSLTest {
     @Test public void withTool() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                assumeDocker();
+                assumeNotWindows();
                 assumeTrue(new File("/usr/bin/docker").canExecute()); // TODO generalize to find docker in $PATH
                 story.j.jenkins.getDescriptorByType(DockerTool.DescriptorImpl.class).setInstallations(new DockerTool("default", "/usr", Collections.<ToolProperty<?>>emptyList()));
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
@@ -351,7 +351,7 @@ public class DockerDSLTest {
     @Test public void tag() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                assumeDocker();
+                assumeNotWindows();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
@@ -371,7 +371,7 @@ public class DockerDSLTest {
     @Test public void run() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                assumeDocker();
+                assumeNotWindows();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                         "node {\n" +
@@ -387,7 +387,7 @@ public class DockerDSLTest {
     @Test public void port(){
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                assumeDocker();
+                assumeNotWindows();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +

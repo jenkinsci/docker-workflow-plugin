@@ -37,6 +37,8 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Collections;
 
+import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeNotWindows;
+
 /**
  * @author <a href="mailto:tom.fennelly@gmail.com">tom.fennelly@gmail.com</a>
  */
@@ -46,6 +48,7 @@ public class DockerClientTest {
     
     @Before
     public void setup() throws Exception {
+        assumeNotWindows();
         DockerTestUtil.assumeDocker();
 
         // Set stuff up for the test
