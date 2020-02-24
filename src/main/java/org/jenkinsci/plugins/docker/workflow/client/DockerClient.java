@@ -257,6 +257,14 @@ public class DockerClient {
             return null;
         }
     }
+    public @CheckForNull String printConfig() throws IOException, InterruptedException {
+        LaunchResult result = launch(new EnvVars(), true, "version");
+        if (result.getStatus() == 0) {
+            return result.getOut();
+        } else {
+            return null;
+        }
+    }
     
     private static final Pattern pattern = Pattern.compile("^(\\D+)(\\d+)\\.(\\d+)\\.(\\d+)(.*)");
     /**

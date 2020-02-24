@@ -35,13 +35,12 @@ import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
+import org.slf4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -58,6 +57,16 @@ public class DockerDSLTest {
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
     @Rule public RestartableJenkinsRule story = new RestartableJenkinsRule();
 
+
+    @BeforeClass
+    public static void log() throws Exception {
+        Logger logger = org.slf4j.LoggerFactory.getLogger(DockerDSLTest.class);
+        String version = printVersion();
+        logger.info("Docker Config ----");
+        logger.info(version);
+        logger.info("Docker Config <-->");
+
+    }
     @Test public void firstDoNoHarm() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {

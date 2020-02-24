@@ -46,6 +46,24 @@ public class DockerTestUtil {
         assumeDocker(new VersionNumber(DEFAULT_MINIMUM_VERSION));
     }
 
+    public static String printVersion() throws Exception {
+        Launcher.LocalLauncher localLauncher = new Launcher.LocalLauncher(StreamTaskListener.NULL);
+        try {
+            int status = localLauncher
+                .launch()
+                .cmds(DockerTool.getExecutable(null, null, null, null), "ps")
+                .start()
+                .joinWithTimeout(DockerClient.CLIENT_TIMEOUT, TimeUnit.SECONDS, localLauncher.getListener());
+            Assume.assumeTrue("Docker working", status == 0);
+        } catch (IOException x) {
+            Assume.assumeNoException("have Docker installed", x);
+        }
+        DockerClient dockerClient = new DockerClient(localLauncher, null, null);
+        return dockerClient.printConfig();
+
+    }
+
+
     public static void assumeDocker(VersionNumber minimumVersion) throws Exception {
         Launcher.LocalLauncher localLauncher = new Launcher.LocalLauncher(StreamTaskListener.NULL);
         try {
