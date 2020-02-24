@@ -70,7 +70,8 @@ public class DockerDSLTest {
     @Test public void firstDoNoHarm() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                assumeNotWindows();
+//                assumeNotWindows();
+                assumeDocker();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition("semaphore 'wait'", true));
                 WorkflowRun b = p.scheduleBuild2(0).waitForStart();
