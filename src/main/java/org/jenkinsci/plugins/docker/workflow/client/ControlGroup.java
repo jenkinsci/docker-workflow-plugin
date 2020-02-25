@@ -62,21 +62,23 @@ public class ControlGroup {
         // 7:cpu:/ecs/0410eff2-7e59-4111-823e-1e0d98ef7f30/3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b
         // 8:cpuset:/kubepods.slice/kubepods-pod9c26dfb6_b9c9_11e7_bfb9_02c6c1fc4861.slice/docker-3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b.scope
         // 12:freezer:/actions_job/ddecc467e1fb3295425e663efb6531282c1c936f25a3eeb7bb64e7b0fc61a216
+        // /kubepods/burstable/pod1fe52ba4-5709-11ea-9ee3-00505682780f/d65c8853fa45d139ce95d5c2b68a6e4aa8da83894d8eb0396cd6edd1c134c97c/user.slice
 
-        Pattern regex = Pattern.compile("([a-z0-9]{64})");
-        Matcher matcher = regex.matcher(group);
+        Matcher matcher = Pattern.compile("([a-z0-9]{64})").matcher(group);
 
         String containerId = null; 
         
-        while (matcher.find()) {
+        while ( matcher.find() ) {
           containerId = matcher.group();
         }
 
-        if (containerId != null) {
-          return containerId;
-        } else {
-          throw new IOException("Unexpected cgroup syntax "+group);
+        if ( null == containerId && 
+            Pattern.compile("^(\\/docker\\/|\\/ecs\\/|\\/docker-|\\/kubepods\\/|\\/actions_job\\/).*").matcher(group).matches() ) 
+        {
+          throw new IOException( "Unexpected cgroup syntax " + group );
         }
+
+        return containerId;
     }
 
 }
