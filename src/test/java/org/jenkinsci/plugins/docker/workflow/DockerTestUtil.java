@@ -55,7 +55,7 @@ public class DockerTestUtil {
                 .joinWithTimeout(DockerClient.CLIENT_TIMEOUT, TimeUnit.SECONDS, localLauncher.getListener());
             Assume.assumeTrue("Docker working", status == 0);
         } catch (IOException x) {
-            Assume.assumeNoException("have Docker installed", x);
+            Assume.assumeNoException("have Docker installed ", x);
         }
         DockerClient dockerClient = new DockerClient(localLauncher, null, null);
         Assume.assumeFalse("Docker version not < " + minimumVersion.toString(), dockerClient.version().isOlderThan(minimumVersion));
