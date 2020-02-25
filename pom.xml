@@ -33,6 +33,7 @@
         <changelist>-SNAPSHOT</changelist>
         <jenkins.version>2.150.3</jenkins.version>
         <java.level>8</java.level>
+        <pipeline-model-definition-plugin.version>1.5.1</pipeline-model-definition-plugin.version>
     </properties>
     <repositories>
         <repository>
@@ -80,6 +81,15 @@
             <artifactId>workflow-step-api</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.jenkinsci.plugins</groupId>
+            <artifactId>pipeline-model-extensions</artifactId>
+            <version>${pipeline-model-definition-plugin.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>cloudbees-folder</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-step-api</artifactId>
             <classifier>tests</classifier>
@@ -113,5 +123,57 @@
             <version>2.10.1</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.jenkinsci.plugins</groupId>
+            <artifactId>pipeline-model-definition</artifactId>
+            <version>${pipeline-model-definition-plugin.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>scm-api</artifactId>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>git</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>git</artifactId>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkinsci.plugins</groupId>
+            <artifactId>pipeline-model-definition</artifactId>
+            <version>${pipeline-model-definition-plugin.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.main</groupId>
+            <artifactId>jenkins-test-harness-tools</artifactId>
+            <version>2.2</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemProperties combine.children="append">
+                        <property>
+                            <!-- TODO copied from pipeline-model-definition; better to docker pull images before invoking timeout -->
+                            <name>jenkins.test.timeout</name>
+                            <value>600</value>
+                        </property>
+                    </systemProperties>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
