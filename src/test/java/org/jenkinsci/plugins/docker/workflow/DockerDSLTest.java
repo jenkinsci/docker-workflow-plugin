@@ -61,6 +61,7 @@ public class DockerDSLTest {
     @Test public void firstDoNoHarm() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
+                assumeDocker();
                 assumeNotWindows();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition("semaphore 'wait'", true));
@@ -103,6 +104,7 @@ public class DockerDSLTest {
     @Test public void inside() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
+                assumeDocker();
                 assumeNotWindows();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
@@ -130,6 +132,7 @@ public class DockerDSLTest {
     @Test public void entrypoint() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
+                assumeDocker();
                 assumeNotWindows();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
@@ -145,6 +148,7 @@ public class DockerDSLTest {
     @Test public void endpoints() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
+                assumeDocker();
                 assumeNotWindows();
 
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
@@ -174,6 +178,7 @@ public class DockerDSLTest {
     @Test public void runArgs() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
+                assumeDocker();
                 assumeNotWindows();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
@@ -194,6 +199,7 @@ public class DockerDSLTest {
     @Test public void withRun() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
+                assumeDocker();
                 assumeNotWindows();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
@@ -220,6 +226,7 @@ public class DockerDSLTest {
     @Test public void withRunCommand() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
+                assumeDocker();
                 assumeNotWindows();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
@@ -234,6 +241,7 @@ public class DockerDSLTest {
     @Test public void build() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
+                assumeDocker();
                 assumeNotWindows();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
@@ -263,6 +271,7 @@ public class DockerDSLTest {
     @Test public void buildWithMultiStage() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
+                assumeDocker();
                 assumeNotWindows();
                 assumeDocker(new VersionNumber("17.05"));
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");

@@ -52,6 +52,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import org.apache.commons.lang.StringUtils;
@@ -240,8 +241,20 @@ public class DockerClient {
             throw new IOException(String.format("Error parsing created date '%s' for object '%s'.", s, objectId), e);
         }
     }
+
+
     public String getConfig() throws IOException, InterruptedException {
-        return launch(new EnvVars(), true, "version").getOut();
+        String config = launch(new EnvVars(), true, "version").getOut();
+        StringTokenizer stringTokenizer = new StringTokenizer(config, System.lineSeparator());
+        while(stringTokenizer.hasMoreTokens()){
+            String token = stringTokenizer.nextToken();
+            Arrays.asList("Client:", "Version", "OS/Arch", "experimental", "Server:").stream().forEach( a -> {
+                if(token.contains(a)){
+                    System.out.println("> " +token);
+                }
+            });
+        }
+        return config;
     }
     /**
      * Get the docker version.
