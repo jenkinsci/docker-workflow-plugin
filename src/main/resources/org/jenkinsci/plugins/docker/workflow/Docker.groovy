@@ -137,7 +137,8 @@ class Docker implements Serializable {
 
         public Container run(String args = '', String command = "") {
             docker.node {
-                def container = docker.script."${docker.shell()}"(script: "docker run -d${args != '' ? ' ' + args : ''} ${id}${command != '' ? ' ' + command : ''}", returnStdout: true).trim()
+                def shouldUseDetach = !args.contains(' -a') && !args.contains("--attach")
+                def container = docker.script."${docker.shell()}"(script: "docker run ${shouldUseDetach? -d : ''}${args != '' ? ' ' + args : ''} ${id}${command != '' ? ' ' + command : ''}", returnStdout: true).trim()
                 new Container(docker, container)
             }
         }
