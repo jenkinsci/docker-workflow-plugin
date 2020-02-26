@@ -122,7 +122,9 @@ public class WithContainerStepTest {
             @Override public void evaluate() throws Throwable {
                 DockerTestUtil.assumeDocker();
                 Process proc = new ProcessBuilder("sudo", "pgrep", "dockerd").inheritIO().start();
-                proc.waitFor(15, TimeUnit.SECONDS);
+                while(proc.isAlive()){
+                    proc.waitFor(15, TimeUnit.SECONDS);
+                }
                 Assume.assumeThat("we are in an interactive environment and can pause dockerd", proc.exitValue(), Matchers.is(0));
                 logging.record("org.jenkinsci.plugins.workflow.support.concurrent.Timeout", Level.FINE); // TODO use Timeout.class when workflow-support 2.13+
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
@@ -140,13 +142,17 @@ public class WithContainerStepTest {
                     WorkflowRun b = p.scheduleBuild2(0).waitForStart();
                     story.j.waitForMessage("+ sleep infinity", b);
                     proc = new ProcessBuilder("sudo", "killall", "-STOP", "dockerd").inheritIO().start();
-                    proc.waitFor(15, TimeUnit.SECONDS);
+                    while(proc.isAlive()) {
+                        proc.waitFor(15, TimeUnit.SECONDS);
+                    }
                     Assume.assumeThat("could suspend dockerd", proc.exitValue(), Matchers.is(0));
                     try {
                         story.j.assertBuildStatus(Result.ABORTED, story.j.waitForCompletion(b));
                     } finally {
                         proc = new ProcessBuilder("sudo", "killall", "-CONT", "dockerd").inheritIO().start();
-                        proc.waitFor(15, TimeUnit.SECONDS);
+                        while(proc.isAlive()) {
+                            proc.waitFor(15, TimeUnit.SECONDS);
+                        }
                         Assume.assumeThat("could resume dockerd", proc.exitValue(), Matchers.is(0));
                     }
                 } finally {
