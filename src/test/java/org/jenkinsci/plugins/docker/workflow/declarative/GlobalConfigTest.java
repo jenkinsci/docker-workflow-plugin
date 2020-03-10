@@ -24,12 +24,17 @@
 
 package org.jenkinsci.plugins.docker.workflow.declarative;
 
+import com.cloudbees.hudson.plugins.folder.Folder;
+import hudson.ExtensionList;
+import hudson.diagnosis.OldDataMonitor;
+import java.util.Collections;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Rule;
 import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
+import org.jvnet.hudson.test.recipes.LocalData;
 
 public class GlobalConfigTest {
 
@@ -52,6 +57,25 @@ public class GlobalConfigTest {
             public void evaluate() throws Throwable {
                 assertEquals("config_docker", GlobalConfig.get().getDockerLabel());
             }
+        });
+    }
+
+    @Issue("https://github.com/jenkinsci/docker-workflow-plugin/pull/202#issuecomment-597156438")
+    @LocalData
+    @Test
+    public void oldPackages() {
+        story.then(r -> {
+            assertEquals("GlobalConfig is translated", "docker", GlobalConfig.get().getDockerLabel());
+            assertEquals("https://myreg/", GlobalConfig.get().getRegistry().getUrl());
+            assertEquals("myreg", GlobalConfig.get().getRegistry().getCredentialsId());
+            Folder d = r.jenkins.getItemByFullName("d", Folder.class);
+            assertNotNull(d);
+            FolderConfig c = d.getProperties().get(FolderConfig.class);
+            assertNotNull("FolderConfig is translated", c);
+            assertEquals("dokker", c.getDockerLabel());
+            assertEquals("https://yourreg/", c.getRegistry().getUrl());
+            assertEquals("yourreg", c.getRegistry().getCredentialsId());
+            assertEquals("there is no old data", Collections.emptySet(), ExtensionList.lookupSingleton(OldDataMonitor.class).getData().keySet());
         });
     }
 

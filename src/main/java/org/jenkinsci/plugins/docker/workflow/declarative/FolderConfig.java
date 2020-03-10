@@ -31,6 +31,7 @@ import com.cloudbees.hudson.plugins.folder.AbstractFolderPropertyDescriptor;
 import hudson.Extension;
 import hudson.model.Item;
 import hudson.model.ItemGroup;
+import hudson.model.Items;
 import hudson.model.Job;
 import hudson.model.Run;
 import org.apache.commons.lang.StringUtils;
@@ -85,6 +86,10 @@ public class FolderConfig extends AbstractFolderProperty<AbstractFolder<?>> {
 
     @Extension @Symbol({"pipeline-model-docker", "pipeline-model"})
     public static class DescriptorImpl extends AbstractFolderPropertyDescriptor {
+
+        public DescriptorImpl() {
+            Items.XSTREAM2.addCompatibilityAlias("org.jenkinsci.plugins.pipeline.modeldefinition.config.FolderConfig", FolderConfig.class);
+        }
 
         @Nonnull
         @Override
