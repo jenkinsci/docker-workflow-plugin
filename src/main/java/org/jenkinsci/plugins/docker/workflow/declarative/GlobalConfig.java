@@ -30,8 +30,15 @@ import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.Util;
 import hudson.model.Run;
+import hudson.util.XStream2;
+import java.io.File;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import jenkins.model.GlobalConfiguration;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
@@ -47,10 +54,25 @@ import javax.annotation.Nullable;
  */
 @Extension @Symbol({"pipeline-model-docker", "pipeline-model"})
 public class GlobalConfig extends GlobalConfiguration {
+
+    private static final Logger LOGGER = Logger.getLogger(GlobalConfig.class.getName());
+
     private String dockerLabel;
     private DockerRegistryEndpoint registry;
 
     public GlobalConfig() {
+        String oldId = "org.jenkinsci.plugins.pipeline.modeldefinition.config.GlobalConfig";
+        File oldConfigFile = new File(Jenkins.get().getRootDir(), oldId + ".xml");
+        File newConfigFile = new File(Jenkins.get().getRootDir(), getId() + ".xml");
+        if (oldConfigFile.exists() && !newConfigFile.exists()) {
+            try {
+                FileUtils.moveFile(oldConfigFile, newConfigFile);
+                LOGGER.info("migrated " + oldConfigFile + " to " + newConfigFile);
+            } catch (IOException x) {
+                LOGGER.log(Level.WARNING, null, x);
+            }
+        }
+        ((XStream2) getConfigFile().getXStream()).addCompatibilityAlias(oldId, GlobalConfig.class);
         load();
     }
 
