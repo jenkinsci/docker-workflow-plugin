@@ -251,9 +251,12 @@ public class DockerClient {
         LaunchResult result = launch(new EnvVars(), true, "-v");
         if (result.getStatus() == 0) {
             return parseVersionNumber(result.getOut());
-        } else {
-            return null;
         }
+        result = launch(new EnvVars(), true, "--version");
+        if (result.getStatus() == 0) {
+            return parseVersionNumber(result.getOut());
+        }
+        return null;
     }
     
     private static final Pattern pattern = Pattern.compile("^(\\D+)(\\d+)\\.(\\d+)\\.(\\d+)(.*)");
