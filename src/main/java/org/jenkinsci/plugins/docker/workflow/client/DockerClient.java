@@ -29,6 +29,7 @@ import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.Node;
+import hudson.os.WindowsUtil;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.VersionNumber;
 import java.io.BufferedReader;
@@ -134,7 +135,7 @@ public class DockerClient {
         }
         for (Map.Entry<String, String> variable : containerEnv.entrySet()) {
             argb.add("-e");
-            argb.addMasked(variable.getKey()+"="+variable.getValue());
+            argb.addMasked(quoteArgument(variable));
         }
         argb.add(image).add(command);
 
@@ -387,5 +388,15 @@ public class DockerClient {
             return Collections.emptyList();
         }
         return Arrays.asList(volumes.replace("\\", "/").split("\\n"));
+    }
+
+    /**
+     * Convert key-value pair (variable) to Docker container environment variable argument.
+     * It handles some difficult cases like a variable containing spaces and quotes.
+     * @param variable a variable as a key-value pair.
+     * @return a string representation of the passed variable.
+     */
+    private static String quoteArgument(Map.Entry<String, String> variable) {
+        return WindowsUtil.quoteArgument(variable.getKey() + "=" + variable.getValue());
     }
 }
