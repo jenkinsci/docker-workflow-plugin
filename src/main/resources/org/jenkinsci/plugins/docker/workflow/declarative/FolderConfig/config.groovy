@@ -28,9 +28,7 @@ package org.jenkinsci.plugins.docker.workflow.declarative.FolderConfig
 
 def f = namespace(lib.FormTagLib)
 
-f.section(title:_("Declarative Pipeline (Docker)")) {
-    f.entry(field: "dockerLabel", title: _("Docker Label")) {
-        f.textbox()
-    }
-    f.property(field: "registry")
+f.entry(field: "dockerLabel", title: _("Docker Label")) {
+    f.textbox()
 }
+f.property(field: "registry")
