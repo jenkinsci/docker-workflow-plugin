@@ -79,8 +79,6 @@ import org.jvnet.hudson.test.RestartableJenkinsRule;
 import org.jvnet.hudson.test.TestExtension;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import static org.junit.Assume.assumeTrue;
-
 public class WithContainerStepTest {
 
     @BeforeClass
