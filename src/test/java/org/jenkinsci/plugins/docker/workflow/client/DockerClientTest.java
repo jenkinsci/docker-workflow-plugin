@@ -32,6 +32,7 @@ import hudson.util.VersionNumber;
 import org.jenkinsci.plugins.docker.commons.fingerprint.ContainerRecord;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -43,6 +44,11 @@ import java.util.Collections;
 public class DockerClientTest {
 
     private DockerClient dockerClient;
+
+    @BeforeClass
+    public static void unix() throws Exception {
+        DockerTestUtil.assumeNotWindows();
+    }
     
     @Before
     public void setup() throws Exception {
