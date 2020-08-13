@@ -386,22 +386,4 @@ public class WithContainerStepTest {
             }
         }
     }
-
-    @Issue("JENKINS-52264")
-    @Test public void emptyEnv() {
-        story.then(r -> {
-            DockerTestUtil.assumeDocker();
-            WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
-            p.setDefinition(new CpsFlowDefinition(
-                "node {\n" +
-                    "  withEnv(['=']) {\n" +
-                    "    withDockerContainer('ubuntu') {\n" +
-                    "      sh 'pwd'\n" +
-                    "    }\n" +
-                    "  }\n" +
-                    "}", true));
-            WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-//            story.j.assertLogNotContains("hello from some step", b);
-        });
-    }
 }
