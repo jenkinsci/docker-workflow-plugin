@@ -1,3 +1,4 @@
 buildPlugin(platforms: [
-    'linux'
+    'linux',
+    'windows'
 ])
