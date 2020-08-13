@@ -33,6 +33,7 @@ import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.model.Statement;
@@ -42,6 +43,12 @@ import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeDocker;
 import static org.junit.Assert.assertNotNull;
 
 public class FromFingerprintStepTest {
+
+    @BeforeClass
+    public static void unix() throws Exception {
+        DockerTestUtil.assumeNotWindows();
+    }
+
     @Rule public RestartableJenkinsRule story = new RestartableJenkinsRule();
 
     private static final String BUSYBOX_IMAGE = "quay.io/prometheus/busybox:latest";
