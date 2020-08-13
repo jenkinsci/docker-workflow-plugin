@@ -85,7 +85,7 @@ public class WithContainerStepTest {
 
     @BeforeClass
     public static void unix() throws Exception {
-        assumeTrue("This test is only for Unix", File.pathSeparatorChar==':');
+        DockerTestUtil.assumeNotWindows();
     }
 
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
