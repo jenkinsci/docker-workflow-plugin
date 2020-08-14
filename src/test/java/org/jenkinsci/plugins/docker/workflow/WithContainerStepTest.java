@@ -36,6 +36,7 @@ import hudson.tools.ToolProperty;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.Secret;
 import java.io.File;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.logging.Level;
 
@@ -380,6 +381,73 @@ public class WithContainerStepTest {
         @TestExtension("envMasking") public static final class DescriptorImpl extends StepDescriptor {
             @Override public String getFunctionName() {
                 return "stepWithLauncher";
+            }
+            @Override public Set<? extends Class<?>> getRequiredContext() {
+                return ImmutableSet.of(Launcher.class, TaskListener.class);
+            }
+        }
+    }
+
+    @Issue("JENKINS-52264")
+    @Test public void removeInvalidEnvVars() throws IOException {
+        story.then(r -> {
+            DockerTestUtil.assumeDocker();
+            WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+            p.setDefinition(new CpsFlowDefinition(
+                "node {\n" +
+                    "  withDockerContainer('ubuntu') {\n" +
+                    "    removeInvalidEnvVarsStep([]) \n" + //without envVars to overwrite
+                    "    removeInvalidEnvVarsStep([\"other=only_valid_value\"]) \n" + //only valid envVar
+                    "    removeInvalidEnvVarsStep([\"=\", \"other=with_empty_var\"]) \n" + //with empty variable
+                    "    removeInvalidEnvVarsStep([\"PATH=ignored_value\", \"other=with_path\"]) \n" + //with PATH variable
+                    "    removeInvalidEnvVarsStep([\"=\", \"PATH=ignored_value\", \"other=with_path_and_empty\"]) \n" + //both invalid variables
+                    "  }\n" +
+                    "}", true));
+            WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+            story.j.assertLogContains("working with empty environment.", b);
+            story.j.assertLogContains("only_valid_value", b);
+            story.j.assertLogContains("with_empty_var", b);
+            story.j.assertLogContains("with_path", b);
+            story.j.assertLogContains("with_path_and_empty", b);
+            story.j.assertLogNotContains("ignored_value", b);
+        });
+    }
+    public static final class RemoveInvalidEnvVarsStep extends Step {
+        public final Collection<String> envVars;
+        @DataBoundConstructor public RemoveInvalidEnvVarsStep(Collection<String> envVars) {
+            this.envVars = envVars;
+        }
+        @Override public StepExecution start(StepContext context) throws Exception {
+            return new Execution(context, envVars);
+        }
+        private static final class Execution extends SynchronousNonBlockingStepExecution<Void> {
+            private final Collection<String> envVars;
+            Execution(StepContext context, Collection<String> envVars) {
+                super(context);
+                this.envVars = envVars;
+            }
+            @Override protected Void run() throws Exception {
+                Launcher.ProcStarter ps = getContext().get(Launcher.class).launch();
+                ps.envs(envVars.toArray(new String[0]));
+                ArgumentListBuilder args = new ArgumentListBuilder("sh", "-c");
+                if(envVars.isEmpty()) {
+                    args.add("echo working with empty environment.");
+                } else {
+                    args.add("printenv other && printenv PATH");
+                }
+                final int exitCode = ps
+                    .cmds(args)
+                    .stdout(getContext().get(TaskListener.class))
+                    .join();
+                if (exitCode != 0) {
+                    throw new IOException("failed to run exec command with vars: "+envVars);
+                }
+                return null;
+            }
+        }
+        @TestExtension("removeInvalidEnvVars") public static final class DescriptorImpl extends StepDescriptor {
+            @Override public String getFunctionName() {
+                return "removeInvalidEnvVarsStep";
             }
             @Override public Set<? extends Class<?>> getRequiredContext() {
                 return ImmutableSet.of(Launcher.class, TaskListener.class);
