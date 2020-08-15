@@ -58,7 +58,6 @@ public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
 
     @BeforeClass
     public static void setup() throws Exception {
-        DockerTestUtil.assumeNotWindows();
         CredentialsStore store = CredentialsProvider.lookupStores(j.jenkins).iterator().next();
 
         store.addCredentials(Domain.global(), globalCred);

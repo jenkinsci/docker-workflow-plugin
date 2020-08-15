@@ -55,7 +55,6 @@ public class DockerAgentTest extends AbstractModelDefTest {
     private static String password;
     @BeforeClass
     public static void setUpAgent() throws Exception {
-        DockerTestUtil.assumeNotWindows();
         s = j.createOnlineSlave();
         s.setLabelString("some-label docker");
         s.getNodeProperties().add(new EnvironmentVariablesNodeProperty(new EnvironmentVariablesNodeProperty.Entry("ONAGENT", "true"),

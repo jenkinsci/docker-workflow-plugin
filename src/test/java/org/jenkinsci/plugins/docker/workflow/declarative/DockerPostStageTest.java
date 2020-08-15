@@ -26,7 +26,6 @@ package org.jenkinsci.plugins.docker.workflow.declarative;
 
 import org.jenkinsci.plugins.docker.workflow.DockerTestUtil;
 import org.jenkinsci.plugins.pipeline.modeldefinition.AbstractModelDefTest;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.jvnet.hudson.test.Issue;
 
@@ -34,11 +33,6 @@ import org.jvnet.hudson.test.Issue;
  * Adapted from {@link org.jenkinsci.plugins.pipeline.modeldefinition.PostStageTest}.
  */
 public class DockerPostStageTest extends AbstractModelDefTest {
-
-    @BeforeClass
-    public static void unix() throws Exception {
-        DockerTestUtil.assumeNotWindows();
-    }
 
     @Issue("JENKINS-46276")
     @Test
