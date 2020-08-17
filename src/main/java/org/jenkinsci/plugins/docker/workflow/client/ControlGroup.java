@@ -30,9 +30,15 @@ public class ControlGroup {
 
     private ControlGroup(String line) throws NumberFormatException, IndexOutOfBoundsException {
         String[] fields = line.split(":");
-        id = Integer.parseInt(fields[0]);
-        subsystems = fields[1];
-        group = fields[2];
+        if (fields.length > 1) {
+            id = Integer.parseInt(fields[0]);
+            subsystems = fields[1];
+            group = fields[2];
+        } else {
+            id = -1;
+            subsystems = "None";
+            group = fields[0];
+        }
     }
 
 
