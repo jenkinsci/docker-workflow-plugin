@@ -59,6 +59,8 @@ public class DockerBasicModelDefTest extends AbstractModelDefTest {
     @Issue("JENKINS-40226")
     @Test
     public void failureBeforeStages() throws Exception {
+        // TODO: Fails using Windows Git
+        DockerTestUtil.assumeNotWindows();
         // This should fail whether we've got Docker available or not. Hopefully.
         expect(Result.FAILURE, "failureBeforeStages")
                 .logContains("Dockerfile failed")

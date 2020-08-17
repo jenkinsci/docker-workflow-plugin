@@ -65,6 +65,8 @@ public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
 
     @Test
     public void plainSystemConfig() throws Exception {
+        // TODO: Fails using Windows Git
+        DockerTestUtil.assumeNotWindows();
         GlobalConfig.get().setDockerLabel("config_docker");
         GlobalConfig.get().setRegistry(new DockerRegistryEndpoint("https://docker.registry", globalCred.getId()));
         expect("org/jenkinsci/plugins/docker/workflow/declarative/declarativeDockerConfig")
