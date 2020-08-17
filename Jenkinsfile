@@ -1,5 +1,4 @@
-def builds = [:]
-builds['linux-with-docker-wrapper'] = { buildPlugin(platforms: ['docker']) }
-// TODO Docker-based tests fail on 2019
-builds['windows-wrapper'] = { buildPlugin(useAci: true, platforms: ['windows']) }
-parallel builds
+buildPlugin(platforms: [
+    'linux',
+    'maven-windows' // TODO Docker-based tests fail when using Docker on Windows. The maven-windows agents do not have Docker installed so tests that require Docker are skipped.
+])
