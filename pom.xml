@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>3.40</version>
+        <version>4.6</version>
         <relativePath />
     </parent>
     <artifactId>docker-workflow</artifactId>
@@ -31,7 +31,7 @@
     <properties>
         <revision>1.24</revision>
         <changelist>-SNAPSHOT</changelist>
-        <jenkins.version>2.150.3</jenkins.version>
+        <jenkins.version>2.176.4</jenkins.version>
         <java.level>8</java.level>
         <pipeline-model-definition-plugin.version>1.5.1</pipeline-model-definition-plugin.version>
     </properties>
@@ -51,8 +51,8 @@
         <dependencies>
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.150.x</artifactId>
-                <version>5</version>
+                <artifactId>bom-2.176.x</artifactId>
+                <version>11</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -157,6 +157,13 @@
             <groupId>org.jenkins-ci.main</groupId>
             <artifactId>jenkins-test-harness-tools</artifactId>
             <version>2.2</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- Required because git plugin optionally depends on a recent version of matrix-project, and if we do not depend
+        on matrix-project here, an older version is installed automatically as a detached plugin, causing git plugin to fail to load. -->
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>matrix-project</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

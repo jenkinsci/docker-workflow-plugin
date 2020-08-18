@@ -32,10 +32,12 @@ import com.cloudbees.plugins.credentials.CredentialsStore;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import hudson.ExtensionList;
+import hudson.Functions;
 import hudson.model.Slave;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 import org.jenkinsci.plugins.docker.workflow.DockerTestUtil;
 import org.jenkinsci.plugins.pipeline.modeldefinition.AbstractModelDefTest;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -65,6 +67,7 @@ public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
 
     @Test
     public void plainSystemConfig() throws Exception {
+        Assume.assumeFalse("Fails using the version of Git installed on the Windows ACI agents on ci.jenkins.io", Functions.isWindows());
         GlobalConfig.get().setDockerLabel("config_docker");
         GlobalConfig.get().setRegistry(new DockerRegistryEndpoint("https://docker.registry", globalCred.getId()));
         expect("org/jenkinsci/plugins/docker/workflow/declarative/declarativeDockerConfig")
