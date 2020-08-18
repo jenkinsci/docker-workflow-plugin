@@ -24,11 +24,13 @@
 
 package org.jenkinsci.plugins.docker.workflow.declarative;
 
+import hudson.Functions;
 import hudson.model.Result;
 import hudson.model.Slave;
 import org.jenkinsci.plugins.docker.workflow.DockerTestUtil;
 import org.jenkinsci.plugins.pipeline.modeldefinition.AbstractModelDefTest;
-import static org.jenkinsci.plugins.pipeline.modeldefinition.AbstractModelDefTest.j;
+
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.jvnet.hudson.test.Issue;
@@ -59,8 +61,7 @@ public class DockerBasicModelDefTest extends AbstractModelDefTest {
     @Issue("JENKINS-40226")
     @Test
     public void failureBeforeStages() throws Exception {
-        // TODO: Fails using Windows Git
-        DockerTestUtil.assumeNotWindows();
+        Assume.assumeFalse("Fails using the version of Git installed on the Windows ACI agents on ci.jenkins.io", Functions.isWindows());
         // This should fail whether we've got Docker available or not. Hopefully.
         expect(Result.FAILURE, "failureBeforeStages")
                 .logContains("Dockerfile failed")

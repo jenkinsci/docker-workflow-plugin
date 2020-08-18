@@ -159,10 +159,11 @@
             <version>2.2</version>
             <scope>test</scope>
         </dependency>
+        <!-- Required because git plugin optionally depends on a recent version of matrix-project, and if we do not depend
+        on matrix-project here, an older version is installed automatically as a detached plugin, causing git plugin to fail to load. -->
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>matrix-project</artifactId>
-            <version>1.14</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
