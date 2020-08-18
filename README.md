@@ -14,7 +14,7 @@ A full description is available in the plugin’s [documentation](https://go.clo
 
 Demo
 ---
-The plugin has a Docker-based demo. See the [demo README](demo/README.md) page for setup and launch guidelines.
+The plugin has an outdated Docker-based demo. See the [demo README from v1.12](https://github.com/jenkinsci/docker-workflow-plugin/tree/docker-workflow-1.12/demo) for setup and launch guidelines.
 
 License
 ---
