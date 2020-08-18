@@ -31,10 +31,6 @@ import hudson.Launcher;
 import hudson.model.Node;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.VersionNumber;
-import org.jenkinsci.plugins.docker.commons.fingerprint.ContainerRecord;
-
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -44,18 +40,22 @@ import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Map;
 import java.util.List;
-import java.util.Arrays;
+import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.plugins.docker.commons.fingerprint.ContainerRecord;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
@@ -106,7 +106,12 @@ public class DockerClient {
     public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, @Nonnull String... command) throws IOException, InterruptedException {
         ArgumentListBuilder argb = new ArgumentListBuilder();
 
-        argb.add("run", "-t", "-d", "-u", user);
+        argb.add("run", "-t", "-d");
+
+        // Username might be empty because we are running on Windows
+        if (StringUtils.isNotEmpty(user)) {
+            argb.add("-u", user);
+        }
         if (args != null) {
             argb.addTokenized(args);
         }
@@ -306,6 +311,10 @@ public class DockerClient {
      * @return a {@link String} containing the <strong>uid:gid</strong>.
      */
     public String whoAmI() throws IOException, InterruptedException {
+        if (!launcher.isUnix()) {
+            // Windows does not support username
+            return "";
+        }
         ByteArrayOutputStream userId = new ByteArrayOutputStream();
         launcher.launch().cmds("id", "-u").quiet(true).stdout(userId).start().joinWithTimeout(CLIENT_TIMEOUT, TimeUnit.SECONDS, launcher.getListener());
 
@@ -367,6 +376,6 @@ public class DockerClient {
         if (volumes.isEmpty()) {
             return Collections.emptyList();
         }
-        return Arrays.asList(volumes.split("\\n"));
+        return Arrays.asList(volumes.replace("\\", "/").split("\\n"));
     }
 }

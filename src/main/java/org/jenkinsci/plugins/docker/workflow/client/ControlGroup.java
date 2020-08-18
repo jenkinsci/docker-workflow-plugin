@@ -78,6 +78,12 @@ public class ControlGroup {
             if (group.length() < i+1+64) throw new IOException("Unexpected cgroup syntax "+group);
             return group.substring(i+1, i+1+64);
         }
+        if (group.startsWith("/actions_job/")) {
+            // 12:freezer:/actions_job/ddecc467e1fb3295425e663efb6531282c1c936f25a3eeb7bb64e7b0fc61a216
+            int i = group.lastIndexOf('/');
+            if (group.length() < i+1+64) throw new IOException("Unexpected cgroup syntax "+group);
+            return group.substring(i+1, i+1+64);
+        }
 
         return null;
     }

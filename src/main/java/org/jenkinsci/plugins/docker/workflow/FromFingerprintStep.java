@@ -43,6 +43,10 @@ import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
+/**
+ * @deprecated Fingerprints produced by this step are not used anywhere, and the parsing code has major limitations. See https://github.com/jenkinsci/docker-workflow-plugin/pull/149#issuecomment-451305522 and https://groups.google.com/d/msg/jenkinsci-dev/k13SfZcBWVg/iQghmCQrEAAJ
+ */
+@Deprecated
 public class FromFingerprintStep extends AbstractStepImpl {
 
     private static final String FIELD_ID = ".Id";

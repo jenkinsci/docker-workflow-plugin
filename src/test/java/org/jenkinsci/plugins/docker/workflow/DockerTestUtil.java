@@ -23,6 +23,7 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
+import hudson.EnvVars;
 import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import hudson.Launcher;
 import hudson.util.StreamTaskListener;
@@ -32,7 +33,6 @@ import org.junit.Assume;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import static org.hamcrest.Matchers.is;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 
 /**
@@ -48,7 +48,12 @@ public class DockerTestUtil {
     public static void assumeDocker(VersionNumber minimumVersion) throws Exception {
         Launcher.LocalLauncher localLauncher = new Launcher.LocalLauncher(StreamTaskListener.NULL);
         try {
-            Assume.assumeThat("Docker working", localLauncher.launch().cmds(DockerTool.getExecutable(null, null, null, null), "ps").start().joinWithTimeout(DockerClient.CLIENT_TIMEOUT, TimeUnit.SECONDS, localLauncher.getListener()), is(0));
+            int status = localLauncher
+                .launch()
+                .cmds(DockerTool.getExecutable(null, null, null, null), "ps")
+                .start()
+                .joinWithTimeout(DockerClient.CLIENT_TIMEOUT, TimeUnit.SECONDS, localLauncher.getListener());
+            Assume.assumeTrue("Docker working", status == 0);
         } catch (IOException x) {
             Assume.assumeNoException("have Docker installed", x);
         }
@@ -58,6 +63,25 @@ public class DockerTestUtil {
 
     public static void assumeNotWindows() throws Exception {
         Assume.assumeFalse(System.getProperty("os.name").toLowerCase().contains("windows"));
+    }
+
+    public static EnvVars newDockerLaunchEnv() {
+        // Create the KeyMaterial for connecting to the docker host/server.
+        // E.g. currently need to add something like the following to your env
+        //  -DDOCKER_HOST_FOR_TEST="tcp://192.168.x.y:2376"
+        //  -DDOCKER_HOST_KEY_DIR_FOR_TEST="/Users/tfennelly/.boot2docker/certs/boot2docker-vm"
+        final String docker_host_for_test = System.getProperty("DOCKER_HOST_FOR_TEST");
+        final String docker_host_key_dir_for_test = System.getProperty("DOCKER_HOST_KEY_DIR_FOR_TEST");
+
+        EnvVars env = new EnvVars();
+        if (docker_host_for_test != null) {
+            env.put("DOCKER_HOST", docker_host_for_test);
+        }
+        if (docker_host_key_dir_for_test != null) {
+            env.put("DOCKER_TLS_VERIFY", "1");
+            env.put("DOCKER_CERT_PATH", docker_host_key_dir_for_test);
+        }
+        return env;
     }
 
     private DockerTestUtil() {}
