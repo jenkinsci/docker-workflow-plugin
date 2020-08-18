@@ -24,6 +24,7 @@ public class ControlGroupTest {
             "8:cpuset:/kubepods/besteffort/pod60070ae4-c63a-11e7-92b3-0adc1ac11520/3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b",
             "7:cpu:/ecs/0410eff2-7e59-4111-823e-1e0d98ef7f30/3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b",
             "2:cpu:/docker-ce/docker/3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b",
+            "2:cpu:/docker/3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b/docker/3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b/user/jenkins/0",
             "/kubepods/burstable/pod1fe52ba4-5709-11ea-9ee3-00505682780f/3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b/user.slice"
         };
 
