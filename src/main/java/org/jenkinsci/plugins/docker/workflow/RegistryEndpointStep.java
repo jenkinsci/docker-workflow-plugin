@@ -146,7 +146,7 @@ public class RegistryEndpointStep extends Step {
             }
             return ud;
         }
-        
+
         @SuppressWarnings("unchecked")
         @Override public Set<? extends Class<?>> getRequiredContext() {
             return ImmutableSet.of(TaskListener.class, EnvVars.class, Node.class, Run.class, FilePath.class, Launcher.class);
