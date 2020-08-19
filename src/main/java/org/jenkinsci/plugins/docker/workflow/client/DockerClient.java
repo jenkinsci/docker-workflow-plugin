@@ -37,8 +37,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.nio.charset.Charset;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -75,9 +74,6 @@ public class DockerClient {
     @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL", justification="mutable for scripts")
     @Restricted(NoExternalUse.class)
     public static int CLIENT_TIMEOUT = Integer.getInteger(DockerClient.class.getName() + ".CLIENT_TIMEOUT", 180); // TODO 2.4+ SystemProperties
-
-    // e.g. 2015-04-09T13:40:21.981801679Z
-    public static final String DOCKER_DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
     
     private final Launcher launcher;
     private final @CheckForNull Node node;
@@ -232,13 +228,8 @@ public class DockerClient {
         if (createdString == null) {
             return null;
         }
-        // TODO Currently truncating. Find out how to specify last part for parsing (TZ etc)
-        String s = createdString.substring(1, DOCKER_DATE_TIME_FORMAT.length() - 1);
-        try {
-            return new SimpleDateFormat(DOCKER_DATE_TIME_FORMAT).parse(s);
-        } catch (ParseException e) {
-            throw new IOException(String.format("Error parsing created date '%s' for object '%s'.", s, objectId), e);
-        }
+        String s = createdString.substring(1, createdString.length() - 1); // remove enclosing quotes
+        return Date.from(OffsetDateTime.parse(s).toInstant());
     }
 
     /**
