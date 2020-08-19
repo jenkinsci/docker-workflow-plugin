@@ -62,7 +62,7 @@ import org.kohsuke.accmod.restrictions.NoExternalUse;
 
 /**
  * Simple docker client for Pipeline.
- * 
+ *
  * @author <a href="mailto:tom.fennelly@gmail.com">tom.fennelly@gmail.com</a>
  */
 public class DockerClient {
@@ -115,7 +115,7 @@ public class DockerClient {
         if (args != null) {
             argb.addTokenized(args);
         }
-        
+
         if (workdir != null) {
             argb.add("-w", workdir);
         }
@@ -135,7 +135,8 @@ public class DockerClient {
         if (result.getStatus() == 0) {
             return result.getOut();
         } else {
-            throw new IOException(String.format("Failed to run image '%s'. Error: %s", image, result.getErr()));
+            throw new IOException(String.format("Failed to run image '%s'. Error %d: '%s','%s'",
+                    image, result.getStatus(), result.getOut(), result.getErr()));
         }
     }
 
@@ -163,32 +164,34 @@ public class DockerClient {
 
     /**
      * Stop a container.
-     * 
-     * <p>                              
+     *
+     * <p>
      * Also removes ({@link #rm(EnvVars, String)}) the container.
-     * 
+     *
      * @param launchEnv Docker client launch environment.
      * @param containerId The container ID.
      */
     public void stop(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
         LaunchResult result = launch(launchEnv, false, "stop", "--time=1", containerId);
-        if (result.getStatus() != 0) {
-            throw new IOException(String.format("Failed to kill container '%s'.", containerId));
+        if (result.getStatus() != 0 && result.getStatus() != 143) {
+            throw new IOException(String.format("Failed to kill container '%s'. Error %d: '%s','%s'",
+                    containerId, result.getStatus(), result.getOut(), result.getErr()));
         }
         rm(launchEnv, containerId);
     }
 
     /**
      * Remove a container.
-     * 
+     *
      * @param launchEnv Docker client launch environment.
      * @param containerId The container ID.
      */
     public void rm(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
         LaunchResult result;
         result = launch(launchEnv, false, "rm", "-f", containerId);
-        if (result.getStatus() != 0) {
-            throw new IOException(String.format("Failed to rm container '%s'.", containerId));
+        if (result.getStatus() != 0 && result.getStatus() != 143) {
+            throw new IOException(String.format("Failed to rm container '%s'. Error %d: '%s','%s'",
+                    containerId, result.getStatus(), result.getOut(), result.getErr()));
         }
     }
 
@@ -207,7 +210,7 @@ public class DockerClient {
             return null;
         }
     }
-    
+
     /**
      * Inspect a docker image/container.
      * @param launchEnv Docker client launch environment.
@@ -218,7 +221,7 @@ public class DockerClient {
      * @throws InterruptedException Interrupted
      * @since 1.1
      */
-    public @Nonnull String inspectRequiredField(@Nonnull EnvVars launchEnv, @Nonnull String objectId, 
+    public @Nonnull String inspectRequiredField(@Nonnull EnvVars launchEnv, @Nonnull String objectId,
             @Nonnull String fieldPath) throws IOException, InterruptedException {
         final String fieldValue = inspect(launchEnv, objectId, fieldPath);
         if (fieldValue == null) {
@@ -226,7 +229,7 @@ public class DockerClient {
         }
         return fieldValue;
     }
-    
+
     private @CheckForNull Date getCreatedDate(@Nonnull EnvVars launchEnv, @Nonnull String objectId) throws IOException, InterruptedException {
         String createdString = inspect(launchEnv, objectId, "json .Created");
         if (createdString == null) {
@@ -255,7 +258,7 @@ public class DockerClient {
             return null;
         }
     }
-    
+
     private static final Pattern pattern = Pattern.compile("^(\\D+)(\\d+)\\.(\\d+)\\.(\\d+)(.*)");
     /**
      * Parse a Docker version string (e.g. "Docker version 1.5.0, build a8a31ef").
@@ -272,7 +275,7 @@ public class DockerClient {
             return new VersionNumber(String.format("%s.%s.%s", major, minor, maint));
         } else {
             return null;
-        }        
+        }
     }
 
     private LaunchResult launch(@Nonnull EnvVars launchEnv, boolean quiet, @Nonnull String... args) throws IOException, InterruptedException {
@@ -353,7 +356,7 @@ public class DockerClient {
 
         // TODO get tags and add for ContainerRecord
         return new ContainerRecord(host, containerId, image, containerName,
-                (created != null ? created.getTime() : 0L), 
+                (created != null ? created.getTime() : 0L),
                 Collections.<String,String>emptyMap());
     }
 
