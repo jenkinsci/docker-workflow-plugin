@@ -153,19 +153,19 @@ class Docker implements Serializable {
             }
         }
 
-        public void tag(String tagName = parsedId.tag, boolean force = true) {
+        public void tag(String tagName = parsedId.tag, boolean force = true, String imageName = parsedId.userAndRepo) {
             docker.node {
-                def taggedImageName = toQualifiedImageName(parsedId.userAndRepo + ':' + tagName)
+                def taggedImageName = toQualifiedImageName(imageName + ':' + tagName)
                 docker.script."${docker.shell()}" "docker tag ${id} ${taggedImageName}"
                 return taggedImageName;
             }
         }
 
-        public void push(String tagName = parsedId.tag, boolean force = true) {
+        public void push(String tagName = parsedId.tag, boolean force = true, String imageName = parsedId.userAndRepo) {
             docker.node {
                 // The image may have already been tagged, so the tagging may be a no-op.
                 // That's ok since tagging is cheap.
-                def taggedImageName = tag(tagName, force)
+                def taggedImageName = tag(tagName, force, imageName)
                 docker.script."${docker.shell()}" "docker push ${taggedImageName}"
             }
         }
