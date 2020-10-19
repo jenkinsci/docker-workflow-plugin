@@ -81,4 +81,18 @@ public class ControlGroup {
         return containerId;
     }
 
+    public static Optional<String> getCgroup(FilePath procfile) throws IOException, InterruptedException {
+        return getCgroup(new InputStreamReader(procfile.read(), StandardCharsets.UTF_8));
+    }
+
+    static Optional<String> getCgroup(Reader reader) throws IOException {
+        try (BufferedReader r = new BufferedReader(reader)) {
+            String line;
+            while ((line = r.readLine()) != null) {
+                final ControlGroup cgroup = new ControlGroup(line);
+                return Optional.of(cgroup.group);
+            }
+        }
+        return Optional.absent();
+    }
 }

@@ -29,7 +29,7 @@ public class WindowsDockerClient extends DockerClient {
     }
 
     @Override
-    public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, @Nonnull String... command) throws IOException, InterruptedException {
+    public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, Optional<String> cgroupParent, @Nonnull String... command) throws IOException, InterruptedException {
         ArgumentListBuilder argb = new ArgumentListBuilder("docker", "run", "-d", "-t");
         if (args != null) {
             argb.addTokenized(args);
@@ -43,6 +43,9 @@ public class WindowsDockerClient extends DockerClient {
         }
         for (String containerId : volumesFromContainers) {
             argb.add("--volumes-from", containerId);
+        }
+        if (cgroupParent.isPresent()) {
+            argb.add("--cgroup-parent", cgroupParent.get());
         }
         for (Map.Entry<String, String> variable : containerEnv.entrySet()) {
             argb.add("-e");

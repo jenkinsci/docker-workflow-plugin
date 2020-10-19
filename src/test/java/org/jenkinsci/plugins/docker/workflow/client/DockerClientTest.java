@@ -23,6 +23,7 @@
  */
 package org.jenkinsci.plugins.docker.workflow.client;
 
+import com.google.common.base.Optional;
 import org.jenkinsci.plugins.docker.workflow.DockerTestUtil;
 import hudson.EnvVars;
 import hudson.Launcher;
@@ -59,8 +60,8 @@ public class DockerClientTest {
     public void test_run() throws IOException, InterruptedException {
         EnvVars launchEnv = DockerTestUtil.newDockerLaunchEnv();
         String containerId =
-                dockerClient.run(launchEnv, "learn/tutorial", null, null, Collections.<String, String>emptyMap(), Collections.<String>emptyList(), new EnvVars(),
-                        dockerClient.whoAmI(), "cat");
+            dockerClient.run(launchEnv, "learn/tutorial", null, null, Collections.<String, String>emptyMap(), Collections.<String>emptyList(), new EnvVars(),
+                        dockerClient.whoAmI(), Optional.<String>absent(), "cat");
         Assert.assertEquals(64, containerId.length());
         ContainerRecord containerRecord = dockerClient.getContainerRecord(launchEnv, containerId);
         Assert.assertEquals(dockerClient.inspect(launchEnv, "learn/tutorial", ".Id"), containerRecord.getImageId());

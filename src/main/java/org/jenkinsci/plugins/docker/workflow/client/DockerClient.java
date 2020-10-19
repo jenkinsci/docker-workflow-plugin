@@ -110,7 +110,7 @@ public class DockerClient {
      * @param command The command to execute in the image container being run.
      * @return The container ID.
      */
-    public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, @Nonnull String... command) throws IOException, InterruptedException {
+    public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, Optional<String> cgroupParent, @Nonnull String... command) throws IOException, InterruptedException {
         ArgumentListBuilder argb = new ArgumentListBuilder();
 
         argb.add("run", "-t", "-d");
@@ -131,6 +131,9 @@ public class DockerClient {
         }
         for (String containerId : volumesFromContainers) {
             argb.add("--volumes-from", containerId);
+        }
+        if (cgroupParent.isPresent()) {
+            argb.add("--cgroup-parent", cgroupParent.get());
         }
         for (Map.Entry<String, String> variable : containerEnv.entrySet()) {
             argb.add("-e");
@@ -388,4 +391,23 @@ public class DockerClient {
         }
         return Arrays.asList(volumes.replace("\\", "/").split("\\n"));
     }
+
+    /**
+     * Checks if this {@link DockerClient} instance is running inside a container and returns the cgroup of the container
+     * if so.
+     *
+     * @return an optional string containing the <strong>cgroup</strong>, or <strong>absent</strong> if
+     * it isn't containerized.
+     */
+    public Optional<String> getCgroupIfContainerized() throws IOException, InterruptedException {
+        if (node == null) {
+            return Optional.absent();
+        }
+        FilePath cgroupFile = node.createPath("/proc/self/cgroup");
+        if (cgroupFile == null || !cgroupFile.exists()) {
+            return Optional.absent();
+        }
+        return ControlGroup.getCgroup(cgroupFile);
+    }
+
 }
