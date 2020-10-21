@@ -53,7 +53,7 @@ public class DockerBasicModelDefTest extends AbstractModelDefTest {
     public void dockerGlobalVariable() throws Exception {
         DockerTestUtil.assumeDocker();
 
-        expect("dockerGlobalVariable")
+        expect("org/jenkinsci/plugins/docker/workflow/declarative/dockerGlobalVariable")
                 .logContains("[Pipeline] { (foo)", "image: ubuntu")
                 .go();
     }
@@ -63,7 +63,7 @@ public class DockerBasicModelDefTest extends AbstractModelDefTest {
     public void failureBeforeStages() throws Exception {
         Assume.assumeFalse("Fails using the version of Git installed on the Windows ACI agents on ci.jenkins.io", Functions.isWindows());
         // This should fail whether we've got Docker available or not. Hopefully.
-        expect(Result.FAILURE, "failureBeforeStages")
+        expect(Result.FAILURE, "org/jenkinsci/plugins/docker/workflow/declarative/failureBeforeStages")
                 .logContains("Dockerfile failed")
                 .logNotContains("This should never happen")
                 .go();

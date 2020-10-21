@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.6</version>
+        <version>4.12</version>
         <relativePath />
     </parent>
     <artifactId>docker-workflow</artifactId>
@@ -33,7 +33,6 @@
         <changelist>-SNAPSHOT</changelist>
         <jenkins.version>2.176.4</jenkins.version>
         <java.level>8</java.level>
-        <pipeline-model-definition-plugin.version>1.5.1</pipeline-model-definition-plugin.version>
     </properties>
     <repositories>
         <repository>
@@ -52,7 +51,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-2.176.x</artifactId>
-                <version>11</version>
+                <version>14</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -79,11 +78,6 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-step-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkinsci.plugins</groupId>
-            <artifactId>pipeline-model-extensions</artifactId>
-            <version>${pipeline-model-definition-plugin.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -126,8 +120,6 @@
         <dependency>
             <groupId>org.jenkinsci.plugins</groupId>
             <artifactId>pipeline-model-definition</artifactId>
-            <version>${pipeline-model-definition-plugin.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -149,7 +141,6 @@
         <dependency>
             <groupId>org.jenkinsci.plugins</groupId>
             <artifactId>pipeline-model-definition</artifactId>
-            <version>${pipeline-model-definition-plugin.version}</version>
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>

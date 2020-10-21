@@ -82,45 +82,45 @@ public class DockerAgentTest extends AbstractModelDefTest {
 
     @Test
     public void agentDocker() throws Exception {
-        agentDocker("agent/agentDocker", "-v /tmp:/tmp");
+        agentDocker("org/jenkinsci/plugins/docker/workflow/declarative/agentDocker", "-v /tmp:/tmp");
     }
 
     @Test
     public void agentDockerWithCreds() throws Exception {
         //If there is no password, the test is ignored
         if(password != null)
-            agentDocker("agent/agentDockerWithCreds", "-v /tmp:/tmp");
+            agentDocker("org/jenkinsci/plugins/docker/workflow/declarative/agentDockerWithCreds", "-v /tmp:/tmp");
     }
 
     @Test
     public void agentDockerWithRegistryNoCreds() throws Exception {
-        agentDocker("agent/agentDockerWithRegistryNoCreds",
+        agentDocker("org/jenkinsci/plugins/docker/workflow/declarative/agentDockerWithRegistryNoCreds",
                 "-v /tmp:/tmp",
                 "Registry is https://index.docker.io/v2/");
     }
 
     @Test
     public void agentDockerReuseNode() throws Exception {
-        agentDocker("agent/agentDockerReuseNode");
+        agentDocker("org/jenkinsci/plugins/docker/workflow/declarative/agentDockerReuseNode");
     }
 
     @Issue("JENKINS-49558")
     @Test
     public void agentDockerContainerPerStage() throws Exception {
-        agentDocker("agent/agentDockerContainerPerStage");
+        agentDocker("org/jenkinsci/plugins/docker/workflow/declarative/agentDockerContainerPerStage");
     }
 
     @Issue("JENKINS-49558")
     @Test
     public void agentDockerWithoutContainerPerStage() throws Exception {
-        agentDocker("agent/agentDockerWithoutContainerPerStage");
+        agentDocker("org/jenkinsci/plugins/docker/workflow/declarative/agentDockerWithoutContainerPerStage");
     }
 
     @Test
     public void agentDockerDontReuseNode() throws Exception {
         DockerTestUtil.assumeDocker();
 
-        expect(Result.FAILURE, "agent/agentDockerDontReuseNode")
+        expect(Result.FAILURE, "org/jenkinsci/plugins/docker/workflow/declarative/agentDockerDontReuseNode")
                 .logContains("The answer is 42")
                 .go();
 
@@ -132,7 +132,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
     public void agentInStageAutoCheckout() throws Exception {
         DockerTestUtil.assumeDocker();
 
-        expect("agent/agentInStageAutoCheckout")
+        expect("org/jenkinsci/plugins/docker/workflow/declarative/agentInStageAutoCheckout")
                 .logContains("The answer is 42",
                         "found tmp.txt in bar",
                         "did not find tmp.txt in new docker node",
@@ -143,12 +143,12 @@ public class DockerAgentTest extends AbstractModelDefTest {
 
     @Test
     public void agentDockerWithNullDockerArgs() throws Exception {
-        agentDocker("agent/agentDockerWithNullDockerArgs");
+        agentDocker("org/jenkinsci/plugins/docker/workflow/declarative/agentDockerWithNullDockerArgs");
     }
 
     @Test
     public void agentDockerWithEmptyDockerArgs() throws Exception {
-        agentDocker("agent/agentDockerWithEmptyDockerArgs");
+        agentDocker("org/jenkinsci/plugins/docker/workflow/declarative/agentDockerWithEmptyDockerArgs");
     }
 
     @Issue("JENKINS-41950")
@@ -156,7 +156,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
     public void nonExistentDockerImage() throws Exception {
         DockerTestUtil.assumeDocker();
 
-        expect(Result.FAILURE, "agent/nonExistentDockerImage")
+        expect(Result.FAILURE, "org/jenkinsci/plugins/docker/workflow/declarative/nonExistentDockerImage")
                 .logContains("ERROR: script returned exit code 1",
                         "There is no image")
                 .go();
@@ -172,7 +172,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
         sampleRepo.git("add", "Dockerfile");
         sampleRepo.git("commit", "--message=Dockerfile");
 
-        expect("agent/fromDockerfile")
+        expect("org/jenkinsci/plugins/docker/workflow/declarative/fromDockerfile")
                 .logContains("[Pipeline] { (foo)",
                         "The answer is 42",
                         "-v /tmp:/tmp",
@@ -189,7 +189,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
         sampleRepo.git("add", "Dockerfile");
         sampleRepo.git("commit", "--message=Dockerfile");
 
-        expect("agent/additionalDockerBuildArgs")
+        expect("org/jenkinsci/plugins/docker/workflow/declarative/additionalDockerBuildArgs")
                 .logContains("[Pipeline] { (foo)",
                         "The answer is 42",
                         "-v /tmp:/tmp",
@@ -209,7 +209,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
         sampleRepo.git("commit", "--message=Dockerfile");
 
         Folder folder = j.jenkins.createProject(Folder.class, "testFolder");
-        expect("agent/additionalDockerBuildArgsParallel")
+        expect("org/jenkinsci/plugins/docker/workflow/declarative/additionalDockerBuildArgsParallel")
                 .inFolder(folder)
                 .withProjectName("parallelImageHashTest")
                 .logContains("[Pipeline] { (foo)",
@@ -235,7 +235,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
         sampleRepo.git("add", "subdir/Dockerfile");
         sampleRepo.git("commit", "--message=Dockerfile");
 
-        expect("agent/fromDockerfileInOtherDir")
+        expect("org/jenkinsci/plugins/docker/workflow/declarative/fromDockerfileInOtherDir")
                 .logContains("[Pipeline] { (foo)",
                         "The answer is 42",
                         "-v /tmp:/tmp",
@@ -253,7 +253,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
         sampleRepo.git("add", "subdir/Dockerfile");
         sampleRepo.git("commit", "--message=Dockerfile");
 
-        expect("agent/fromDockerfileInOtherDir")
+        expect("org/jenkinsci/plugins/docker/workflow/declarative/fromDockerfileInOtherDir")
                 .logContains("[Pipeline] { (foo)",
                         "The answer is 42",
                         "-v /tmp:/tmp",
@@ -270,7 +270,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
         sampleRepo.git("add", "Dockerfile");
         sampleRepo.git("commit", "--message=Dockerfile");
 
-        expect("agent/fromDockerfileNoArgs")
+        expect("org/jenkinsci/plugins/docker/workflow/declarative/fromDockerfileNoArgs")
                 .logContains("[Pipeline] { (foo)",
                         "The answer is 42",
                         "HI THERE")
@@ -285,7 +285,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
         sampleRepo.git("add", "Dockerfile.alternate");
         sampleRepo.git("commit", "--message=Dockerfile");
 
-        expect("agent/fromAlternateDockerfile")
+        expect("org/jenkinsci/plugins/docker/workflow/declarative/fromAlternateDockerfile")
                 .logContains("[Pipeline] { (foo)",
                         "The answer is 42",
                         "-v /tmp:/tmp",
@@ -297,7 +297,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
     @Issue("JENKINS-46831")
     @Test
     public void agentDockerGlobalThenLabel() throws Exception {
-        expect("agent/agentDockerGlobalThenLabel")
+        expect("org/jenkinsci/plugins/docker/workflow/declarative/agentDockerGlobalThenLabel")
             .logContains(
                 "first agent = first",
                 "second agent = second"
@@ -315,7 +315,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
         sampleRepo.git("add", "Dockerfile");
         sampleRepo.git("commit", "--message=Dockerfile");
 
-        expect("dockerPullLocalImage")
+        expect("org/jenkinsci/plugins/docker/workflow/declarative/dockerPullLocalImage")
                 .logContains("[Pipeline] { (in built image)",
                         "The answer is 42",
                         "-v /tmp:/tmp",
