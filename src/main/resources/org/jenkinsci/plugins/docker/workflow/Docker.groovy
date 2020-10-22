@@ -183,7 +183,7 @@ class Docker implements Serializable {
         }
 
         public void stop() {
-            docker.script."${docker.shell()}" "docker stop ${id} && docker rm -f ${id}"
+            docker.script."${docker.shell()}" "docker stop ${id} && docker rm -fv ${id}"
         }
 
         public String port(int port) {
