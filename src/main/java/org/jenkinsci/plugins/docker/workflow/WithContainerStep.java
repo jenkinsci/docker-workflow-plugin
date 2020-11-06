@@ -194,8 +194,12 @@ public class WithContainerStep extends AbstractStepImpl {
                 volumes.put(tmp, tmp);
             }
 
-            // Inherit from the parent container's cgroup (if any).
-            Optional<String> cgroup = dockerClient.getCgroupIfContainerized();
+            Optional<String> cgroup = Optional.absent();
+            Boolean inheritCgroup = !Boolean.getBoolean(WithContainerStep.class.getName()+".NO_INHERIT_CGROUP");
+            if (inheritCgroup) {
+                // Inherit from the parent container's cgroup (if any).
+                cgroup = dockerClient.getCgroupIfContainerized();
+            }
             String command = launcher.isUnix() ? "cat" : "cmd.exe";
             container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), cgroup, /* expected to hang until killed */ command);
             final List<String> ps = dockerClient.listProcess(env, container);
