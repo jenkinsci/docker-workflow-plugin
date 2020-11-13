@@ -189,6 +189,10 @@ class Docker implements Serializable {
         public String port(int port) {
             docker.script."${docker.shell()}"(script: "docker port ${id} ${port}", returnStdout: true).trim()
         }
+
+        public String exec(String command)  {
+            docker.script.sh(script: "docker exec ${id} ${command}", returnStdout: true).trim()
+        }
     }
 
 }
