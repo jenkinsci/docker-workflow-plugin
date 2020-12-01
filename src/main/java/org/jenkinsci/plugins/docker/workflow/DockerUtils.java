@@ -42,6 +42,7 @@ public final class DockerUtils {
         }
 
         String[] arguments = parsed.getArguments();
+
         for (int i = 0; i < arguments.length; i++) {
             String arg = arguments[i];
             if (arg.equals("--build-arg")) {
@@ -50,14 +51,13 @@ public final class DockerUtils {
                 }
                 String keyVal = arguments[i+1];
 
-                String parts[] = keyVal.split("=", 2);
-                if (parts.length != 2) {
-                    throw new IllegalArgumentException("Illegal syntax for --build-arg " + keyVal + ", need KEY=VALUE");
+                String[] parts = keyVal.split("=", 2);
+                if (parts.length == 1) {
+                    // Docker is passing the environment variable to the build argument, which is effectively the same as:
+                    result.put(parts[0], String.format("${%s}", parts[0]));
+                } else {
+                    result.put(parts[0], parts[1]);
                 }
-                String key = parts[0];
-                String value = parts[1];
-
-                result.put(key, value);
             }
         }
         return result;

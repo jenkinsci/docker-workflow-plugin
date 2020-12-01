@@ -24,10 +24,9 @@
 package org.jenkinsci.plugins.docker.workflow;
 
 import hudson.FilePath;
-import org.hamcrest.collection.IsCollectionWithSize;
-import org.hamcrest.core.IsCollectionContaining;
-import org.hamcrest.core.IsEqual;
-import org.junit.Assert;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -41,79 +40,87 @@ public class DockerUtilsTest {
     @Rule public final ExpectedException exception = ExpectedException.none();
 
     @Test public void parseBuildArgs() throws IOException, InterruptedException {
-
         FilePath dockerfilePath = new FilePath(new File("src/test/resources/Dockerfile-withArgs"));
         Dockerfile dockerfile = new Dockerfile(dockerfilePath);
 
         final String imageToUpdate = "hello-world:latest";
         final String key = "IMAGE_TO_UPDATE";
-        final String commangLine = "docker build -t hello-world --build-arg "+key+"="+imageToUpdate;
-        Map<String, String> buildArgs = DockerUtils.parseBuildArgs(dockerfile, commangLine);
+        final String commandLine = "docker build -t hello-world --build-arg "+key+"="+imageToUpdate;
+        Map<String, String> buildArgs = DockerUtils.parseBuildArgs(dockerfile, commandLine);
 
-        Assert.assertThat(buildArgs.keySet(), IsCollectionWithSize.hasSize(1));
-        Assert.assertThat(buildArgs.keySet(), IsCollectionContaining.hasItems(key));
-        Assert.assertThat(buildArgs.get(key), IsEqual.equalTo(imageToUpdate));
+        assertThat(buildArgs, aMapWithSize(1));
+        assertThat(buildArgs, hasEntry(key, imageToUpdate));
     }
 
     @Test public void parseBuildArgsWithDefaults() throws IOException, InterruptedException {
 
-        Dockerfile dockerfile = getDockerfileDefaultArgs();
+        Dockerfile dockerfile = aDockerfileWithDefaultBuildArgs();
 
         final String registry = "";
         final String key_registry = "REGISTRY_URL";
         final String key_tag = "TAG";
-        final String commangLine = "docker build -t hello-world";
-        Map<String, String> buildArgs = DockerUtils.parseBuildArgs(dockerfile, commangLine);
+        final String commandLine = "docker build -t hello-world";
+        Map<String, String> buildArgs = DockerUtils.parseBuildArgs(dockerfile, commandLine);
 
-        Assert.assertThat(buildArgs.keySet(), IsCollectionWithSize.hasSize(2));
-        Assert.assertThat(buildArgs.keySet(), IsCollectionContaining.hasItems(key_registry, key_tag));
-        Assert.assertThat(buildArgs.get(key_registry), IsEqual.equalTo(registry));
-        Assert.assertThat(buildArgs.get(key_tag), IsEqual.equalTo("latest"));
+        assertThat(buildArgs, aMapWithSize(2));
+        assertThat(buildArgs, hasEntry(key_registry, registry));
+        assertThat(buildArgs, hasEntry(key_tag, "latest"));
     }
 
     @Test public void parseBuildArgsOverridingDefaults() throws IOException, InterruptedException {
 
-        Dockerfile dockerfile = getDockerfileDefaultArgs();
+        Dockerfile dockerfile = aDockerfileWithDefaultBuildArgs();
 
         final String registry = "http://private.registry:5000/";
         final String key_registry = "REGISTRY_URL";
         final String key_tag = "TAG";
         final String tag = "1.2.3";
-        final String commangLine = "docker build -t hello-world --build-arg "+key_tag+"="+tag+
+        final String commandLine = "docker build -t hello-world --build-arg "+key_tag+"="+tag+
             " --build-arg "+key_registry+"="+registry;
-        Map<String, String> buildArgs = DockerUtils.parseBuildArgs(dockerfile, commangLine);
+        Map<String, String> buildArgs = DockerUtils.parseBuildArgs(dockerfile, commandLine);
 
-        Assert.assertThat(buildArgs.keySet(), IsCollectionWithSize.hasSize(2));
-        Assert.assertThat(buildArgs.keySet(), IsCollectionContaining.hasItems(key_registry, key_tag));
-        Assert.assertThat(buildArgs.get(key_registry), IsEqual.equalTo(registry));
-        Assert.assertThat(buildArgs.get(key_tag), IsEqual.equalTo(tag));
+        assertThat(buildArgs, aMapWithSize(2));
+        assertThat(buildArgs, hasEntry(key_registry, registry));
+        assertThat(buildArgs, hasEntry(key_tag, tag));
     }
 
-    @Test public void parseBuildArgWithKeyAndEqual() throws IOException, InterruptedException {
-        final String commangLine = "docker build -t hello-world --build-arg key=";
+    @Test public void parseBuildArgWithKeyAndEqual() {
+        final String commandLine = "docker build -t hello-world --build-arg key=";
 
-        Map<String, String> buildArgs = DockerUtils.parseBuildArgs(null, commangLine);
+        Map<String, String> buildArgs = DockerUtils.parseBuildArgs(null, commandLine);
 
-        Assert.assertThat(buildArgs.keySet(), IsCollectionWithSize.hasSize(1));
-        Assert.assertThat(buildArgs.keySet(), IsCollectionContaining.hasItems("key"));
-        Assert.assertThat(buildArgs.get("key"), IsEqual.equalTo(""));
+        assertThat(buildArgs, aMapWithSize(1));
+        assertThat(buildArgs, hasEntry("key", ""));
     }
 
-    @Test public void parseInvalidBuildArg() throws IOException, InterruptedException {
-        final String commangLine = "docker build -t hello-world --build-arg";
+    @Test public void parseBuildArgsWithQuotedEnvironmentVariableValue() {
+        final String commandLine = "docker build -t hello-world --build-arg ENV_VAR=${ENV_VAR}";
+
+        Map<String, String> buildArgs = DockerUtils.parseBuildArgs(null, commandLine);
+
+        assertThat(buildArgs, aMapWithSize(1));
+        assertThat(buildArgs, hasEntry("ENV_VAR", "${ENV_VAR}"));
+    }
+
+    // A short form for passing a build argument from an environment variable of the same name. See:
+    //   https://docs.docker.com/engine/reference/commandline/build/#set-build-time-variables---build-arg
+    @Test public void parseBuildArgsWithOmittedValue() {
+        final String commandLine = "docker build -t hello-world --build-arg ENV_VAR";
+
+        Map<String, String> buildArgs = DockerUtils.parseBuildArgs(null, commandLine);
+
+        assertThat(buildArgs, aMapWithSize(1));
+        assertThat(buildArgs, hasEntry("ENV_VAR", "${ENV_VAR}"));
+    }
+
+    @Test public void parseInvalidBuildArg() {
+        final String commandLine = "docker build -t hello-world --build-arg";
 
         exception.expect(IllegalArgumentException.class);
-        DockerUtils.parseBuildArgs(null, commangLine);
+        DockerUtils.parseBuildArgs(null, commandLine);
     }
 
-    @Test public void parseInvalidBuildArgWithKeyOnly() throws IOException, InterruptedException {
-        final String commangLine = "docker build -t hello-world --build-arg key";
-
-        exception.expect(IllegalArgumentException.class);
-        DockerUtils.parseBuildArgs(null, commangLine);
-    }
-
-    private Dockerfile getDockerfileDefaultArgs() throws IOException, InterruptedException {
+    private Dockerfile aDockerfileWithDefaultBuildArgs() throws IOException, InterruptedException {
         FilePath dockerfilePath = new FilePath(new File("src/test/resources/Dockerfile-defaultArgs"));
         return new Dockerfile(dockerfilePath);
     }
