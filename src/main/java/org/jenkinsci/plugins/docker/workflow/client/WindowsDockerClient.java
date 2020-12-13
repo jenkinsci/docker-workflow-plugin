@@ -112,6 +112,14 @@ public class WindowsDockerClient extends DockerClient {
     }
 
     @Override
+    public String runCommand() {
+        if(isContainerUnix) {
+            return "cat";
+        }
+        return "cmd";
+    }
+
+    @Override
     public Optional<String> getContainerIdIfContainerized() throws IOException, InterruptedException {
         if (node == null ||
             launch(new EnvVars(), true, null, "sc.exe", "query", "cexecsvc").getStatus() != 0) {

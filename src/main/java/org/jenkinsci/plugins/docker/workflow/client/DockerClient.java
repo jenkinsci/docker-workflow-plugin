@@ -394,6 +394,10 @@ public class DockerClient {
         return Arrays.asList(volumes.replace("\\", "/").split("\\n"));
     }
 
+    public String runCommand() {
+        return "cat";
+    }
+
     public boolean isNeedToContainerizePath() {
         return needToContainerizePath;
     }
