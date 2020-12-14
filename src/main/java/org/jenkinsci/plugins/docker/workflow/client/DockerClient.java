@@ -73,7 +73,10 @@ public class DockerClient {
     @Restricted(NoExternalUse.class)
     public static boolean SKIP_RM_ON_STOP = Boolean.getBoolean(DockerClient.class.getName() + ".SKIP_RM_ON_STOP");
 
-    // e.g. 2015-04-09T13:40:21.981801679Z
+    /**
+     * The constant DOCKER_DATE_TIME_FORMAT.
+     */
+// e.g. 2015-04-09T13:40:21.981801679Z
     public static final String DOCKER_DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
 
     private final Launcher launcher;
@@ -84,6 +87,13 @@ public class DockerClient {
     private boolean needToContainerizePath = false;
     private boolean isContainerUnix = true;
 
+    /**
+     * Instantiates a new Docker client.
+     *
+     * @param launcher the launcher
+     * @param node     the node
+     * @param toolName the tool name
+     */
     public DockerClient(@Nonnull Launcher launcher, @CheckForNull Node node, @CheckForNull String toolName) {
         this.launcher = launcher;
         this.node = node;
@@ -103,6 +113,8 @@ public class DockerClient {
      * @param user                  The <strong>uid:gid</strong> to execute the container command as. Use {@link #whoAmI()}.
      * @param command               The command to execute in the image container being run.
      * @return The container ID.
+     * @throws IOException          the io exception
+     * @throws InterruptedException the interrupted exception
      */
     public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, @Nonnull String... command) throws IOException, InterruptedException {
         ArgumentListBuilder argb = new ArgumentListBuilder();
@@ -140,6 +152,15 @@ public class DockerClient {
         }
     }
 
+    /**
+     * List process list.
+     *
+     * @param launchEnv   the launch env
+     * @param containerId the container id
+     * @return list list
+     * @throws IOException          the io exception
+     * @throws InterruptedException the interrupted exception
+     */
     public List<String> listProcess(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
         LaunchResult result = launch(launchEnv, false, "top", containerId, "-eo", "pid,comm");
         if (result.getStatus() != 0) {
@@ -171,6 +192,8 @@ public class DockerClient {
      *
      * @param launchEnv   Docker client launch environment.
      * @param containerId The container ID.
+     * @throws IOException          the io exception
+     * @throws InterruptedException the interrupted exception
      */
     public void stop(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
         LaunchResult result = launch(launchEnv, false, "stop", "--time=1", containerId);
@@ -187,6 +210,8 @@ public class DockerClient {
      *
      * @param launchEnv   Docker client launch environment.
      * @param containerId The container ID.
+     * @throws IOException          the io exception
+     * @throws InterruptedException the interrupted exception
      */
     public void rm(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
         LaunchResult result;
@@ -203,6 +228,8 @@ public class DockerClient {
      * @param objectId  The image/container ID.
      * @param fieldPath The data path of the data required e.g. {@code .NetworkSettings.IPAddress}.
      * @return The inspected field value. Null if the command failed
+     * @throws IOException          the io exception
+     * @throws InterruptedException the interrupted exception
      */
     public @CheckForNull
     String inspect(@Nonnull EnvVars launchEnv, @Nonnull String objectId, @Nonnull String fieldPath) throws IOException, InterruptedException {
@@ -253,8 +280,9 @@ public class DockerClient {
     /**
      * Get the docker version.
      *
-     * @return The {@link VersionNumber} instance if the version string matches the expected format,
-     * otherwise {@code null}.
+     * @return The {@link VersionNumber} instance if the version string matches the expected format, otherwise {@code null}.
+     * @throws IOException          the io exception
+     * @throws InterruptedException the interrupted exception
      */
     public @CheckForNull
     VersionNumber version() throws IOException, InterruptedException {
@@ -272,8 +300,7 @@ public class DockerClient {
      * Parse a Docker version string (e.g. "Docker version 1.5.0, build a8a31ef").
      *
      * @param versionString The version string to parse.
-     * @return The {@link VersionNumber} instance if the version string matched the
-     * expected format, otherwise {@code null}.
+     * @return The {@link VersionNumber} instance if the version string matched the expected format, otherwise {@code null}.
      */
     protected static VersionNumber parseVersionNumber(@Nonnull String versionString) {
         Matcher matcher = pattern.matcher(versionString.trim());
@@ -287,14 +314,40 @@ public class DockerClient {
         }
     }
 
+    /**
+     * @param launchEnv
+     * @param quiet
+     * @param args
+     * @return
+     * @throws IOException
+     * @throws InterruptedException
+     */
     private LaunchResult launch(@Nonnull EnvVars launchEnv, boolean quiet, @Nonnull String... args) throws IOException, InterruptedException {
         return launch(launchEnv, quiet, null, args);
     }
 
+    /**
+     * @param launchEnv
+     * @param quiet
+     * @param pwd
+     * @param args
+     * @return
+     * @throws IOException
+     * @throws InterruptedException
+     */
     private LaunchResult launch(@Nonnull EnvVars launchEnv, boolean quiet, FilePath pwd, @Nonnull String... args) throws IOException, InterruptedException {
         return launch(launchEnv, quiet, pwd, new ArgumentListBuilder(args));
     }
 
+    /**
+     * @param launchEnv
+     * @param quiet
+     * @param pwd
+     * @param args
+     * @return
+     * @throws IOException
+     * @throws InterruptedException
+     */
     private LaunchResult launch(@Nonnull EnvVars launchEnv, boolean quiet, FilePath pwd, @Nonnull ArgumentListBuilder args) throws IOException, InterruptedException {
         // Prepend the docker command
         args.prepend(DockerTool.getExecutable(toolName, node, launcher.getListener(), launchEnv));
@@ -323,6 +376,8 @@ public class DockerClient {
      * Who is executing this {@link DockerClient} instance.
      *
      * @return a {@link String} containing the <strong>uid:gid</strong>.
+     * @throws IOException          the io exception
+     * @throws InterruptedException the interrupted exception
      */
     public String whoAmI() throws IOException, InterruptedException {
         if (!launcher.isUnix()) {
@@ -344,8 +399,9 @@ public class DockerClient {
      * Checks if this {@link DockerClient} instance is running inside a container and returns the id of the container
      * if so.
      *
-     * @return an optional string containing the <strong>container id</strong>, or <strong>absent</strong> if
-     * it isn't containerized.
+     * @return an optional string containing the <strong>container id</strong>, or <strong>absent</strong> if it isn't containerized.
+     * @throws IOException          the io exception
+     * @throws InterruptedException the interrupted exception
      * @see <a href="http://stackoverflow.com/a/25729598/12916">Discussion</a>
      */
     public Optional<String> getContainerIdIfContainerized() throws IOException, InterruptedException {
@@ -359,6 +415,15 @@ public class DockerClient {
         return ControlGroup.getContainerId(cgroupFile);
     }
 
+    /**
+     * Gets container record.
+     *
+     * @param launchEnv   the launch env
+     * @param containerId the container id
+     * @return the container record
+     * @throws IOException          the io exception
+     * @throws InterruptedException the interrupted exception
+     */
     public ContainerRecord getContainerRecord(@Nonnull EnvVars launchEnv, String containerId) throws IOException, InterruptedException {
         String host = inspectRequiredField(launchEnv, containerId, ".Config.Hostname");
         String containerName = inspectRequiredField(launchEnv, containerId, ".Name");
@@ -394,22 +459,47 @@ public class DockerClient {
         return Arrays.asList(volumes.replace("\\", "/").split("\\n"));
     }
 
+    /**
+     * Run command string.
+     *
+     * @return the string
+     */
     public String runCommand() {
         return "cat";
     }
 
+    /**
+     * Is need to containerize path boolean.
+     *
+     * @return the boolean
+     */
     public boolean isNeedToContainerizePath() {
         return needToContainerizePath;
     }
 
+    /**
+     * Sets need to containerize path.
+     *
+     * @param needToContainerizePath the need to containerize path
+     */
     public void setNeedToContainerizePath(boolean needToContainerizePath) {
         this.needToContainerizePath = needToContainerizePath;
     }
 
+    /**
+     * Is container unix boolean.
+     *
+     * @return the boolean
+     */
     public boolean isContainerUnix() {
         return isContainerUnix;
     }
 
+    /**
+     * Sets container unix.
+     *
+     * @param containerUnix the container unix
+     */
     public void setContainerUnix(boolean containerUnix) {
         isContainerUnix = containerUnix;
     }

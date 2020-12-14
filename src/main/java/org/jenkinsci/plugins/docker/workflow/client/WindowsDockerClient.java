@@ -17,6 +17,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * The type Windows docker client.
+ */
 public class WindowsDockerClient extends DockerClient {
     private static final Logger LOGGER = Logger.getLogger(WindowsDockerClient.class.getName());
 
@@ -25,12 +28,33 @@ public class WindowsDockerClient extends DockerClient {
     private boolean needToContainerizePath = false;
     private boolean isContainerUnix = false;
 
+    /**
+     * Instantiates a new Windows docker client.
+     *
+     * @param launcher the launcher
+     * @param node     the node
+     * @param toolName the tool name
+     */
     public WindowsDockerClient(@Nonnull Launcher launcher, @CheckForNull Node node, @CheckForNull String toolName) {
         super(launcher, node, toolName);
         this.launcher = launcher;
         this.node = node;
     }
 
+    /**
+     * @param launchEnv             Docker client launch environment.
+     * @param image                 The image name.
+     * @param args                  Any additional arguments for the {@code docker run} command.
+     * @param workdir               The working directory in the container, or {@code null} for default.
+     * @param volumes               Volumes to be bound. Supply an empty list if no volumes are to be bound.
+     * @param volumesFromContainers Mounts all volumes from the given containers.
+     * @param containerEnv          Environment variables to set in container.
+     * @param user                  The <strong>uid:gid</strong> to execute the container command as. Use {@link #whoAmI()}.
+     * @param command               The command to execute in the image container being run.
+     * @return The container ID.
+     * @throws IOException          the io exception
+     * @throws InterruptedException the interrupted exception
+     */
     @Override
     public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, @Nonnull String... command) throws IOException, InterruptedException {
         ArgumentListBuilder argb = new ArgumentListBuilder("docker", "run", "-d", "-t");
@@ -61,6 +85,13 @@ public class WindowsDockerClient extends DockerClient {
         }
     }
 
+    /**
+     * @param launchEnv   the launch env
+     * @param containerId the container id
+     * @return
+     * @throws IOException
+     * @throws InterruptedException
+     */
     @Override
     public List<String> listProcess(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
         if (isContainerUnix) {
@@ -87,6 +118,15 @@ public class WindowsDockerClient extends DockerClient {
         return processes;
     }
 
+    /**
+     * List process unix container list.
+     *
+     * @param launchEnv   the launch env
+     * @param containerId the container id
+     * @return the list
+     * @throws IOException          the io exception
+     * @throws InterruptedException the interrupted exception
+     */
     public List<String> listProcessUnixContainer(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
         LaunchResult result = launch(launchEnv, false, null, "docker", "top", containerId);
         if (result.getStatus() != 0) {
@@ -100,7 +140,7 @@ public class WindowsDockerClient extends DockerClient {
             while ((line = in.readLine()) != null) {
                 final StringTokenizer stringTokenizer = new StringTokenizer(line, " ");
                 if (stringTokenizer.countTokens() < 4) {
-                    throw new IOException("Unexpected `docker top` output : "+line);
+                    throw new IOException("Unexpected `docker top` output : " + line);
                 }
                 stringTokenizer.nextToken(); // PID
                 stringTokenizer.nextToken(); // USER
@@ -111,14 +151,22 @@ public class WindowsDockerClient extends DockerClient {
         return processes;
     }
 
+    /**
+     * @return
+     */
     @Override
     public String runCommand() {
-        if(isContainerUnix) {
+        if (isContainerUnix) {
             return "cat";
         }
         return "cmd";
     }
 
+    /**
+     * @return
+     * @throws IOException
+     * @throws InterruptedException
+     */
     @Override
     public Optional<String> getContainerIdIfContainerized() throws IOException, InterruptedException {
         if (node == null ||
@@ -141,6 +189,11 @@ public class WindowsDockerClient extends DockerClient {
         return Optional.of(getLongIdResult.getOut());
     }
 
+    /**
+     * @return
+     * @throws IOException
+     * @throws InterruptedException
+     */
     @Override
     public String whoAmI() throws IOException, InterruptedException {
         try (ByteArrayOutputStream userId = new ByteArrayOutputStream()) {
@@ -149,10 +202,28 @@ public class WindowsDockerClient extends DockerClient {
         }
     }
 
+    /**
+     * @param env
+     * @param quiet
+     * @param workDir
+     * @param args
+     * @return
+     * @throws IOException
+     * @throws InterruptedException
+     */
     private LaunchResult launch(EnvVars env, boolean quiet, FilePath workDir, String... args) throws IOException, InterruptedException {
         return launch(env, quiet, workDir, new ArgumentListBuilder(args));
     }
 
+    /**
+     * @param env
+     * @param quiet
+     * @param workDir
+     * @param argb
+     * @return
+     * @throws IOException
+     * @throws InterruptedException
+     */
     private LaunchResult launch(EnvVars env, boolean quiet, FilePath workDir, ArgumentListBuilder argb) throws IOException, InterruptedException {
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.log(Level.FINE, "Executing command \"{0}\"", argb);
@@ -174,32 +245,64 @@ public class WindowsDockerClient extends DockerClient {
         return result;
     }
 
+    /**
+     * @return
+     */
     public boolean isNeedToContainerizePath() {
         return needToContainerizePath;
     }
 
+    /**
+     * @param needToContainerizePath the need to containerize path
+     */
     public void setNeedToContainerizePath(boolean needToContainerizePath) {
         this.needToContainerizePath = needToContainerizePath;
     }
 
+    /**
+     * @return
+     */
     public boolean isContainerUnix() {
         return isContainerUnix;
     }
 
+    /**
+     * @param containerUnix the container unix
+     */
     public void setContainerUnix(boolean containerUnix) {
         isContainerUnix = containerUnix;
     }
 
+    /**
+     * Containerize path if needed string.
+     *
+     * @param path the path
+     * @return the string
+     */
     public String containerizePathIfNeeded(String path) {
         return containerizePathIfNeeded(path, null);
     }
 
+    /**
+     * Containerize path if needed string.
+     *
+     * @param path   the path
+     * @param prefix the prefix
+     * @return the string
+     */
     public String containerizePathIfNeeded(String path, String prefix) {
         if (this.needToContainerizePath)
             return WindowsDockerClient.containerizePath(path, prefix);
         return path;
     }
 
+    /**
+     * Containerize path string.
+     *
+     * @param path   the path
+     * @param prefix the prefix
+     * @return the string
+     */
     public static String containerizePath(String path, String prefix) {
         StringBuffer result = new StringBuffer();
         char[] pathChars = path.toCharArray();
@@ -264,6 +367,12 @@ public class WindowsDockerClient extends DockerClient {
 
     }
 
+    /**
+     * @param pathChars
+     * @param index
+     * @param prefixChars
+     * @return
+     */
     private static boolean checkPrefix(char[] pathChars, int index, char[] prefixChars) {
         if (index + prefixChars.length > pathChars.length)
             return false;
