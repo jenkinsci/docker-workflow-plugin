@@ -89,7 +89,7 @@ public class WindowsDockerClient extends DockerClient {
      * @param launchEnv   the launch env
      * @param containerId the container id
      * @return returns Process
-     * @throws IOException the io exception
+     * @throws IOException          the io exception
      * @throws InterruptedException the interrupted exception
      */
     @Override
@@ -164,7 +164,7 @@ public class WindowsDockerClient extends DockerClient {
 
     /**
      * @return Container ID
-     * @throws IOException the io exception
+     * @throws IOException          the io exception
      * @throws InterruptedException the interrupted exception
      */
     @Override
@@ -191,7 +191,7 @@ public class WindowsDockerClient extends DockerClient {
 
     /**
      * @return Current User
-     * @throws IOException the io exception
+     * @throws IOException          the io exception
      * @throws InterruptedException the interrupted exception
      */
     @Override
@@ -208,7 +208,7 @@ public class WindowsDockerClient extends DockerClient {
      * @param workDir
      * @param args
      * @return result of command executed
-     * @throws IOException the io exception
+     * @throws IOException          the io exception
      * @throws InterruptedException
      */
     private LaunchResult launch(EnvVars env, boolean quiet, FilePath workDir, String... args) throws IOException, InterruptedException {
