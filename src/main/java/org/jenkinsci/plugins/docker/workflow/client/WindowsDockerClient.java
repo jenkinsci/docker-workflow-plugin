@@ -88,9 +88,9 @@ public class WindowsDockerClient extends DockerClient {
     /**
      * @param launchEnv   the launch env
      * @param containerId the container id
-     * @return
-     * @throws IOException
-     * @throws InterruptedException
+     * @return returns Process
+     * @throws IOException the io exception
+     * @throws InterruptedException the interrupted exception
      */
     @Override
     public List<String> listProcess(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
@@ -152,7 +152,7 @@ public class WindowsDockerClient extends DockerClient {
     }
 
     /**
-     * @return
+     * @return command to run as entry-point
      */
     @Override
     public String runCommand() {
@@ -163,9 +163,9 @@ public class WindowsDockerClient extends DockerClient {
     }
 
     /**
-     * @return
-     * @throws IOException
-     * @throws InterruptedException
+     * @return Container ID
+     * @throws IOException the io exception
+     * @throws InterruptedException the interrupted exception
      */
     @Override
     public Optional<String> getContainerIdIfContainerized() throws IOException, InterruptedException {
@@ -190,9 +190,9 @@ public class WindowsDockerClient extends DockerClient {
     }
 
     /**
-     * @return
-     * @throws IOException
-     * @throws InterruptedException
+     * @return Current User
+     * @throws IOException the io exception
+     * @throws InterruptedException the interrupted exception
      */
     @Override
     public String whoAmI() throws IOException, InterruptedException {
@@ -207,8 +207,8 @@ public class WindowsDockerClient extends DockerClient {
      * @param quiet
      * @param workDir
      * @param args
-     * @return
-     * @throws IOException
+     * @return result of command executed
+     * @throws IOException the io exception
      * @throws InterruptedException
      */
     private LaunchResult launch(EnvVars env, boolean quiet, FilePath workDir, String... args) throws IOException, InterruptedException {
@@ -246,7 +246,7 @@ public class WindowsDockerClient extends DockerClient {
     }
 
     /**
-     * @return
+     * @return boolean path need to be containerize
      */
     public boolean isNeedToContainerizePath() {
         return needToContainerizePath;
@@ -259,8 +259,9 @@ public class WindowsDockerClient extends DockerClient {
         this.needToContainerizePath = needToContainerizePath;
     }
 
+
     /**
-     * @return
+     * @return boolean container type (unix or windows)
      */
     public boolean isContainerUnix() {
         return isContainerUnix;
