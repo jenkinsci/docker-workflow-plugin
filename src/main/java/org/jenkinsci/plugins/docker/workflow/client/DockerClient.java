@@ -31,24 +31,34 @@ import hudson.Launcher;
 import hudson.model.Node;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.VersionNumber;
-import org.apache.commons.lang.StringUtils;
-import org.jenkinsci.plugins.docker.commons.fingerprint.ContainerRecord;
-import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
-import org.kohsuke.accmod.Restricted;
-import org.kohsuke.accmod.restrictions.NoExternalUse;
-
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.StringTokenizer;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.plugins.docker.commons.fingerprint.ContainerRecord;
+import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
 
 /**
  * Simple docker client for Pipeline.
@@ -62,14 +72,14 @@ public class DockerClient {
     /**
      * Maximum amount of time (in seconds) to wait for {@code docker} client operations which are supposed to be more or less instantaneous.
      */
-    @SuppressFBWarnings(value = "MS_SHOULD_BE_FINAL", justification = "mutable for scripts")
+    @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL", justification="mutable for scripts")
     @Restricted(NoExternalUse.class)
     public static int CLIENT_TIMEOUT = Integer.getInteger(DockerClient.class.getName() + ".CLIENT_TIMEOUT", 180); // TODO 2.4+ SystemProperties
 
     /**
      * Skip removal of container after a container has been stopped.
      */
-    @SuppressFBWarnings(value = "MS_SHOULD_BE_FINAL", justification = "mutable for scripts")
+    @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL", justification="mutable for scripts")
     @Restricted(NoExternalUse.class)
     public static boolean SKIP_RM_ON_STOP = Boolean.getBoolean(DockerClient.class.getName() + ".SKIP_RM_ON_STOP");
 
@@ -80,10 +90,8 @@ public class DockerClient {
     public static final String DOCKER_DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
 
     private final Launcher launcher;
-    private final @CheckForNull
-    Node node;
-    private final @CheckForNull
-    String toolName;
+    private final @CheckForNull Node node;
+    private final @CheckForNull String toolName;
     private boolean needToContainerizePath = false;
     private boolean isContainerUnix = true;
 
@@ -140,7 +148,7 @@ public class DockerClient {
         }
         for (Map.Entry<String, String> variable : containerEnv.entrySet()) {
             argb.add("-e");
-            argb.addMasked(variable.getKey() + "=" + variable.getValue());
+            argb.addMasked(variable.getKey()+"="+variable.getValue());
         }
         argb.add(image).add(command);
 
@@ -157,7 +165,7 @@ public class DockerClient {
      *
      * @param launchEnv   the launch env
      * @param containerId the container id
-     * @return list list
+     * @return the list
      * @throws IOException          the io exception
      * @throws InterruptedException the interrupted exception
      */
@@ -174,7 +182,7 @@ public class DockerClient {
             while ((line = in.readLine()) != null) {
                 final StringTokenizer stringTokenizer = new StringTokenizer(line, " ");
                 if (stringTokenizer.countTokens() < 2) {
-                    throw new IOException("Unexpected `docker top` output : " + line);
+                    throw new IOException("Unexpected `docker top` output : "+line);
                 }
                 stringTokenizer.nextToken(); // PID
                 processes.add(stringTokenizer.nextToken()); // COMMAND
@@ -231,8 +239,7 @@ public class DockerClient {
      * @throws IOException          the io exception
      * @throws InterruptedException the interrupted exception
      */
-    public @CheckForNull
-    String inspect(@Nonnull EnvVars launchEnv, @Nonnull String objectId, @Nonnull String fieldPath) throws IOException, InterruptedException {
+    public @CheckForNull String inspect(@Nonnull EnvVars launchEnv, @Nonnull String objectId, @Nonnull String fieldPath) throws IOException, InterruptedException {
         LaunchResult result = launch(launchEnv, true, "inspect", "-f", String.format("{{%s}}", fieldPath), objectId);
         if (result.getStatus() == 0) {
             return result.getOut();
@@ -252,9 +259,8 @@ public class DockerClient {
      * @throws InterruptedException Interrupted
      * @since 1.1
      */
-    public @Nonnull
-    String inspectRequiredField(@Nonnull EnvVars launchEnv, @Nonnull String objectId,
-                                @Nonnull String fieldPath) throws IOException, InterruptedException {
+    public @Nonnull String inspectRequiredField(@Nonnull EnvVars launchEnv, @Nonnull String objectId,
+                                                @Nonnull String fieldPath) throws IOException, InterruptedException {
         final String fieldValue = inspect(launchEnv, objectId, fieldPath);
         if (fieldValue == null) {
             throw new IOException("Cannot retrieve " + fieldPath + " from 'docker inspect " + objectId + "'");
@@ -262,8 +268,7 @@ public class DockerClient {
         return fieldValue;
     }
 
-    private @CheckForNull
-    Date getCreatedDate(@Nonnull EnvVars launchEnv, @Nonnull String objectId) throws IOException, InterruptedException {
+    private @CheckForNull Date getCreatedDate(@Nonnull EnvVars launchEnv, @Nonnull String objectId) throws IOException, InterruptedException {
         String createdString = inspect(launchEnv, objectId, "json .Created");
         if (createdString == null) {
             return null;
@@ -284,8 +289,7 @@ public class DockerClient {
      * @throws IOException          the io exception
      * @throws InterruptedException the interrupted exception
      */
-    public @CheckForNull
-    VersionNumber version() throws IOException, InterruptedException {
+    public @CheckForNull VersionNumber version() throws IOException, InterruptedException {
         LaunchResult result = launch(new EnvVars(), true, "-v");
         if (result.getStatus() == 0) {
             return parseVersionNumber(result.getOut());
@@ -314,40 +318,12 @@ public class DockerClient {
         }
     }
 
-    /**
-     * @param launchEnv
-     * @param quiet
-     * @param args
-     * @return
-     * @throws IOException
-     * @throws InterruptedException
-     */
     private LaunchResult launch(@Nonnull EnvVars launchEnv, boolean quiet, @Nonnull String... args) throws IOException, InterruptedException {
         return launch(launchEnv, quiet, null, args);
     }
-
-    /**
-     * @param launchEnv
-     * @param quiet
-     * @param pwd
-     * @param args
-     * @return
-     * @throws IOException
-     * @throws InterruptedException
-     */
     private LaunchResult launch(@Nonnull EnvVars launchEnv, boolean quiet, FilePath pwd, @Nonnull String... args) throws IOException, InterruptedException {
         return launch(launchEnv, quiet, pwd, new ArgumentListBuilder(args));
     }
-
-    /**
-     * @param launchEnv
-     * @param quiet
-     * @param pwd
-     * @param args
-     * @return
-     * @throws IOException
-     * @throws InterruptedException
-     */
     private LaunchResult launch(@Nonnull EnvVars launchEnv, boolean quiet, FilePath pwd, @Nonnull ArgumentListBuilder args) throws IOException, InterruptedException {
         // Prepend the docker command
         args.prepend(DockerTool.getExecutable(toolName, node, launcher.getListener(), launchEnv));
@@ -433,7 +409,7 @@ public class DockerClient {
         // TODO get tags and add for ContainerRecord
         return new ContainerRecord(host, containerId, image, containerName,
             (created != null ? created.getTime() : 0L),
-            Collections.emptyMap());
+            Collections.<String,String>emptyMap());
     }
 
     /**

@@ -41,20 +41,6 @@ public class WindowsDockerClient extends DockerClient {
         this.node = node;
     }
 
-    /**
-     * @param launchEnv             Docker client launch environment.
-     * @param image                 The image name.
-     * @param args                  Any additional arguments for the {@code docker run} command.
-     * @param workdir               The working directory in the container, or {@code null} for default.
-     * @param volumes               Volumes to be bound. Supply an empty list if no volumes are to be bound.
-     * @param volumesFromContainers Mounts all volumes from the given containers.
-     * @param containerEnv          Environment variables to set in container.
-     * @param user                  The <strong>uid:gid</strong> to execute the container command as. Use {@link #whoAmI()}.
-     * @param command               The command to execute in the image container being run.
-     * @return The container ID.
-     * @throws IOException          the io exception
-     * @throws InterruptedException the interrupted exception
-     */
     @Override
     public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, @Nonnull String... command) throws IOException, InterruptedException {
         ArgumentListBuilder argb = new ArgumentListBuilder("docker", "run", "-d", "-t");
@@ -85,13 +71,6 @@ public class WindowsDockerClient extends DockerClient {
         }
     }
 
-    /**
-     * @param launchEnv   the launch env
-     * @param containerId the container id
-     * @return returns Process
-     * @throws IOException          the io exception
-     * @throws InterruptedException the interrupted exception
-     */
     @Override
     public List<String> listProcess(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
         if (isContainerUnix) {
@@ -109,13 +88,67 @@ public class WindowsDockerClient extends DockerClient {
             while ((line = in.readLine()) != null) {
                 final StringTokenizer stringTokenizer = new StringTokenizer(line, " ");
                 if (stringTokenizer.countTokens() < 1) {
-                    throw new IOException("Unexpected `docker top` output : " + line);
+                    throw new IOException("Unexpected `docker top` output : "+line);
                 }
 
                 processes.add(stringTokenizer.nextToken()); // COMMAND
             }
         }
         return processes;
+    }
+
+    @Override
+    public Optional<String> getContainerIdIfContainerized() throws IOException, InterruptedException {
+        if (node == null ||
+            launch(new EnvVars(), true, null, "sc.exe", "query", "cexecsvc").getStatus() != 0) {
+            return Optional.absent();
+        }
+
+        LaunchResult getComputerName = launch(new EnvVars(), true, null, "hostname");
+        if(getComputerName.getStatus() != 0) {
+            throw new IOException("Failed to get hostname.");
+        }
+
+        String shortID = getComputerName.getOut().toLowerCase();
+        LaunchResult getLongIdResult = launch(new EnvVars(), true, null, "docker", "inspect", shortID, "--format={{.Id}}");
+        if(getLongIdResult.getStatus() != 0) {
+            LOGGER.log(Level.INFO, "Running inside of a container but cannot determine container ID from current environment.");
+            return Optional.absent();
+        }
+
+        return Optional.of(getLongIdResult.getOut());
+    }
+
+    @Override
+    public String whoAmI() throws IOException, InterruptedException {
+        try (ByteArrayOutputStream userId = new ByteArrayOutputStream()) {
+            launcher.launch().cmds("whoami").quiet(true).stdout(userId).start().joinWithTimeout(CLIENT_TIMEOUT, TimeUnit.SECONDS, launcher.getListener());
+            return userId.toString(Charset.defaultCharset().name()).trim();
+        }
+    }
+
+    private LaunchResult launch(EnvVars env, boolean quiet, FilePath workDir, String... args) throws IOException, InterruptedException {
+        return launch(env, quiet, workDir, new ArgumentListBuilder(args));
+    }
+    private LaunchResult launch(EnvVars env, boolean quiet, FilePath workDir, ArgumentListBuilder argb) throws IOException, InterruptedException {
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.log(Level.FINE, "Executing command \"{0}\"", argb);
+        }
+
+        Launcher.ProcStarter procStarter = launcher.launch();
+        if (workDir != null) {
+            procStarter.pwd(workDir);
+        }
+
+        LaunchResult result = new LaunchResult();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        result.setStatus(procStarter.quiet(quiet).cmds(argb).envs(env).stdout(out).stderr(err).start().joinWithTimeout(CLIENT_TIMEOUT, TimeUnit.SECONDS, launcher.getListener()));
+        final String charsetName = Charset.defaultCharset().name();
+        result.setOut(out.toString(charsetName));
+        result.setErr(err.toString(charsetName));
+
+        return result;
     }
 
     /**
@@ -160,89 +193,6 @@ public class WindowsDockerClient extends DockerClient {
             return "cat";
         }
         return "cmd";
-    }
-
-    /**
-     * @return Container ID
-     * @throws IOException          the io exception
-     * @throws InterruptedException the interrupted exception
-     */
-    @Override
-    public Optional<String> getContainerIdIfContainerized() throws IOException, InterruptedException {
-        if (node == null ||
-            launch(new EnvVars(), true, null, "sc.exe", "query", "cexecsvc").getStatus() != 0) {
-            return Optional.absent();
-        }
-
-        LaunchResult getComputerName = launch(new EnvVars(), true, null, "hostname");
-        if (getComputerName.getStatus() != 0) {
-            throw new IOException("Failed to get hostname.");
-        }
-
-        String shortID = getComputerName.getOut().toLowerCase();
-        LaunchResult getLongIdResult = launch(new EnvVars(), true, null, "docker", "inspect", shortID, "--format={{.Id}}");
-        if (getLongIdResult.getStatus() != 0) {
-            LOGGER.log(Level.INFO, "Running inside of a container but cannot determine container ID from current environment.");
-            return Optional.absent();
-        }
-
-        return Optional.of(getLongIdResult.getOut());
-    }
-
-    /**
-     * @return Current User
-     * @throws IOException          the io exception
-     * @throws InterruptedException the interrupted exception
-     */
-    @Override
-    public String whoAmI() throws IOException, InterruptedException {
-        try (ByteArrayOutputStream userId = new ByteArrayOutputStream()) {
-            launcher.launch().cmds("whoami").quiet(true).stdout(userId).start().joinWithTimeout(CLIENT_TIMEOUT, TimeUnit.SECONDS, launcher.getListener());
-            return userId.toString(Charset.defaultCharset().name()).trim();
-        }
-    }
-
-    /**
-     * @param env
-     * @param quiet
-     * @param workDir
-     * @param args
-     * @return result of command executed
-     * @throws IOException          the io exception
-     * @throws InterruptedException
-     */
-    private LaunchResult launch(EnvVars env, boolean quiet, FilePath workDir, String... args) throws IOException, InterruptedException {
-        return launch(env, quiet, workDir, new ArgumentListBuilder(args));
-    }
-
-    /**
-     * @param env
-     * @param quiet
-     * @param workDir
-     * @param argb
-     * @return
-     * @throws IOException
-     * @throws InterruptedException
-     */
-    private LaunchResult launch(EnvVars env, boolean quiet, FilePath workDir, ArgumentListBuilder argb) throws IOException, InterruptedException {
-        if (LOGGER.isLoggable(Level.FINE)) {
-            LOGGER.log(Level.FINE, "Executing command \"{0}\"", argb);
-        }
-
-        Launcher.ProcStarter procStarter = launcher.launch();
-        if (workDir != null) {
-            procStarter.pwd(workDir);
-        }
-
-        LaunchResult result = new LaunchResult();
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        result.setStatus(procStarter.quiet(quiet).cmds(argb).envs(env).stdout(out).stderr(err).start().joinWithTimeout(CLIENT_TIMEOUT, TimeUnit.SECONDS, launcher.getListener()));
-        final String charsetName = Charset.defaultCharset().name();
-        result.setOut(out.toString(charsetName));
-        result.setErr(err.toString(charsetName));
-
-        return result;
     }
 
     /**
