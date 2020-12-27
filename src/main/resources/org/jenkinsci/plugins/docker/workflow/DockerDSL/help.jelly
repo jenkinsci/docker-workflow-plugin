@@ -112,7 +112,7 @@
                 Hexadecimal ID of a running container.
             </p>
         </dd>
-        <dt><code>Container.stop</code></dt>
+        <dt><code>Container.stop()</code></dt>
         <dd>
             <p>
                 Runs <code>docker stop</code> and <code>docker rm</code> to shut down a container and remove its storage.
