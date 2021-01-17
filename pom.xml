@@ -31,7 +31,7 @@
     <properties>
         <revision>1.26</revision>
         <changelist>-SNAPSHOT</changelist>
-        <jenkins.version>2.190.1</jenkins.version>
+        <jenkins.version>2.276-rc30787.8a441e06c3da</jenkins.version>
         <java.level>8</java.level>
         <pipeline-model-definition-plugin.version>1.5.1</pipeline-model-definition-plugin.version>
     </properties>
