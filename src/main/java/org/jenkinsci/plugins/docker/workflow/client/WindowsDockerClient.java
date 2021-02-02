@@ -5,6 +5,7 @@ import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.Node;
+import hudson.os.WindowsUtil;
 import hudson.util.ArgumentListBuilder;
 
 import javax.annotation.CheckForNull;
@@ -46,7 +47,7 @@ public class WindowsDockerClient extends DockerClient {
         }
         for (Map.Entry<String, String> variable : containerEnv.entrySet()) {
             argb.add("-e");
-            argb.addMasked(variable.getKey()+"="+variable.getValue());
+            argb.addMasked(WindowsUtil.quoteArgument(variable.getKey() + "=" + variable.getValue()));
         }
         argb.add(image).add(command);
 

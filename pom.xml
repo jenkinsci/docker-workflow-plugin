@@ -29,9 +29,9 @@
     </scm>
 
     <properties>
-        <revision>1.25</revision>
+        <revision>1.26</revision>
         <changelist>-SNAPSHOT</changelist>
-        <jenkins.version>2.176.4</jenkins.version>
+        <jenkins.version>2.190.1</jenkins.version>
         <java.level>8</java.level>
         <pipeline-model-definition-plugin.version>1.7.3-rc1884.390d0d8878e7</pipeline-model-definition-plugin.version> <!-- TODO https://github.com/jenkinsci/pipeline-model-definition-plugin/pull/393 -->
     </properties>
@@ -51,7 +51,7 @@
         <dependencies>
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.176.x</artifactId>
+                <artifactId>bom-2.190.x</artifactId>
                 <version>14</version>
                 <scope>import</scope>
                 <type>pom</type>
