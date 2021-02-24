@@ -355,13 +355,19 @@ public class DockerDSLTest {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
-                    "     try { sh 'docker rmi busybox:test' } catch (Exception e) {}\n" +
+                    "     try { sh 'docker rmi busybox:test my.registry.com/busybox:test' } catch (Exception e) {}\n" +
                     "     def busybox = docker.image('busybox');\n" +
                     "     busybox.pull();\n" +
                     "     // tag it\n" +
                     "     busybox.tag('test', /* ignored but to test that the argument is accepted */false);\n" +
+                    "     // assert that the tag exists\n" +
+                    "     sh 'docker inspect busybox:test'\n" +    
                     "     // retag it\n" +
-                    "     busybox.tag('test');\n" +
+                    "     busybox.tag('test');\n" + 
+                    "     // retag it with new image name\n" +
+                    "     busybox.tag('test', /* ignored but to test that the argument is accepted */ false, 'my.registry.com/busybox');\n" + 
+                    "     // assert that the tag exists\n" + 
+                    "     sh 'docker inspect my.registry.com/busybox:test'\n" +
                     "}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
             }
