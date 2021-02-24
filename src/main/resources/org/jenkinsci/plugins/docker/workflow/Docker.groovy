@@ -131,7 +131,7 @@ class Docker implements Serializable {
 
         public void pull() {
             docker.node {
-                docker.script."${docker.shell()}" "docker pull ${imageName()}"
+                docker.script."${docker.shell()}" "docker pull -q ${imageName()}"
             }
         }
 
