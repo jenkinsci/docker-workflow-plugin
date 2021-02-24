@@ -26,15 +26,18 @@ package org.jenkinsci.plugins.docker.workflow.declarative;
 
 import hudson.model.Run;
 import org.apache.commons.lang.StringUtils;
-import org.jenkinsci.plugins.docker.workflow.declarative.DockerPropertiesProvider;
+import org.jenkinsci.plugins.pipeline.modeldefinition.agent.impl.Label;
+import org.jenkinsci.plugins.pipeline.modeldefinition.withscript.WithScriptScript;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowExecution;
+import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jenkinsci.plugins.workflow.cps.CpsThread;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Collections;
 
 /**
  * @see org.jenkinsci.plugins.docker.workflow.declarative.DockerLabelProvider
@@ -80,6 +83,16 @@ public class DeclarativeDockerUtils {
             }
         }
         return null;
+    }
+
+    @Whitelisted
+    public static WithScriptScript<?> getLabelScript(AbstractDockerAgent<?> describable, CpsScript script) throws Exception {
+        String targetLabel = getLabel(describable.getLabel());
+        Label l = (Label) Label.DescriptorImpl.instanceForName("label", Collections.singletonMap("label", targetLabel));
+        l.copyFlags(describable);
+        l.setCustomWorkspace(describable.getCustomWorkspace());
+        return l.getScript(script);
+        
     }
 
     @Whitelisted

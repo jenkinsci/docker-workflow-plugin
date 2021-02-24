@@ -48,7 +48,7 @@ public class DockerScriptStepTest extends AbstractModelDefTest {
     public void dockerGlobalVariableInScript() throws Exception {
         DockerTestUtil.assumeDocker();
 
-        expect("dockerGlobalVariableInScript")
+        expect("org/jenkinsci/plugins/docker/workflow/declarative/dockerGlobalVariableInScript")
                 .logContains("[Pipeline] { (foo)", "image: ubuntu")
                 .go();
     }
