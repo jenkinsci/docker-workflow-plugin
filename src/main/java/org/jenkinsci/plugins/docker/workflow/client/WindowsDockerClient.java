@@ -37,10 +37,10 @@ public class WindowsDockerClient extends DockerClient {
         }
 
         if (workdir != null) {
-            argb.add("-w", workdir);
+            argb.add("-w", containerizePathIfNeeded(workdir, null));
         }
         for (Map.Entry<String, String> volume : volumes.entrySet()) {
-            argb.add("-v", volume.getKey() + ":" + volume.getValue());
+            argb.add("-v", volume.getKey() + ":" + containerizePathIfNeeded(volume.getValue(), null));
         }
         for (String containerId : volumesFromContainers) {
             argb.add("--volumes-from", containerId);
@@ -81,7 +81,7 @@ public class WindowsDockerClient extends DockerClient {
         }
         return processes;
     }
-
+    
     @Override
     public Optional<String> getContainerIdIfContainerized() throws IOException, InterruptedException {
         if (node == null ||
@@ -112,10 +112,10 @@ public class WindowsDockerClient extends DockerClient {
         }
     }
 
-    private LaunchResult launch(EnvVars env, boolean quiet, FilePath workDir, String... args) throws IOException, InterruptedException {
+    protected LaunchResult launch(EnvVars env, boolean quiet, FilePath workDir, String... args) throws IOException, InterruptedException {
         return launch(env, quiet, workDir, new ArgumentListBuilder(args));
     }
-    private LaunchResult launch(EnvVars env, boolean quiet, FilePath workDir, ArgumentListBuilder argb) throws IOException, InterruptedException {
+    protected LaunchResult launch(EnvVars env, boolean quiet, FilePath workDir, ArgumentListBuilder argb) throws IOException, InterruptedException {
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.log(Level.FINE, "Executing command \"{0}\"", argb);
         }
@@ -134,5 +134,11 @@ public class WindowsDockerClient extends DockerClient {
         result.setErr(err.toString(charsetName));
 
         return result;
+    }
+
+    @Override
+    public String runCommand()
+    {
+        return "cmd.exe";
     }
 }
