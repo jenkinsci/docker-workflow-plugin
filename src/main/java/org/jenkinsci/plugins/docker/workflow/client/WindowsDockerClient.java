@@ -17,12 +17,24 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * The type Windows docker client.
+ */
 public class WindowsDockerClient extends DockerClient {
     private static final Logger LOGGER = Logger.getLogger(WindowsDockerClient.class.getName());
 
     private final Launcher launcher;
     private final Node node;
+    private boolean needToContainerizePath = false;
+    private boolean isContainerUnix = false;
 
+    /**
+     * Instantiates a new Windows docker client.
+     *
+     * @param launcher the launcher
+     * @param node     the node
+     * @param toolName the tool name
+     */
     public WindowsDockerClient(@Nonnull Launcher launcher, @CheckForNull Node node, @CheckForNull String toolName) {
         super(launcher, node, toolName);
         this.launcher = launcher;
@@ -37,10 +49,10 @@ public class WindowsDockerClient extends DockerClient {
         }
 
         if (workdir != null) {
-            argb.add("-w", workdir);
+            argb.add("-w", containerizePathIfNeeded(workdir));
         }
         for (Map.Entry<String, String> volume : volumes.entrySet()) {
-            argb.add("-v", volume.getKey() + ":" + volume.getValue());
+            argb.add("-v", volume.getKey() + ":" + containerizePathIfNeeded(volume.getValue()));
         }
         for (String containerId : volumesFromContainers) {
             argb.add("--volumes-from", containerId);
@@ -61,6 +73,9 @@ public class WindowsDockerClient extends DockerClient {
 
     @Override
     public List<String> listProcess(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
+        if (isContainerUnix) {
+            return listProcessUnixContainer(launchEnv, containerId);
+        }
         LaunchResult result = launch(launchEnv, false, null, "docker", "top", containerId);
         if (result.getStatus() != 0) {
             throw new IOException(String.format("Failed to run top '%s'. Error: %s", containerId, result.getErr()));
@@ -134,5 +149,198 @@ public class WindowsDockerClient extends DockerClient {
         result.setErr(err.toString(charsetName));
 
         return result;
+    }
+
+    /**
+     * List process unix container list.
+     *
+     * @param launchEnv   the launch env
+     * @param containerId the container id
+     * @return the list
+     * @throws IOException          the io exception
+     * @throws InterruptedException the interrupted exception
+     */
+    public List<String> listProcessUnixContainer(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
+        LaunchResult result = launch(launchEnv, false, null, "docker", "top", containerId);
+        if (result.getStatus() != 0) {
+            throw new IOException(String.format("Failed to run top '%s'. Error: %s", containerId, result.getErr()));
+        }
+        List<String> processes = new ArrayList<>();
+        try (Reader r = new StringReader(result.getOut());
+             BufferedReader in = new BufferedReader(r)) {
+            String line;
+            in.readLine(); // ps header
+            while ((line = in.readLine()) != null) {
+                final StringTokenizer stringTokenizer = new StringTokenizer(line, " ");
+                if (stringTokenizer.countTokens() < 4) {
+                    throw new IOException("Unexpected `docker top` output : " + line);
+                }
+                stringTokenizer.nextToken(); // PID
+                stringTokenizer.nextToken(); // USER
+                stringTokenizer.nextToken(); // TIME
+                processes.add(stringTokenizer.nextToken()); // COMMAND
+            }
+        }
+        return processes;
+    }
+
+    /**
+     * @return command to run as entry-point
+     */
+    @Override
+    public String runCommand() {
+        if (isContainerUnix) {
+            return "cat";
+        }
+        return "cmd";
+    }
+
+    /**
+     * @return boolean path need to be containerize
+     */
+    public boolean isNeedToContainerizePath() {
+        return needToContainerizePath;
+    }
+
+    /**
+     * @param needToContainerizePath the need to containerize path
+     */
+    public void setNeedToContainerizePath(boolean needToContainerizePath) {
+        this.needToContainerizePath = needToContainerizePath;
+    }
+
+
+    /**
+     * @return boolean container type (unix or windows)
+     */
+    public boolean isContainerUnix() {
+        return isContainerUnix;
+    }
+
+    /**
+     * @param containerUnix the container unix
+     */
+    public void setContainerUnix(boolean containerUnix) {
+        isContainerUnix = containerUnix;
+    }
+
+    /**
+     * Containerize path if needed string.
+     *
+     * @param path the path
+     * @return the string
+     */
+    public String containerizePathIfNeeded(String path) {
+        return containerizePathIfNeeded(path, null);
+    }
+
+    /**
+     * Containerize path if needed string.
+     *
+     * @param path   the path
+     * @param prefix the prefix
+     * @return the string
+     */
+    public String containerizePathIfNeeded(String path, String prefix) {
+        if (this.needToContainerizePath)
+            return WindowsDockerClient.containerizePath(path, prefix);
+        return path;
+    }
+
+    /**
+     * Containerize path string.
+     *
+     * @param path   the path
+     * @param prefix the prefix
+     * @return the string
+     */
+    public static String containerizePath(String path, String prefix) {
+        StringBuffer result = new StringBuffer();
+        char[] pathChars = path.toCharArray();
+        char[] prefixChars = (prefix == null) ? null : prefix.toCharArray();
+
+        for (int i = 0; i < pathChars.length; i++) {
+            char currentChar = pathChars[i];
+            if (currentChar == ':' && i > 0 && i < pathChars.length - 1) {
+                char previousChar = pathChars[i - 1];
+                if ((previousChar >= 'a' && previousChar <= 'z') || (previousChar >= 'A' && previousChar <= 'Z')) {
+                    char nextChar = pathChars[i + 1];
+                    if (nextChar == '/' || nextChar == '\\') {
+                        char nextNextChar = (i < pathChars.length - 2) ? pathChars[i + 2] : ' ';
+                        if (nextNextChar != '/') {
+                            if (prefix == null || checkPrefix(pathChars, i - 1, prefixChars)) {
+                                result.setCharAt(i - 1, '/');
+                                result.append(Character.toLowerCase(previousChar));
+                                result.append('/');
+                                i++;
+                                i++;
+
+                                boolean done = false;
+                                for (; i < pathChars.length; i++) {
+                                    currentChar = pathChars[i];
+                                    switch (currentChar) {
+                                        case '\\':
+                                            result.append('/');
+                                            break;
+
+                                        case '?':
+                                        case '<':
+                                        case '>':
+                                        case ':':
+                                        case '*':
+                                        case '|':
+                                        case '"':
+                                        case '\'':
+                                            result.append(currentChar);
+                                            done = true;
+                                            break;
+
+                                        default:
+                                            result.append(currentChar);
+                                            break;
+                                    }
+
+                                    if (done)
+                                        break;
+                                }
+
+                                continue;
+                            }
+                        }
+                    }
+                }
+            }
+
+            result.append(currentChar);
+
+        }
+        return result.toString();
+
+    }
+
+    /**
+     * @param pathChars
+     * @param index
+     * @param prefixChars
+     * @return
+     */
+    private static boolean checkPrefix(char[] pathChars, int index, char[] prefixChars) {
+        if (index + prefixChars.length > pathChars.length)
+            return false;
+
+        for (int i = 0; i < prefixChars.length; i++) {
+            char pathChar = pathChars[index + i];
+            if (pathChar == '\\')
+                pathChar = '/';
+
+            char prefixChar = prefixChars[i];
+            if (prefixChar == '\\')
+                prefixChar = '/';
+
+            if (pathChar != prefixChar)
+                return false;
+        }
+
+        return true;
     }
 }
