@@ -148,7 +148,9 @@ class Docker implements Serializable {
                 try {
                     body.call(c)
                 } finally {
-                    c.stop()
+                    timeout(1) {
+                        c.stop()
+                    }
                 }
             }
         }
