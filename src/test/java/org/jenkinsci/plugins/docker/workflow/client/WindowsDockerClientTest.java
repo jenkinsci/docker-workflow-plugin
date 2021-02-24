@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.docker.workflow.client;
 
+import com.google.common.base.Optional;
 import hudson.EnvVars;
 import hudson.Launcher;
 import hudson.model.TaskListener;
@@ -39,6 +40,7 @@ public class WindowsDockerClientTest {
             Collections.emptyList(),
             new EnvVars(),
             dockerClient.whoAmI(),
+            Optional.absent(),
             "cat");
 
         Assert.assertEquals(64, containerId.length());
