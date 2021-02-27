@@ -400,4 +400,21 @@ public class DockerDSLTest {
             }
         });
     }
+
+    @Test public void insideContextOfEnvironmentVariablesWithSpecialCharacters(){
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                    "  withEnv(['ENV_VAR=\"VARIABLE = VALUE WITH QUOTES \\\" AND SPACES \\\"\"']) {\n" +
+                    "    docker.image('busybox').inside { sh 'env' }\n" +
+                    "  }\n" +
+                    "}", true));
+                WorkflowRun r = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertLogContains("ENV_VAR=\"VARIABLE = VALUE WITH QUOTES \" AND SPACES \"\"", r);
+            }
+        });
+    }
 }
