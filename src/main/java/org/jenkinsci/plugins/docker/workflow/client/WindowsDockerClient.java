@@ -30,12 +30,11 @@ public class WindowsDockerClient extends DockerClient {
     }
 
     @Override
-    public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, @Nonnull String... command) throws IOException, InterruptedException {
+    public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @CheckForNull String user, @Nonnull String... command) throws IOException, InterruptedException {
         ArgumentListBuilder argb = new ArgumentListBuilder("docker", "run", "-d", "-t");
         if (args != null) {
             argb.addTokenized(args);
         }
-
         if (workdir != null) {
             argb.add("-w", workdir);
         }
