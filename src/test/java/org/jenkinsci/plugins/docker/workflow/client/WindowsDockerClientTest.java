@@ -12,6 +12,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 public class WindowsDockerClientTest {
 
@@ -35,7 +37,7 @@ public class WindowsDockerClientTest {
             "learn/tutorial",
             null,
             null,
-            Collections.emptyMap(),
+            Collections.singletonMap("D:\\Jenkins\\workspace", "D:\\Jenkins\\workspace"),
             Collections.emptyList(),
             new EnvVars(),
             dockerClient.whoAmI(),
@@ -47,7 +49,7 @@ public class WindowsDockerClientTest {
         Assert.assertTrue(containerRecord.getContainerName().length() > 0);
         Assert.assertTrue(containerRecord.getHost().length() > 0);
         Assert.assertTrue(containerRecord.getCreated() > 1000000000000L);
-        Assert.assertEquals(Collections.<String>emptyList(), dockerClient.getVolumes(launchEnv, containerId));
+        Assert.assertEquals(Collections.singletonList("d:"), dockerClient.getVolumes(launchEnv, containerId));
 
         // Also test that the stop works and cleans up after itself
         Assert.assertNotNull(dockerClient.inspect(launchEnv, containerId, ".Name"));
