@@ -8,8 +8,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -35,6 +33,19 @@ public class ControlGroup {
         group = fields[2];
     }
 
+    public static Optional<String> getContainerIdByHostname(FilePath hostnameFile) throws IOException, InterruptedException {
+        return getContainerIdByHostname(new InputStreamReader(hostnameFile.read(), StandardCharsets.UTF_8));
+    }
+
+    static Optional<String> getContainerIdByHostname(Reader reader) throws IOException {
+        try (BufferedReader r = new BufferedReader(reader)) {
+            String line;
+            if ((line = r.readLine()) != null) {
+                return Optional.of(line.trim());
+            }
+        }
+        return Optional.absent();
+    }
 
     public static Optional<String> getContainerId(FilePath procfile) throws IOException, InterruptedException {
         return getContainerId(new InputStreamReader(procfile.read(), StandardCharsets.UTF_8));
