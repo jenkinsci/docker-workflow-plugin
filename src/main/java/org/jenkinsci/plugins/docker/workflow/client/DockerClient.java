@@ -345,17 +345,22 @@ public class DockerClient {
      * @see <a href="http://stackoverflow.com/a/25729598/12916">Discussion</a>
      */
     public Optional<String> getContainerIdIfContainerized() throws IOException, InterruptedException {
+        if (node == null) {
+            return Optional.absent();
+        }
         if ("true".equals(System.getenv("JENKINS_RUNNING_IN_CONTAINER"))) {
-            if (node == null) {
-                return Optional.absent();
-            }
             FilePath hostnameFile = node.createPath("/etc/hostname");
             if (hostnameFile == null || !hostnameFile.exists()) {
                 return Optional.absent();
             }
             return ControlGroup.getContainerIdByHostname(hostnameFile);
+        } else {
+            FilePath cgroupFile = node.createPath("/proc/self/cgroup");
+            if (cgroupFile == null || !cgroupFile.exists()) {
+                return Optional.absent();
+            }
+            return ControlGroup.getContainerId(cgroupFile);
         }
-        return Optional.absent();
     }
 
     public ContainerRecord getContainerRecord(@Nonnull EnvVars launchEnv, String containerId) throws IOException, InterruptedException {
