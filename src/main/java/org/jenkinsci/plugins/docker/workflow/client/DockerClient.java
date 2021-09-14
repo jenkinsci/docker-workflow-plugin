@@ -116,7 +116,9 @@ public class DockerClient {
         argb.add("run", "-t", "-d");
 
         // Username might be empty because we are running on Windows
-        if (StringUtils.isNotEmpty(user)) {
+        // or user and group id is given in arguments
+        boolean isUserGiven = (args != null && args.contains("-u "));
+        if (StringUtils.isNotEmpty(user) && !isUserGiven) {
             argb.add("-u", user);
         }
         if (args != null) {
