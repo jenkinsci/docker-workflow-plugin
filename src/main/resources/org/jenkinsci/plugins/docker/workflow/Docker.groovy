@@ -75,17 +75,15 @@ class Docker implements Serializable {
         new Image(this, id)
     }
 
-    String shell() {
-        node {
-            script.isUnix() ? "sh" : "bat"
-        }
+    private Object shell(Object args) {
+        script.isUnix() ? script.sh(args) : script.bat(args)
     }
 
     public Image build(String image, String args = '.') {
         node {
             def commandLine = "docker build -t ${image} ${args}"
 
-            script."${shell()}" commandLine
+            shell commandLine
             this.image(image)
         }
     }
@@ -113,11 +111,11 @@ class Docker implements Serializable {
         public <V> V inside(String args = '', Closure<V> body) {
             docker.node {
                 def toRun = imageName()
-                if (toRun != id && docker.script."${docker.shell()}"(script: "docker inspect -f . ${id}", returnStatus: true) == 0) {
+                if (toRun != id && docker.shell(script: "docker inspect -f . ${id}", returnStatus: true) == 0) {
                     // Can run it without registry prefix, because it was locally built.
                     toRun = id
                 } else {
-                    if (docker.script."${docker.shell()}"(script: "docker inspect -f . ${toRun}", returnStatus: true) != 0) {
+                    if (docker.shell(script: "docker inspect -f . ${toRun}", returnStatus: true) != 0) {
                         // Not yet present locally.
                         // withDockerContainer requires the image to be available locally, since its start phase is not a durable task.
                         pull()
@@ -131,13 +129,13 @@ class Docker implements Serializable {
 
         public void pull() {
             docker.node {
-                docker.script."${docker.shell()}" "docker pull ${imageName()}"
+                docker.shell "docker pull ${imageName()}"
             }
         }
 
         public Container run(String args = '', String command = "") {
             docker.node {
-                def container = docker.script."${docker.shell()}"(script: "docker run -d${args != '' ? ' ' + args : ''} ${id}${command != '' ? ' ' + command : ''}", returnStdout: true).trim()
+                def container = docker.shell(script: "docker run -d${args != '' ? ' ' + args : ''} ${id}${command != '' ? ' ' + command : ''}", returnStdout: true).trim()
                 new Container(docker, container)
             }
         }
@@ -156,7 +154,7 @@ class Docker implements Serializable {
         public void tag(String tagName = parsedId.tag, boolean force = true) {
             docker.node {
                 def taggedImageName = toQualifiedImageName(parsedId.userAndRepo + ':' + tagName)
-                docker.script."${docker.shell()}" "docker tag ${id} ${taggedImageName}"
+                docker.shell "docker tag ${id} ${taggedImageName}"
                 return taggedImageName;
             }
         }
@@ -166,7 +164,7 @@ class Docker implements Serializable {
                 // The image may have already been tagged, so the tagging may be a no-op.
                 // That's ok since tagging is cheap.
                 def taggedImageName = tag(tagName, force)
-                docker.script."${docker.shell()}" "docker push ${taggedImageName}"
+                docker.shell "docker push ${taggedImageName}"
             }
         }
 
@@ -183,11 +181,11 @@ class Docker implements Serializable {
         }
 
         public void stop() {
-            docker.script."${docker.shell()}" "docker stop ${id} && docker rm -f ${id}"
+            docker.shell "docker stop ${id} && docker rm -f ${id}"
         }
 
         public String port(int port) {
-            docker.script."${docker.shell()}"(script: "docker port ${id} ${port}", returnStdout: true).trim()
+            docker.shell(script: "docker port ${id} ${port}", returnStdout: true).trim()
         }
     }
 
