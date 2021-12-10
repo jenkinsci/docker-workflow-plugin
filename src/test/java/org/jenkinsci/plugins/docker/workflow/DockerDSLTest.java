@@ -25,6 +25,7 @@ package org.jenkinsci.plugins.docker.workflow;
 
 import hudson.EnvVars;
 import hudson.Launcher;
+import hudson.model.Result;
 import hudson.tools.ToolProperty;
 import hudson.util.StreamTaskListener;
 import hudson.util.VersionNumber;
@@ -41,6 +42,7 @@ import org.junit.Test;
 import org.junit.runners.model.Statement;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
+import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
 
 import java.io.File;
@@ -49,6 +51,10 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsNot.not;
+import static org.hamcrest.core.StringContains.containsString;
+import static org.hamcrest.core.StringRegularExpression.matchesRegex;
 import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeDocker;
 import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeNotWindows;
 import static org.junit.Assert.assertEquals;
@@ -364,6 +370,27 @@ public class DockerDSLTest {
                     "     busybox.tag('test');\n" +
                     "}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+            }
+        });
+    }
+
+    @Test @Issue("SECURITY-1878") public void tagInjection() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                        "     try { sh 'docker rmi busybox:test' } catch (Exception e) {}\n" +
+                        "     def busybox = docker.image('busybox');\n" +
+                        "     busybox.pull();\n" +
+                        "     // tag it\n" +
+                        "     busybox.tag(\"test\\necho haxored\", false);\n" +
+                        "}", true));
+                WorkflowRun b = story.j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0));
+                final String log = JenkinsRule.getLog(b);
+                assertThat(log, not(matchesRegex("^haxored")));
+                assertThat(log, containsString("ERROR: Tag must follow the pattern"));
             }
         });
     }
