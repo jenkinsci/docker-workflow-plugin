@@ -128,11 +128,11 @@ class Docker implements Serializable {
             docker.node {
                 def toRun = imageName()
                 docker.script.withEnv(["JD_ID=${id}", "JD_TO_RUN=${toRun}"]) {
-                    if (toRun != id && docker.script."${docker.shell()}"(script: 'docker inspect -f . "' + asEnv('JD_ID') + '"', returnStatus: true) == 0) {
+                    if (toRun != id && docker.script."${docker.shell()}"(script: 'docker inspect -f . "' + docker.asEnv('JD_ID') + '"', returnStatus: true) == 0) {
                         // Can run it without registry prefix, because it was locally built.
                         toRun = id
                     } else {
-                        if (docker.script."${docker.shell()}"(script: 'docker inspect -f . "' + asEnv('JD_TO_RUN') + '"', returnStatus: true) != 0) {
+                        if (docker.script."${docker.shell()}"(script: 'docker inspect -f . "' + docker.asEnv('JD_TO_RUN') + '"', returnStatus: true) != 0) {
                             // Not yet present locally.
                             // withDockerContainer requires the image to be available locally, since its start phase is not a durable task.
                             pull()
@@ -149,7 +149,7 @@ class Docker implements Serializable {
             docker.node {
                 def toPull = imageName()
                 docker.script.withEnv(["JD_TO_PULL=${toPull}"]) {
-                    docker.script."${docker.shell()}" 'docker pull "' + asEnv('JD_TO_PULL') + '"'
+                    docker.script."${docker.shell()}" 'docker pull "' + docker.asEnv('JD_TO_PULL') + '"'
                 }
             }
         }
@@ -176,7 +176,7 @@ class Docker implements Serializable {
             docker.node {
                 def taggedImageName = toQualifiedImageName(parsedId.userAndRepo + ':' + tagName)
                 docker.script.withEnv(["JD_ID=${id}", "JD_TAGGED_IMAGE_NAME=${taggedImageName}"]) {
-                    docker.script."${docker.shell()}" 'docker tag "' + asEnv('JD_ID') + '" "' + asEnv('JD_TAGGED_IMAGE_NAME') + '"'
+                    docker.script."${docker.shell()}" 'docker tag "' + docker.asEnv('JD_ID') + '" "' + docker.asEnv('JD_TAGGED_IMAGE_NAME') + '"'
                 }
                 return taggedImageName;
             }
@@ -188,7 +188,7 @@ class Docker implements Serializable {
                 // That's ok since tagging is cheap.
                 def taggedImageName = tag(tagName, force)
                 docker.script.withEnv(["JD_TAGGED_IMAGE_NAME=${taggedImageName}"]) {
-                    docker.script."${docker.shell()}" 'docker push "' + asEnv('JD_TAGGED_IMAGE_NAME') + '"'
+                    docker.script."${docker.shell()}" 'docker push "' + docker.asEnv('JD_TAGGED_IMAGE_NAME') + '"'
                 }
             }
         }
@@ -207,13 +207,13 @@ class Docker implements Serializable {
 
         public void stop() {
             docker.script.withEnv(["JD_ID=${id}"]) {
-                docker.script."${docker.shell()}" 'docker stop "' + asEnv('JD_ID') + '" && docker rm -f "' + asEnv('JD_ID') + '"'
+                docker.script."${docker.shell()}" 'docker stop "' + docker.asEnv('JD_ID') + '" && docker rm -f "' + docker.asEnv('JD_ID') + '"'
             }
         }
 
         public String port(int port) {
             docker.script.withEnv(["JD_ID=${id}", "JD_PORT=${port}"]) {
-                docker.script."${docker.shell()}"(script: 'docker port "' + asEnv('JD_ID') + '" "' + asEnv('JD_PORT') + '"', returnStdout: true).trim()
+                docker.script."${docker.shell()}"(script: 'docker port "' + docker.asEnv('JD_ID') + '" "' + docker.asEnv('JD_PORT') + '"', returnStdout: true).trim()
             }
         }
     }
