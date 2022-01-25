@@ -83,6 +83,13 @@ public class DockerClient {
     @Restricted(NoExternalUse.class)
     public static boolean SKIP_RM_ON_STOP = Boolean.getBoolean(DockerClient.class.getName() + ".SKIP_RM_ON_STOP");
 
+    /**
+     * Skip failing a job if docker-stop / rm fails / times out.
+     */
+    @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL", justification="mutable for scripts")
+    @Restricted(NoExternalUse.class)
+    public static boolean SKIP_FAILJOB_ON_STOP_ERROR = Boolean.getBoolean(DockerClient.class.getName() + ".SKIP_FAILJOB_ON_STOP_ERROR");
+
     // e.g. 2015-04-09T13:40:21.981801679Z
     public static final String DOCKER_DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
     
@@ -181,7 +188,13 @@ public class DockerClient {
     public void stop(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
         LaunchResult result = launch(launchEnv, false, "stop", "--time=1", containerId);
         if (result.getStatus() != 0) {
-            throw new IOException(String.format("Failed to kill container '%s'.", containerId));
+            if(SKIP_FAILJOB_ON_STOP_ERROR) {
+                if (LOGGER.isLoggable(Level.WARNING)) {
+                    LOGGER.log(Level.WARNING, "Failed to kill container {0}, SKIP_FAILJOB_ON_STOP_ERROR is enabled.", containerId);
+                }
+            } else {
+                throw new IOException(String.format("Failed to kill container '%s'.", containerId));
+            }
         }
         if (!SKIP_RM_ON_STOP) {
             rm(launchEnv, containerId);
@@ -198,7 +211,13 @@ public class DockerClient {
         LaunchResult result;
         result = launch(launchEnv, false, "rm", "-f", containerId);
         if (result.getStatus() != 0) {
-            throw new IOException(String.format("Failed to rm container '%s'.", containerId));
+            if(SKIP_FAILJOB_ON_STOP_ERROR) {
+                if (LOGGER.isLoggable(Level.WARNING)) {
+                    LOGGER.log(Level.WARNING, "Failed to rm container {0}, SKIP_FAILJOB_ON_STOP_ERROR is enabled.", containerId);
+                }
+            } else {
+                throw new IOException(String.format("Failed to rm container '%s'.", containerId));
+            }
         }
     }
 
