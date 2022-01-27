@@ -75,24 +75,21 @@ class Docker implements Serializable {
         new Image(this, id)
     }
 
-    String shell() {
-        node {
-            script.isUnix() ? "sh" : "bat"
-        }
+    String shell(boolean isUnix) {
+        isUnix ? "sh" : "bat"
     }
 
-    String asEnv(String var) {
-        node {
-            script.isUnix() ? "$${var}" : "%${var}%"
-        }
+    String asEnv(boolean isUnix, String var) {
+        isUnix ? "$${var}" : "%${var}%"
     }
 
     public Image build(String image, String args = '.') {
         check(image)
         node {
-            def commandLine = 'docker build -t "' + asEnv('JD_IMAGE') + '" ' + args
+            def isUnix = script.isUnix()
+            def commandLine = 'docker build -t "' + asEnv(isUnix, 'JD_IMAGE') + '" ' + args
             script.withEnv(["JD_IMAGE=${image}"]) {
-                script."${shell()}" commandLine
+                script."${shell(isUnix)}" commandLine
             }
             this.image(image)
         }
@@ -127,12 +124,13 @@ class Docker implements Serializable {
         public <V> V inside(String args = '', Closure<V> body) {
             docker.node {
                 def toRun = imageName()
+                def isUnix = docker.script.isUnix()
                 docker.script.withEnv(["JD_ID=${id}", "JD_TO_RUN=${toRun}"]) {
-                    if (toRun != id && docker.script."${docker.shell()}"(script: 'docker inspect -f . "' + docker.asEnv('JD_ID') + '"', returnStatus: true) == 0) {
+                    if (toRun != id && docker.script."${docker.shell(isUnix)}"(script: 'docker inspect -f . "' + docker.asEnv(isUnix, 'JD_ID') + '"', returnStatus: true) == 0) {
                         // Can run it without registry prefix, because it was locally built.
                         toRun = id
                     } else {
-                        if (docker.script."${docker.shell()}"(script: 'docker inspect -f . "' + docker.asEnv('JD_TO_RUN') + '"', returnStatus: true) != 0) {
+                        if (docker.script."${docker.shell(isUnix)}"(script: 'docker inspect -f . "' + docker.asEnv(isUnix, 'JD_TO_RUN') + '"', returnStatus: true) != 0) {
                             // Not yet present locally.
                             // withDockerContainer requires the image to be available locally, since its start phase is not a durable task.
                             pull()
@@ -148,16 +146,18 @@ class Docker implements Serializable {
         public void pull() {
             docker.node {
                 def toPull = imageName()
+                def isUnix = docker.script.isUnix()
                 docker.script.withEnv(["JD_TO_PULL=${toPull}"]) {
-                    docker.script."${docker.shell()}" 'docker pull "' + docker.asEnv('JD_TO_PULL') + '"'
+                    docker.script."${docker.shell(isUnix)}" 'docker pull "' + docker.asEnv(isUnix, 'JD_TO_PULL') + '"'
                 }
             }
         }
 
         public Container run(String args = '', String command = "") {
             docker.node {
-                def container = docker.script."${docker.shell()}"(script: "docker run -d${args != '' ? ' ' + args : ''} ${id}${command != '' ? ' ' + command : ''}", returnStdout: true).trim()
-                new Container(docker, container)
+                def isUnix = docker.script.isUnix()
+                def container = docker.script."${docker.shell(isUnix)}"(script: "docker run -d${args != '' ? ' ' + args : ''} ${id}${command != '' ? ' ' + command : ''}", returnStdout: true).trim()
+                new Container(docker, container, isUnix)
             }
         }
 
@@ -175,8 +175,9 @@ class Docker implements Serializable {
         public void tag(String tagName = parsedId.tag, boolean force = true) {
             docker.node {
                 def taggedImageName = toQualifiedImageName(parsedId.userAndRepo + ':' + tagName)
+                def isUnix = docker.script.isUnix()
                 docker.script.withEnv(["JD_ID=${id}", "JD_TAGGED_IMAGE_NAME=${taggedImageName}"]) {
-                    docker.script."${docker.shell()}" 'docker tag "' + docker.asEnv('JD_ID') + '" "' + docker.asEnv('JD_TAGGED_IMAGE_NAME') + '"'
+                    docker.script."${docker.shell(isUnix)}" 'docker tag "' + docker.asEnv(isUnix, 'JD_ID') + '" "' + docker.asEnv(isUnix, 'JD_TAGGED_IMAGE_NAME') + '"'
                 }
                 return taggedImageName;
             }
@@ -187,8 +188,9 @@ class Docker implements Serializable {
                 // The image may have already been tagged, so the tagging may be a no-op.
                 // That's ok since tagging is cheap.
                 def taggedImageName = tag(tagName, force)
+                def isUnix = docker.script.isUnix()
                 docker.script.withEnv(["JD_TAGGED_IMAGE_NAME=${taggedImageName}"]) {
-                    docker.script."${docker.shell()}" 'docker push "' + docker.asEnv('JD_TAGGED_IMAGE_NAME') + '"'
+                    docker.script."${docker.shell(isUnix)}" 'docker push "' + docker.asEnv(isUnix, 'JD_TAGGED_IMAGE_NAME') + '"'
                 }
             }
         }
@@ -198,22 +200,24 @@ class Docker implements Serializable {
     public static class Container implements Serializable {
 
         private final Docker docker;
+        private final boolean isUnix;
         public final String id;
 
-        private Container(Docker docker, String id) {
+        private Container(Docker docker, String id, boolean isUnix) {
             this.docker = docker
             this.id = id
+            this.isUnix = isUnix;
         }
 
         public void stop() {
             docker.script.withEnv(["JD_ID=${id}"]) {
-                docker.script."${docker.shell()}" 'docker stop "' + docker.asEnv('JD_ID') + '" && docker rm -f "' + docker.asEnv('JD_ID') + '"'
+                docker.script."${docker.shell(isUnix)}" 'docker stop "' + docker.asEnv(isUnix,'JD_ID') + '" && docker rm -f "' + docker.asEnv(isUnix, 'JD_ID') + '"'
             }
         }
 
         public String port(int port) {
             docker.script.withEnv(["JD_ID=${id}", "JD_PORT=${port}"]) {
-                docker.script."${docker.shell()}"(script: 'docker port "' + docker.asEnv('JD_ID') + '" "' + docker.asEnv('JD_PORT') + '"', returnStdout: true).trim()
+                docker.script."${docker.shell(isUnix)}"(script: 'docker port "' + docker.asEnv(isUnix, 'JD_ID') + '" "' + docker.asEnv(isUnix, 'JD_PORT') + '"', returnStdout: true).trim()
             }
         }
     }
