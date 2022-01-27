@@ -148,9 +148,9 @@ class Docker implements Serializable {
             }
         }
 
-        public Container run(String args = '', String command = "") {
+        public Container run(String args = '', String command = "", boolean foreground = false) {
             docker.node {
-                def container = docker.script."${docker.shell()}"(script: "docker run -d${args != '' ? ' ' + args : ''} ${id}${command != '' ? ' ' + command : ''}", returnStdout: true).trim()
+                def container = docker.script."${docker.shell()}"(script: "docker run ${!foreground ? '-d' : ''} ${args != '' ? ' ' + args : ''} ${id}${command != '' ? ' ' + command : ''}", returnStdout: true).trim()
                 new Container(docker, container)
             }
         }
