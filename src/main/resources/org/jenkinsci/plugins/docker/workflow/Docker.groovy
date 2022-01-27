@@ -80,7 +80,7 @@ class Docker implements Serializable {
     }
 
     String asEnv(boolean isUnix, String var) {
-        isUnix ? "$${var}" : "%${var}%"
+        isUnix ? "\$${var}" : "%${var}%"
     }
 
     public Image build(String image, String args = '.') {
