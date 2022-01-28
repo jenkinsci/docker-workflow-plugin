@@ -455,4 +455,23 @@ public class WithContainerStepTest {
         }
     }
 
+    @Test
+    @Issue("JENKINS-64954")
+    public void dockerConnectionTracking() {
+        story.then(r -> {
+            DockerTestUtil.assumeDocker();
+            WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+            p.setDefinition(new CpsFlowDefinition("node {\n"
+                + "    docker.image(\"docker:dind\").withRun(\"--privileged\", \"dockerd --tls=false --host 0.0.0.0\") { dockerContainer ->\n"
+                + "        docker.image(\"docker:dind\").inside(\"--link ${dockerContainer.id}:docker --entrypoint=''\") {\n"
+                + "            docker.withServer(\"tcp://docker\") {\n"
+                + "                sh \"echo with nested docker\"\n"
+                + "            }\n"
+                + "        }\n"
+                + "    }\n"
+                + "}", true));
+            WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+            story.j.assertLogContains("with nested docker", b);
+        });
+    }
 }

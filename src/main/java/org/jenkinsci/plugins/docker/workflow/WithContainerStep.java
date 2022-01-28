@@ -43,6 +43,7 @@ import hudson.util.VersionNumber;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -207,8 +208,9 @@ public class WithContainerStep extends AbstractStepImpl {
             }
 
             ImageAction.add(step.image, run);
+            String dockerHost = envHost.get("DOCKER_HOST", "unix:///var/run/docker.sock");
             getContext().newBodyInvoker().
-                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws, toolName, dockerVersion))).
+                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, dockerHost, envHost, ws, toolName, dockerVersion))).
                     withCallback(new Callback(container, toolName)).
                     start();
             return false;
@@ -241,14 +243,16 @@ public class WithContainerStep extends AbstractStepImpl {
 
         private static final long serialVersionUID = 1;
         private final String container;
+        private final String dockerHost;
         private final String[] envHost;
         private final String ws;
         private final @CheckForNull String toolName;
         private final boolean hasEnv;
         private final boolean hasWorkdir;
 
-        Decorator(String container, EnvVars envHost, String ws, String toolName, VersionNumber dockerVersion) {
+        Decorator(String container, String dockerHost, EnvVars envHost, String ws, String toolName, VersionNumber dockerVersion) {
             this.container = container;
+            this.dockerHost = dockerHost;
             this.envHost = Util.mapToEnv(envHost);
             this.ws = ws;
             this.toolName = toolName;
@@ -342,6 +346,8 @@ public class WithContainerStep extends AbstractStepImpl {
                     System.arraycopy(masksPrefix, 0, masks, 0, masksPrefix.length);
                     System.arraycopy(originalMasks, 0, masks, prefix.size(), originalMasks.length);
                     starter.masks(masks);
+
+                    starter.envs(Collections.singletonMap("DOCKER_HOST", dockerHost));
 
                     return super.launch(starter);
                 }
