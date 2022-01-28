@@ -74,34 +74,68 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+/**
+ * The type With container step.
+ */
 public class WithContainerStep extends AbstractStepImpl {
-    
+
     private static final Logger LOGGER = Logger.getLogger(WithContainerStep.class.getName());
     private final @Nonnull String image;
     private String args;
     private String toolName;
+    private static boolean needToContainerizePath = false;
 
+    /**
+     * Instantiates a new With container step.
+     *
+     * @param image the image
+     */
     @DataBoundConstructor public WithContainerStep(@Nonnull String image) {
         this.image = image;
     }
-    
+
+    /**
+     * Gets image.
+     *
+     * @return the image
+     */
     public String getImage() {
         return image;
     }
 
+    /**
+     * Sets args.
+     *
+     * @param args the args
+     */
     @DataBoundSetter
     public void setArgs(String args) {
         this.args = Util.fixEmpty(args);
     }
 
+    /**
+     * Gets args.
+     *
+     * @return the args
+     */
     public String getArgs() {
         return args;
     }
 
+    /**
+     * Gets tool name.
+     *
+     * @return the tool name
+     */
     public String getToolName() {
         return toolName;
     }
 
+    /**
+     * Sets tool name.
+     *
+     * @param toolName the tool name
+     */
     @DataBoundSetter public void setToolName(String toolName) {
         this.toolName = Util.fixEmpty(toolName);
     }
@@ -110,7 +144,10 @@ public class WithContainerStep extends AbstractStepImpl {
         new DockerClient(launcher, node, toolName).stop(launcherEnv, container);
     }
 
-    // TODO switch to GeneralNonBlockingStepExecution
+    /**
+     * The type Execution.
+     */
+// TODO switch to GeneralNonBlockingStepExecution
     public static class Execution extends AbstractStepExecutionImpl {
         private static final long serialVersionUID = 1;
         @Inject(optional=true) private transient WithContainerStep step;
@@ -125,6 +162,9 @@ public class WithContainerStep extends AbstractStepImpl {
         private String container;
         private String toolName;
 
+        /**
+         * Instantiates a new Execution.
+         */
         public Execution() {
         }
 
@@ -144,6 +184,14 @@ public class WithContainerStep extends AbstractStepImpl {
             DockerClient dockerClient = launcher.isUnix()
                 ? new DockerClient(launcher, node, toolName)
                 : new WindowsDockerClient(launcher, node, toolName);
+
+            String containerOsType = dockerClient.inspect(new EnvVars(), step.image, ".Os");
+
+            if (!launcher.isUnix() && containerOsType != null && containerOsType.equalsIgnoreCase("linux")) {
+                needToContainerizePath = true;
+                dockerClient.setNeedToContainerizePath(true);
+                dockerClient.setContainerUnix(true);
+            }
 
             VersionNumber dockerVersion = dockerClient.version();
             if (dockerVersion != null) {
@@ -195,7 +243,7 @@ public class WithContainerStep extends AbstractStepImpl {
                 volumes.put(tmp, tmp);
             }
 
-            String command = launcher.isUnix() ? "cat" : "cmd.exe";
+            String command = dockerClient.runCommand();
             container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ command);
             final List<String> ps = dockerClient.listProcess(env, container);
             if (!ps.contains(command)) {
@@ -208,9 +256,9 @@ public class WithContainerStep extends AbstractStepImpl {
 
             ImageAction.add(step.image, run);
             getContext().newBodyInvoker().
-                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws, toolName, dockerVersion))).
-                    withCallback(new Callback(container, toolName)).
-                    start();
+                withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws, toolName, dockerVersion))).
+                withCallback(new Callback(container, toolName)).
+                start();
             return false;
         }
 
@@ -247,6 +295,15 @@ public class WithContainerStep extends AbstractStepImpl {
         private final boolean hasEnv;
         private final boolean hasWorkdir;
 
+        /**
+         * Instantiates a new Decorator.
+         *
+         * @param container     the container
+         * @param envHost       the env host
+         * @param ws            the ws
+         * @param toolName      the tool name
+         * @param dockerVersion the docker version
+         */
         Decorator(String container, EnvVars envHost, String ws, String toolName, VersionNumber dockerVersion) {
             this.container = container;
             this.envHost = Util.mapToEnv(envHost);
@@ -322,8 +379,8 @@ public class WithContainerStep extends AbstractStepImpl {
                                                     .collect(Collectors.toList()));
                         }
                         masksPrefixList.addAll(envReduced.stream()
-                                                         .map(v -> true)
-                                                         .collect(Collectors.toList()));
+                            .map(v -> true)
+                            .collect(Collectors.toList()));
                     }
 
                     boolean[] originalMasks = starter.masks();
@@ -343,8 +400,17 @@ public class WithContainerStep extends AbstractStepImpl {
                     System.arraycopy(originalMasks, 0, masks, prefix.size(), originalMasks.length);
                     starter.masks(masks);
 
+                    if (needToContainerizePath && ws != null) {
+                        String wsTrimmed = ws.replaceAll("[/\\\\]+$", "");
+                        List<String> cmds = starter.cmds();
+                        for (int i = 0; i < cmds.size(); i++) {
+                            cmds.set(i, WindowsDockerClient.containerizePath(cmds.get(i), wsTrimmed));
+                        }
+                    }
+
                     return super.launch(starter);
                 }
+
                 @Override public void kill(Map<String,String> modelEnvVars) throws IOException, InterruptedException {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     String executable = getExecutable();
@@ -393,6 +459,12 @@ public class WithContainerStep extends AbstractStepImpl {
         private final String container;
         private final String toolName;
 
+        /**
+         * Instantiates a new Callback.
+         *
+         * @param container the container
+         * @param toolName  the tool name
+         */
         Callback(String container, String toolName) {
             this.container = container;
             this.toolName = toolName;
@@ -404,8 +476,14 @@ public class WithContainerStep extends AbstractStepImpl {
 
     }
 
+    /**
+     * The type Descriptor.
+     */
     @Extension public static class DescriptorImpl extends AbstractStepDescriptorImpl {
 
+        /**
+         * Instantiates a new Descriptor.
+         */
         public DescriptorImpl() {
             super(Execution.class);
         }
