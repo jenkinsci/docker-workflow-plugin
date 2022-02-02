@@ -37,6 +37,7 @@ import hudson.model.Computer;
 import hudson.model.Node;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.os.WindowsUtil;
 import hudson.slaves.WorkspaceList;
 import hudson.util.VersionNumber;
 import java.util.ArrayList;
@@ -299,7 +300,11 @@ public class WithContainerStep extends AbstractStepImpl {
                         for (String e : envReduced) {
                             prefix.add("--env");
                             masksPrefixList.add(false);
-                            prefix.add(e);
+                            if (super.isUnix()) {
+                                prefix.add(e);
+                            } else {
+                                prefix.add(WindowsUtil.quoteArgument(e));
+                            }
                             masksPrefixList.add(true);
                         }
                         prefix.add(container);
@@ -309,7 +314,13 @@ public class WithContainerStep extends AbstractStepImpl {
                         masksPrefixList.add(false);
                         prefix.add("env");
                         masksPrefixList.add(false);
-                        prefix.addAll(envReduced);
+                        if (super.isUnix()) {
+                            prefix.addAll(envReduced);
+                        } else {
+                            prefix.addAll(envReduced.stream()
+                                                    .map(v -> WindowsUtil.quoteArgument(v))
+                                                    .collect(Collectors.toList()));
+                        }
                         masksPrefixList.addAll(envReduced.stream()
                                                          .map(v -> true)
                                                          .collect(Collectors.toList()));
