@@ -28,11 +28,11 @@ import com.gargoylesoftware.htmlunit.HttpMethod;
 import com.gargoylesoftware.htmlunit.WebRequest;
 import com.gargoylesoftware.htmlunit.WebResponse;
 import com.gargoylesoftware.htmlunit.util.NameValuePair;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.Describable;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nonnull;
 import jenkins.model.OptionalJobProperty;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -127,7 +127,7 @@ public class DockerDirectiveGeneratorTest {
                 "}");
     }
 
-    private void assertGenerateDirective(@Nonnull AbstractDirective desc, @Nonnull String responseText) throws Exception {
+    private void assertGenerateDirective(@NonNull AbstractDirective desc, @NonNull String responseText) throws Exception {
         // First, make sure the expected response text actually matches the toGroovy for the directive.
         assertEquals(desc.toGroovy(true), responseText);
 

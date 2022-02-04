@@ -24,12 +24,12 @@
 package org.jenkinsci.plugins.docker.workflow;
 
 import com.google.common.collect.ImmutableSet;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.model.Run;
 import java.io.IOException;
 import java.util.Set;
-import javax.annotation.Nonnull;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerServerEndpoint;
 import org.jenkinsci.plugins.docker.commons.credentials.KeyMaterialFactory;
 import org.jenkinsci.plugins.workflow.steps.Step;
@@ -40,9 +40,9 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 public class ServerEndpointStep extends Step {
     
-    private final @Nonnull DockerServerEndpoint server;
+    private final @NonNull DockerServerEndpoint server;
 
-    @DataBoundConstructor public ServerEndpointStep(@Nonnull DockerServerEndpoint server) {
+    @DataBoundConstructor public ServerEndpointStep(@NonNull DockerServerEndpoint server) {
         assert server != null;
         this.server = server;
     }

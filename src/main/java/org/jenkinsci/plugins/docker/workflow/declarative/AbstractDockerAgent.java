@@ -25,11 +25,11 @@
 package org.jenkinsci.plugins.docker.workflow.declarative;
 
 import java.util.Map;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
+
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.jenkinsci.plugins.pipeline.modeldefinition.agent.DeclarativeAgent;
 import org.jenkinsci.plugins.pipeline.modeldefinition.options.DeclarativeOption;
-import org.jenkinsci.plugins.docker.workflow.declarative.ContainerPerStage;
 import org.kohsuke.stapler.DataBoundSetter;
 
 public abstract class AbstractDockerAgent<D extends AbstractDockerAgent<D>> extends DeclarativeAgent<D> {
@@ -41,8 +41,7 @@ public abstract class AbstractDockerAgent<D extends AbstractDockerAgent<D>> exte
     protected boolean reuseNode;
     protected boolean containerPerStageRoot;
 
-    public @Nullable
-    String getRegistryUrl() {
+    public @Nullable String getRegistryUrl() {
         return registryUrl;
     }
 

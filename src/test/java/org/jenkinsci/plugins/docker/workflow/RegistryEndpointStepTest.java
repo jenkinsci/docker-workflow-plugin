@@ -29,6 +29,7 @@ import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.google.common.collect.ImmutableSet;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Launcher;
 import hudson.LauncherDecorator;
 import hudson.model.Computer;
@@ -67,7 +68,6 @@ import org.jvnet.hudson.test.MockQueueItemAuthenticator;
 import org.jvnet.hudson.test.TestExtension;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import javax.annotation.Nonnull;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -204,7 +204,7 @@ public class RegistryEndpointStepTest {
             }
 
             @Override
-            public void stop(@Nonnull Throwable throwable) {
+            public void stop(@NonNull Throwable throwable) {
                 
             }
         }

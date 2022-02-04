@@ -24,6 +24,8 @@
 package org.jenkinsci.plugins.docker.workflow;
 
 import com.google.common.collect.ImmutableSet;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -38,8 +40,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 import org.jenkinsci.plugins.docker.commons.credentials.KeyMaterialFactory;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
@@ -53,10 +53,10 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 public class RegistryEndpointStep extends Step {
     
-    private final @Nonnull DockerRegistryEndpoint registry;
+    private final @NonNull DockerRegistryEndpoint registry;
     private @CheckForNull String toolName;
 
-    @DataBoundConstructor public RegistryEndpointStep(@Nonnull DockerRegistryEndpoint registry) {
+    @DataBoundConstructor public RegistryEndpointStep(@NonNull DockerRegistryEndpoint registry) {
         assert registry != null;
         this.registry = registry;
     }
