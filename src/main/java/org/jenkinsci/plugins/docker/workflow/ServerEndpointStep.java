@@ -29,6 +29,7 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.model.Run;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.Set;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerServerEndpoint;
 import org.jenkinsci.plugins.docker.commons.credentials.KeyMaterialFactory;
@@ -43,10 +44,10 @@ public class ServerEndpointStep extends Step {
     private final @NonNull DockerServerEndpoint server;
 
     @DataBoundConstructor public ServerEndpointStep(@NonNull DockerServerEndpoint server) {
-        assert server != null;
-        this.server = server;
+        this.server = Objects.requireNonNull(server, "server must not be null");;
     }
-    
+
+    @NonNull
     public DockerServerEndpoint getServer() {
         return server;
     }
@@ -86,6 +87,7 @@ public class ServerEndpointStep extends Step {
             return "withDockerServer";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Sets up Docker server endpoint";
         }

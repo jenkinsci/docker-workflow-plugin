@@ -37,8 +37,6 @@ import hudson.model.Item;
 import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.User;
-import hudson.security.ACL;
-import hudson.security.ACLContext;
 import jenkins.model.Jenkins;
 import jenkins.security.QueueItemAuthenticatorConfiguration;
 import org.acegisecurity.Authentication;
@@ -210,7 +208,8 @@ public class RegistryEndpointStepTest {
         }
         private static class Decorator extends LauncherDecorator implements Serializable {
             private static final long serialVersionUID = 1;
-            @Override public Launcher decorate(Launcher launcher, Node node) {
+            @NonNull
+            @Override public Launcher decorate(@NonNull Launcher launcher, @NonNull Node node) {
                 return launcher.decorateByPrefix("echo");
             }
         }
@@ -224,6 +223,7 @@ public class RegistryEndpointStepTest {
             @Override public String getFunctionName() {
                 return "mockDockerLoginWithEcho";
             }
+            @NonNull
             @Override public String getDisplayName() {
                 return "Mock Docker Login with Echo";
             }

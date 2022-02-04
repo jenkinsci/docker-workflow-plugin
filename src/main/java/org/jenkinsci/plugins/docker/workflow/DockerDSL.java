@@ -23,6 +23,7 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import groovy.lang.Binding;
 import hudson.Extension;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
@@ -33,10 +34,12 @@ import org.jenkinsci.plugins.workflow.cps.GlobalVariable;
  */
 @Extension public class DockerDSL extends GlobalVariable {
 
+    @NonNull
     @Override public String getName() {
         return "docker";
     }
 
+    @NonNull
     @Override public Object getValue(CpsScript script) throws Exception {
         Binding binding = script.getBinding();
         Object docker;

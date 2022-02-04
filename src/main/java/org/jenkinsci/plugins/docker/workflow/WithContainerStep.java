@@ -84,7 +84,8 @@ public class WithContainerStep extends AbstractStepImpl {
     @DataBoundConstructor public WithContainerStep(@NonNull String image) {
         this.image = image;
     }
-    
+
+    @NonNull
     public String getImage() {
         return image;
     }
@@ -247,7 +248,7 @@ public class WithContainerStep extends AbstractStepImpl {
         private final boolean hasEnv;
         private final boolean hasWorkdir;
 
-        Decorator(String container, EnvVars envHost, String ws, String toolName, VersionNumber dockerVersion) {
+        Decorator(String container, EnvVars envHost, String ws, @CheckForNull String toolName, VersionNumber dockerVersion) {
             this.container = container;
             this.envHost = Util.mapToEnv(envHost);
             this.ws = ws;
@@ -256,7 +257,8 @@ public class WithContainerStep extends AbstractStepImpl {
             this.hasWorkdir = dockerVersion != null && dockerVersion.compareTo(new VersionNumber("17.12")) >= 0;
         }
 
-        @Override public Launcher decorate(final Launcher launcher, final Node node) {
+        @NonNull
+        @Override public Launcher decorate(@NonNull final Launcher launcher, @NonNull final Node node) {
             return new Launcher.DecoratedLauncher(launcher) {
                 @Override public Proc launch(Launcher.ProcStarter starter) throws IOException {
                     String executable;
@@ -414,6 +416,7 @@ public class WithContainerStep extends AbstractStepImpl {
             return "withDockerContainer";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Run build steps inside a Docker container";
         }

@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
@@ -57,14 +58,15 @@ public class RegistryEndpointStep extends Step {
     private @CheckForNull String toolName;
 
     @DataBoundConstructor public RegistryEndpointStep(@NonNull DockerRegistryEndpoint registry) {
-        assert registry != null;
-        this.registry = registry;
+        this.registry = Objects.requireNonNull(registry, "registry must not be null");;
     }
-    
+
+    @NonNull
     public DockerRegistryEndpoint getRegistry() {
         return registry;
     }
 
+    @CheckForNull
     public String getToolName() {
         return toolName;
     }
@@ -111,6 +113,7 @@ public class RegistryEndpointStep extends Step {
             return "withDockerRegistry";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Sets up Docker registry endpoint";
         }

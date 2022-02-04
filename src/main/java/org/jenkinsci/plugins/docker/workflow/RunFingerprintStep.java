@@ -23,6 +23,7 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import com.google.inject.Inject;
 import hudson.EnvVars;
@@ -98,6 +99,7 @@ public class RunFingerprintStep extends AbstractStepImpl {
             return "dockerFingerprintRun";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Record trace of a Docker image run in a container";
         }
