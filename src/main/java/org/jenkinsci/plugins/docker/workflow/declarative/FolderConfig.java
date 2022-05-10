@@ -28,6 +28,8 @@ package org.jenkinsci.plugins.docker.workflow.declarative;
 import com.cloudbees.hudson.plugins.folder.AbstractFolder;
 import com.cloudbees.hudson.plugins.folder.AbstractFolderProperty;
 import com.cloudbees.hudson.plugins.folder.AbstractFolderPropertyDescriptor;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
 import hudson.model.Item;
 import hudson.model.ItemGroup;
@@ -39,9 +41,6 @@ import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 /**
  * Provides folder level configuration.
@@ -91,7 +90,7 @@ public class FolderConfig extends AbstractFolderProperty<AbstractFolder<?>> {
             Items.XSTREAM2.addCompatibilityAlias("org.jenkinsci.plugins.pipeline.modeldefinition.config.FolderConfig", FolderConfig.class);
         }
 
-        @Nonnull
+        @NonNull
         @Override
         public String getDisplayName() {
             return Messages.PipelineModelDefinition_DisplayName();

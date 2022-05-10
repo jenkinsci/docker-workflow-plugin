@@ -24,12 +24,11 @@
 
 package org.jenkinsci.plugins.docker.workflow.declarative;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.ExtensionList;
 import hudson.ExtensionPoint;
 import hudson.model.Run;
-
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
 
 /**
  * Provider of configuration options to use for {@code agent docker}.

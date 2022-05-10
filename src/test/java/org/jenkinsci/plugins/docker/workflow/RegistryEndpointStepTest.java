@@ -29,6 +29,7 @@ import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.google.common.collect.ImmutableSet;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Launcher;
 import hudson.LauncherDecorator;
 import hudson.model.Computer;
@@ -36,8 +37,6 @@ import hudson.model.Item;
 import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.User;
-import hudson.security.ACL;
-import hudson.security.ACLContext;
 import jenkins.model.Jenkins;
 import jenkins.security.QueueItemAuthenticatorConfiguration;
 import org.acegisecurity.Authentication;
@@ -67,7 +66,6 @@ import org.jvnet.hudson.test.MockQueueItemAuthenticator;
 import org.jvnet.hudson.test.TestExtension;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import javax.annotation.Nonnull;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -204,13 +202,14 @@ public class RegistryEndpointStepTest {
             }
 
             @Override
-            public void stop(@Nonnull Throwable throwable) {
+            public void stop(@NonNull Throwable throwable) {
                 
             }
         }
         private static class Decorator extends LauncherDecorator implements Serializable {
             private static final long serialVersionUID = 1;
-            @Override public Launcher decorate(Launcher launcher, Node node) {
+            @NonNull
+            @Override public Launcher decorate(@NonNull Launcher launcher, @NonNull Node node) {
                 return launcher.decorateByPrefix("echo");
             }
         }
@@ -224,6 +223,7 @@ public class RegistryEndpointStepTest {
             @Override public String getFunctionName() {
                 return "mockDockerLoginWithEcho";
             }
+            @NonNull
             @Override public String getDisplayName() {
                 return "Mock Docker Login with Echo";
             }

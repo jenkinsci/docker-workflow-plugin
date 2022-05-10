@@ -24,6 +24,7 @@
 
 package org.jenkinsci.plugins.docker.workflow.declarative;
 
+import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.model.Run;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.pipeline.modeldefinition.agent.impl.Label;
@@ -34,7 +35,6 @@ import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jenkinsci.plugins.workflow.cps.CpsThread;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collections;
