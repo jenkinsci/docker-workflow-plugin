@@ -30,59 +30,89 @@ import hudson.tools.ToolProperty;
 import hudson.util.StreamTaskListener;
 import hudson.util.VersionNumber;
 import org.apache.commons.io.FileUtils;
+import org.hamcrest.Matcher;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runners.model.Statement;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
-import org.jvnet.hudson.test.RestartableJenkinsRule;
+import org.jvnet.hudson.test.JenkinsSessionRule;
+import org.jvnet.hudson.test.LoggerRule;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.logging.Level;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInRelativeOrder.containsInRelativeOrder;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.hamcrest.core.StringRegularExpression.matchesRegex;
 import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeDocker;
 import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeNotWindows;
+import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.randomTcpPort;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
+@RunWith(Parameterized.class)
 public class DockerDSLTest {
 
     @ClassRule public static BuildWatcher buildWatcher = new BuildWatcher();
-    @Rule public RestartableJenkinsRule story = new RestartableJenkinsRule();
+    @Rule public JenkinsSessionRule story = new JenkinsSessionRule();
+    @Rule public LoggerRule logger = new LoggerRule();
 
-    @Test public void firstDoNoHarm() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
+    private boolean unsafeParameterExpansion;
+
+    public DockerDSLTest(final boolean unsafeParameterExpansion) {
+        this.unsafeParameterExpansion = unsafeParameterExpansion;
+    }
+
+    @Parameterized.Parameters(name = "upx:{0}")
+    public static Object[] data() {
+        return new Object[]{false, true};
+    }
+
+    @Before
+    public void setUp() {
+        DockerDSL.UNSAFE_PARAMETER_EXPANDING = unsafeParameterExpansion;
+        logger.record(DockerDSL.class.getName(), Level.FINE).capture(1000);
+    }
+
+    @After
+    public void tearDown() {
+        DockerDSL.UNSAFE_PARAMETER_EXPANDING = false;
+    }
+
+    @Test public void firstDoNoHarm() throws Throwable {
+        story.then(j -> {
                 assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition("semaphore 'wait'", true));
                 WorkflowRun b = p.scheduleBuild2(0).waitForStart();
                 SemaphoreStep.waitForStart("wait/1", b);
-            }
+
         });
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                WorkflowJob p = story.j.jenkins.getItemByFullName("prj", WorkflowJob.class);
+        story.then(j -> {
+                WorkflowJob p = j.jenkins.getItemByFullName("prj", WorkflowJob.class);
                 WorkflowRun b = p.getLastBuild();
                 assertEquals(Collections.<String>emptySet(), grep(b.getRootDir(), "org.jenkinsci.plugins.docker.workflow.Docker"));
                 SemaphoreStep.success("wait/1", null);
-                story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b));
-            }
+                j.assertBuildStatusSuccess(j.waitForCompletion(b));
+
         });
     }
     // TODO copied from BindingStepTest, should be made into a utility in Jenkins test harness perhaps (or JenkinsRuleExt as a first step)
@@ -107,11 +137,10 @@ public class DockerDSLTest {
     }
 
 
-    @Test public void inside() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
+    @Test public void inside() throws Throwable {
+        story.then(j -> {
                 assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "def r = docker.image('httpd:2.4.12').inside {\n" +
                     "  semaphore 'wait'\n" +
@@ -120,43 +149,45 @@ public class DockerDSLTest {
                     "}; echo \"the answer is ${r}\"", true));
                 WorkflowRun b = p.scheduleBuild2(0).waitForStart();
                 SemaphoreStep.waitForStart("wait/1", b);
-            }
+
         });
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
+        story.then(j -> {
                 SemaphoreStep.success("wait/1", null);
-                WorkflowJob p = story.j.jenkins.getItemByFullName("prj", WorkflowJob.class);
+                WorkflowJob p = j.jenkins.getItemByFullName("prj", WorkflowJob.class);
                 WorkflowRun b = p.getLastBuild();
-                story.j.assertLogContains("Require method GET POST OPTIONS", story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
-                story.j.assertLogContains("the answer is 42", b);
-            }
+                j.assertLogContains("Require method GET POST OPTIONS", j.assertBuildStatusSuccess(j.waitForCompletion(b)));
+                j.assertLogContains("the answer is 42", b);
+                Matcher<String> matcher = containsString("WARNING! Unsafe parameter expansion is enabled.");
+                if (unsafeParameterExpansion) {
+                    assertThat(logger.getMessages(), containsInRelativeOrder(matcher));
+                } else {
+                    assertThat(logger.getMessages(), not(containsInRelativeOrder(matcher)));
+                }
         });
     }
 
     @Issue("JENKINS-37987")
-    @Test public void entrypoint() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
+    @Test public void entrypoint() throws Throwable {
+        story.then(j -> {
                 assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
                         "docker.image('maven:3.5.3-jdk-8').inside {\n" +
                         "  sh 'mvn -version'\n" +
                         "}", true));
 
-                story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-            }
+                j.assertBuildStatusSuccess(p.scheduleBuild2(0));
         });
     }
 
-    @Test public void endpoints() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
+    @Test public void endpoints() throws Throwable {
+        final int port = randomTcpPort();
+        story.then(j -> {
                 assumeNotWindows();
 
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
-                    "docker.withServer('tcp://host:1234') {\n" +
+                    "docker.withServer('tcp://host:"+port+"') {\n" +
                     "  docker.withRegistry('https://docker.my.com/') {\n" +
                     "    semaphore 'wait'\n" +
                     "    sh 'echo would be connecting to $DOCKER_HOST'\n" +
@@ -165,24 +196,20 @@ public class DockerDSLTest {
                     "}", true));
                 WorkflowRun b = p.scheduleBuild2(0).waitForStart();
                 SemaphoreStep.waitForStart("wait/1", b);
-            }
         });
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
+        story.then(j -> {
                 SemaphoreStep.success("wait/1", null);
-                WorkflowJob p = story.j.jenkins.getItemByFullName("prj", WorkflowJob.class);
-                WorkflowRun b = story.j.assertBuildStatusSuccess(story.j.waitForCompletion(p.getLastBuild()));
-                story.j.assertLogContains("would be connecting to tcp://host:1234", b);
-                story.j.assertLogContains("image name is docker.my.com/whatever", b);
-            }
+                WorkflowJob p = j.jenkins.getItemByFullName("prj", WorkflowJob.class);
+                WorkflowRun b = j.assertBuildStatusSuccess(j.waitForCompletion(p.getLastBuild()));
+                j.assertLogContains("would be connecting to tcp://host:" + port, b);
+                j.assertLogContains("image name is docker.my.com/whatever", b);
         });
     }
 
-    @Test public void runArgs() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
+    @Test public void runArgs() throws Throwable {
+        story.then(j -> {
                 assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                     "  def img = docker.image('httpd:2.4.12')\n" +
@@ -193,16 +220,20 @@ public class DockerDSLTest {
                     "  img.inside {}\n" +
                     "  img.inside('--memory-swap=-1') {}\n" +
                 "}", true));
-                story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-            }
+                j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                final Matcher<String> stringMatcher = containsString("WARNING! Unsafe parameter expansion is enabled.");
+                if (unsafeParameterExpansion) {
+                    assertThat(logger.getMessages(), containsInRelativeOrder(stringMatcher));
+                } else {
+                    assertThat(logger.getMessages(), not(containsInRelativeOrder(stringMatcher)));
+                }
         });
     }
 
-    @Test public void withRun() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
+    @Test public void withRun() throws Throwable {
+        story.then(j -> {
                 assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "def r = docker.image('httpd:2.4.12').withRun {c ->\n" +
                     "  semaphore 'wait'\n" +
@@ -211,38 +242,32 @@ public class DockerDSLTest {
                     "}; echo \"the answer is ${r}\"", true));
                 WorkflowRun b = p.scheduleBuild2(0).waitForStart();
                 SemaphoreStep.waitForStart("wait/1", b);
-            }
         });
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
+        story.then(j -> {
                 SemaphoreStep.success("wait/1", null);
-                WorkflowJob p = story.j.jenkins.getItemByFullName("prj", WorkflowJob.class);
+                WorkflowJob p = j.jenkins.getItemByFullName("prj", WorkflowJob.class);
                 WorkflowRun b = p.getLastBuild();
-                story.j.assertLogContains("Require method GET POST OPTIONS", story.j.assertBuildStatusSuccess(story.j.waitForCompletion(b)));
-                story.j.assertLogContains("the answer is 42", b);
-            }
+                j.assertLogContains("Require method GET POST OPTIONS", j.assertBuildStatusSuccess(j.waitForCompletion(b)));
+                j.assertLogContains("the answer is 42", b);
         });
     }
 
-    @Test public void withRunCommand() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
+    @Test public void withRunCommand() throws Throwable {
+        story.then(j -> {
                 assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                         " docker.image('maven:3.3.9-jdk-8').withRun(\"--entrypoint mvn\", \"-version\") {c ->\n" +
                                 "  sh \"docker logs ${c.id}\"" +
                                 "}", true));
-                story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-            }
+                j.assertBuildStatusSuccess(p.scheduleBuild2(0));
         });
     }
 
-    @Test public void build() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
+    @Test public void build() throws Throwable {
+        story.then(j -> {
                 assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                     "  writeFile file: 'stuff1', text: 'hello'\n" +
@@ -252,26 +277,30 @@ public class DockerDSLTest {
                     "  def built = docker.build 'hello-world-stuff'\n" +
                     "  echo \"built ${built.id}\"\n" +
                     "}", true));
-                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                WorkflowRun b = j.assertBuildStatusSuccess(p.scheduleBuild2(0));
                 DockerClient client = new DockerClient(new Launcher.LocalLauncher(StreamTaskListener.NULL), null, null);
 
                 String descendantImageId1 = client.inspect(new EnvVars(), "hello-world-stuff", ".Id");
-                story.j.assertLogContains("built hello-world-stuff", b);
-                story.j.assertLogContains(descendantImageId1.replaceFirst("^sha256:", "").substring(0, 12), b);
+                j.assertLogContains("built hello-world-stuff", b);
+                j.assertLogContains(descendantImageId1.replaceFirst("^sha256:", "").substring(0, 12), b);
 
-                b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                b = j.assertBuildStatusSuccess(p.scheduleBuild2(0));
                 String descendantImageId2 = client.inspect(new EnvVars(), "hello-world-stuff", ".Id");
-                story.j.assertLogContains("built hello-world-stuff", b);
-                story.j.assertLogContains(descendantImageId2.replaceFirst("^sha256:", "").substring(0, 12), b);
-            }
+                j.assertLogContains("built hello-world-stuff", b);
+                j.assertLogContains(descendantImageId2.replaceFirst("^sha256:", "").substring(0, 12), b);
+                final Matcher<String> stringMatcher = containsString("WARNING! Unsafe parameter expansion is enabled.");
+                if (unsafeParameterExpansion) {
+                    assertThat(logger.getMessages(), containsInRelativeOrder(stringMatcher));
+                } else {
+                    assertThat(logger.getMessages(), not(containsInRelativeOrder(stringMatcher)));
+                }
         });
     }
 
-    @Test public void buildWithMultiStage() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
+    @Test public void buildWithMultiStage() throws Throwable {
+        story.then(j -> {
                 assumeDocker(new VersionNumber("17.05"));
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                         "node {\n" +
                                 "  sh 'mkdir -p child'\n" +
@@ -296,23 +325,21 @@ public class DockerDSLTest {
 // This is due to a Docker bug: https://github.com/docker/for-mac/issues/1751
 // It can be re-added when that is fixed
 
-                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                WorkflowRun b = j.assertBuildStatusSuccess(p.scheduleBuild2(0));
                 DockerClient client = new DockerClient(new Launcher.LocalLauncher(StreamTaskListener.NULL), null, null);
                 String descendantImageId1 = client.inspect(new EnvVars(), "hello-world-stuff-arguments", ".Id");
-                story.j.assertLogContains("built hello-world-stuff-arguments", b);
-                story.j.assertLogNotContains(" --no-cache ", b);
-                story.j.assertLogContains(descendantImageId1.replaceFirst("^sha256:", "").substring(0, 12), b);
-                story.j.assertLogContains(" --build-arg stuff4=build4 ", b);
-                story.j.assertLogContains(" --build-arg stuff5=build5 ", b);
-            }
+                j.assertLogContains("built hello-world-stuff-arguments", b);
+                j.assertLogNotContains(" --no-cache ", b);
+                j.assertLogContains(descendantImageId1.replaceFirst("^sha256:", "").substring(0, 12), b);
+                j.assertLogContains(" --build-arg stuff4=build4 ", b);
+                j.assertLogContains(" --build-arg stuff5=build5 ", b);
         });
     }
 
-    @Test public void buildArguments() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
+    @Test public void buildArguments() throws Throwable {
+        story.then(j -> {
                 assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                         "node {\n" +
                         "  sh 'mkdir -p child'\n" +
@@ -324,41 +351,43 @@ public class DockerDSLTest {
                         "  echo \"built ${built.id}\"\n" +
                         "}", true));
 
-                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                WorkflowRun b = j.assertBuildStatusSuccess(p.scheduleBuild2(0));
                 DockerClient client = new DockerClient(new Launcher.LocalLauncher(StreamTaskListener.NULL), null, null);
                 String descendantImageId1 = client.inspect(new EnvVars(), "hello-world-stuff-arguments", ".Id");
-                story.j.assertLogContains("built hello-world-stuff-arguments", b);
-                story.j.assertLogContains(" --pull ", b);
-                story.j.assertLogNotContains(" --no-cache ", b);
-                story.j.assertLogContains(descendantImageId1.replaceFirst("^sha256:", "").substring(0, 12), b);
-                story.j.assertLogContains(" --build-arg stuff4=build4 ", b);
-                story.j.assertLogContains(" --build-arg stuff5=build5 ", b);
-            }
+                j.assertLogContains("built hello-world-stuff-arguments", b);
+                j.assertLogContains(" --pull ", b);
+                j.assertLogNotContains(" --no-cache ", b);
+                j.assertLogContains(descendantImageId1.replaceFirst("^sha256:", "").substring(0, 12), b);
+                j.assertLogContains(" --build-arg stuff4=build4 ", b);
+                j.assertLogContains(" --build-arg stuff5=build5 ", b);
+                final Matcher<String> stringMatcher = containsString("WARNING! Unsafe parameter expansion is enabled.");
+                if (unsafeParameterExpansion) {
+                    assertThat(logger.getMessages(), containsInRelativeOrder(stringMatcher));
+                } else {
+                    assertThat(logger.getMessages(), not(containsInRelativeOrder(stringMatcher)));
+                }
         });
     }
 
-    @Test public void withTool() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
+    @Test public void withTool() throws Throwable {
+        story.then(j -> {
                 assumeDocker();
                 assumeTrue(new File("/usr/bin/docker").canExecute()); // TODO generalize to find docker in $PATH
-                story.j.jenkins.getDescriptorByType(DockerTool.DescriptorImpl.class).setInstallations(new DockerTool("default", "/usr", Collections.<ToolProperty<?>>emptyList()));
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                j.jenkins.getDescriptorByType(DockerTool.DescriptorImpl.class).setInstallations(new DockerTool("default", "/usr", Collections.<ToolProperty<?>>emptyList()));
+                WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                 "docker.withTool('default') {\n" +
                 "  docker.image('httpd:2.4.12').withRun {}\n" +
                 "  sh 'echo PATH=$PATH'\n" +
                 "}", true));
-                story.j.assertLogContains("PATH=/usr/bin:", story.j.assertBuildStatusSuccess(p.scheduleBuild2(0)));
-            }
+                j.assertLogContains("PATH=/usr/bin:", j.assertBuildStatusSuccess(p.scheduleBuild2(0)));
         });
     }
 
-    @Test public void tag() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
+    @Test public void tag() throws Throwable {
+        story.then(j -> {
                 assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                     "     try { sh 'docker rmi busybox:test' } catch (Exception e) {}\n" +
@@ -369,16 +398,20 @@ public class DockerDSLTest {
                     "     // retag it\n" +
                     "     busybox.tag('test');\n" +
                     "}", true));
-                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-            }
+                WorkflowRun b = j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+            final Matcher<String> stringMatcher = containsString("WARNING! Unsafe parameter expansion is enabled.");
+            if (unsafeParameterExpansion) {
+                    assertThat(logger.getMessages(), containsInRelativeOrder(stringMatcher));
+                } else {
+                    assertThat(logger.getMessages(), not(containsInRelativeOrder(stringMatcher)));
+                }
         });
     }
 
-    @Test @Issue("SECURITY-1878") public void tagInjection() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
+    @Test @Issue("SECURITY-1878") public void tagInjection() throws Throwable {
+        story.then(j -> {
                 assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                         "     try { sh 'docker rmi busybox:test' } catch (Exception e) {}\n" +
@@ -387,63 +420,63 @@ public class DockerDSLTest {
                         "     // tag it\n" +
                         "     busybox.tag(\"test\\necho haxored\", false);\n" +
                         "}", true));
-                WorkflowRun b = story.j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0));
+                WorkflowRun b = j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0));
                 final String log = JenkinsRule.getLog(b);
                 assertThat(log, not(matchesRegex("^haxored")));
                 assertThat(log, containsString("ERROR: Tag must follow the pattern"));
-            }
+                final Matcher<String> stringMatcher = containsString("WARNING! Unsafe parameter expansion is enabled.");
+                if (unsafeParameterExpansion) {
+                    assertThat(logger.getMessages(), containsInRelativeOrder(stringMatcher));
+                } else {
+                    assertThat(logger.getMessages(), not(containsInRelativeOrder(stringMatcher)));
+                }
         });
     }
 
-    @Test @Issue("JENKINS-57366") public void imageInjectionOr() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
+    @Test @Issue("JENKINS-57366") public void imageInjectionOr() throws Throwable {
+        story.then(j -> {
                 assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                         "     try { sh 'docker rmi busybox:test' } catch (Exception e) {}\n" +
                         "     def busybox = docker.image('busybox|echo haxored');\n" +
                         "     busybox.pull();\n" +
                         "}", true));
-                WorkflowRun b = story.j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0));
+                WorkflowRun b = j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0));
                 final String log = JenkinsRule.getLog(b);
                 assertThat(log, not(matchesRegex("^haxored")));
                 assertThat(log, containsString("ERROR: Name must follow the pattern"));
-            }
         });
     }
 
-    @Test public void run() {
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
+    @Test public void run() throws Throwable {
+        story.then(j -> {
                 assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                         "node {\n" +
                                 "     def busybox = docker.image('busybox');\n" +
                                 "     busybox.run('--tty', 'echo \"Hello\"').stop();\n" +
                                 "}", true));
-                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-                story.j.assertLogContains("Hello", b);
-            }
+                WorkflowRun b = j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                j.assertLogContains("Hello", b);
         });
     }
 
-    @Test public void port(){
-        story.addStep(new Statement() {
-            @Override public void evaluate() throws Throwable {
-                assumeDocker();
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
-                p.setDefinition(new CpsFlowDefinition(
-                    "node {\n" +
-                        "  def img = docker.image('httpd:2.4.12')\n" +
-                        "  def port = img.withRun('-p 12345:80') { c -> c.port(80) }\n" +
-                        "  echo \"container running on ${port}\"" +
-                    "}", true));
-                WorkflowRun r = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
-                story.j.assertLogContains("container running on 0.0.0.0:12345", r);
-            }
+    @Test public void port() throws Throwable {
+        final int port = randomTcpPort();
+        story.then(j -> {
+            assumeDocker();
+            WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "prj");
+            p.setDefinition(new CpsFlowDefinition(
+                "node {\n" +
+                    "  def img = docker.image('httpd:2.4.12')\n" +
+                    "  def port = img.withRun('-p "+port+":80') { c -> c.port(80) }\n" +
+                    "  echo \"container running on ${port}\"" +
+                "}", true));
+            WorkflowRun r = j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+            j.assertLogContains("container running on 0.0.0.0:" + port, r);
         });
     }
 }

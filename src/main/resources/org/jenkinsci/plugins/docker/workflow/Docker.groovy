@@ -79,18 +79,36 @@ class Docker implements Serializable {
         isUnix ? "sh" : "bat"
     }
 
+    String shell() {
+        node {
+            script.isUnix() ? "sh" : "bat"
+        }
+    }
+
     String asEnv(boolean isUnix, String var) {
         isUnix ? "\$${var}" : "%${var}%"
     }
 
     public Image build(String image, String args = '.') {
         check(image)
+        if (DockerDSL.isUnsafeParameterExpanding()) {
+            return _build_unsafe(image, args)
+        }
         node {
             def isUnix = script.isUnix()
             def commandLine = 'docker build -t "' + asEnv(isUnix, 'JD_IMAGE') + '" ' + args
             script.withEnv(["JD_IMAGE=${image}"]) {
                 script."${shell(isUnix)}" commandLine
             }
+            this.image(image)
+        }
+    }
+    //Acts as in v. 1.26
+    private Image _build_unsafe(String image, String args = '.') {
+        node {
+            def commandLine = "docker build -t ${image} ${args}"
+
+            script."${shell()}" commandLine
             this.image(image)
         }
     }
@@ -122,6 +140,9 @@ class Docker implements Serializable {
         }
 
         public <V> V inside(String args = '', Closure<V> body) {
+            if (DockerDSL.isUnsafeParameterExpanding()) {
+                return _inside_unsafe(args, body);
+            }
             docker.node {
                 def toRun = imageName()
                 def isUnix = docker.script.isUnix()
@@ -143,7 +164,31 @@ class Docker implements Serializable {
             }
         }
 
+        //Acts as in v. 1.26
+        private <V> V _inside_unsafe(String args = '', Closure<V> body) {
+            docker.node {
+                def toRun = imageName()
+                if (toRun != id && docker.script."${docker.shell()}"(script: "docker inspect -f . ${id}", returnStatus: true) == 0) {
+                    // Can run it without registry prefix, because it was locally built.
+                    toRun = id
+                } else {
+                    if (docker.script."${docker.shell()}"(script: "docker inspect -f . ${toRun}", returnStatus: true) != 0) {
+                        // Not yet present locally.
+                        // withDockerContainer requires the image to be available locally, since its start phase is not a durable task.
+                        pull()
+                    }
+                }
+                docker.script.withDockerContainer(image: toRun, args: args, toolName: docker.script.env.DOCKER_TOOL_NAME) {
+                    body()
+                }
+            }
+        }
+
         public void pull() {
+            if (DockerDSL.isUnsafeParameterExpanding()) {
+                _pull_unsafe()
+                return
+            }
             docker.node {
                 def toPull = imageName()
                 def isUnix = docker.script.isUnix()
@@ -153,7 +198,26 @@ class Docker implements Serializable {
             }
         }
 
+        //Acts as in v. 1.26
+        private void _pull_unsafe() {
+            docker.node {
+                docker.script."${docker.shell()}" "docker pull ${imageName()}"
+            }
+        }
+
         public Container run(String args = '', String command = "") {
+            if (DockerDSL.isUnsafeParameterExpanding()) {
+                return _run_unsafe(args, command)
+            }
+            docker.node {
+                def isUnix = docker.script.isUnix()
+                def container = docker.script."${docker.shell(isUnix)}"(script: "docker run -d${args != '' ? ' ' + args : ''} ${id}${command != '' ? ' ' + command : ''}", returnStdout: true).trim()
+                new Container(docker, container, isUnix)
+            }
+        }
+
+        //Acts as in v. 1.26
+        private Container _run_unsafe(String args = '', String command = "") {
             docker.node {
                 def isUnix = docker.script.isUnix()
                 def container = docker.script."${docker.shell(isUnix)}"(script: "docker run -d${args != '' ? ' ' + args : ''} ${id}${command != '' ? ' ' + command : ''}", returnStdout: true).trim()
@@ -173,6 +237,10 @@ class Docker implements Serializable {
         }
 
         public void tag(String tagName = parsedId.tag, boolean force = true) {
+            if (DockerDSL.isUnsafeParameterExpanding()) {
+                _tag_unsafe(tagName, force)
+                return
+            }
             docker.node {
                 def taggedImageName = toQualifiedImageName(parsedId.userAndRepo + ':' + tagName)
                 def isUnix = docker.script.isUnix()
@@ -183,7 +251,20 @@ class Docker implements Serializable {
             }
         }
 
+        //Acts as in v. 1.26
+        private void _tag_unsafe(String tagName = parsedId.tag, boolean force = true) {
+            docker.node {
+                def taggedImageName = toQualifiedImageName(parsedId.userAndRepo + ':' + tagName)
+                docker.script."${docker.shell()}" "docker tag ${id} ${taggedImageName}"
+                return taggedImageName;
+            }
+        }
+
         public void push(String tagName = parsedId.tag, boolean force = true) {
+            if (DockerDSL.isUnsafeParameterExpanding()) {
+                _push_unsafe(tagName, force)
+                return
+            }
             docker.node {
                 // The image may have already been tagged, so the tagging may be a no-op.
                 // That's ok since tagging is cheap.
@@ -192,6 +273,16 @@ class Docker implements Serializable {
                 docker.script.withEnv(["JD_TAGGED_IMAGE_NAME=${taggedImageName}"]) {
                     docker.script."${docker.shell(isUnix)}" 'docker push "' + docker.asEnv(isUnix, 'JD_TAGGED_IMAGE_NAME') + '"'
                 }
+            }
+        }
+
+        //Acts as in v. 1.26
+        private void _push_unsafe(String tagName = parsedId.tag, boolean force = true) {
+            docker.node {
+                // The image may have already been tagged, so the tagging may be a no-op.
+                // That's ok since tagging is cheap.
+                def taggedImageName = tag(tagName, force)
+                docker.script."${docker.shell()}" "docker push ${taggedImageName}"
             }
         }
 
@@ -210,15 +301,32 @@ class Docker implements Serializable {
         }
 
         public void stop() {
+            if (DockerDSL.isUnsafeParameterExpanding()) {
+                _stop_unsafe()
+                return
+            }
             docker.script.withEnv(["JD_ID=${id}"]) {
                 docker.script."${docker.shell(isUnix)}" 'docker stop "' + docker.asEnv(isUnix,'JD_ID') + '" && docker rm -f "' + docker.asEnv(isUnix, 'JD_ID') + '"'
             }
         }
 
         public String port(int port) {
+            if (DockerDSL.isUnsafeParameterExpanding()) {
+                return _port_unsafe(port)
+            }
             docker.script.withEnv(["JD_ID=${id}", "JD_PORT=${port}"]) {
                 docker.script."${docker.shell(isUnix)}"(script: 'docker port "' + docker.asEnv(isUnix, 'JD_ID') + '" "' + docker.asEnv(isUnix, 'JD_PORT') + '"', returnStdout: true).trim()
             }
+        }
+
+        //Acts as in v. 1.26
+        private void _stop_unsafe() {
+            docker.script."${docker.shell()}" "docker stop ${id} && docker rm -f ${id}"
+        }
+
+        //Acts as in v. 1.26
+        private String _port_unsafe(int port) {
+            docker.script."${docker.shell()}"(script: "docker port ${id} ${port}", returnStdout: true).trim()
         }
     }
 

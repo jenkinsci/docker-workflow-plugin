@@ -25,13 +25,23 @@ package org.jenkinsci.plugins.docker.workflow;
 
 import groovy.lang.Binding;
 import hudson.Extension;
+import jenkins.util.SystemProperties;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jenkinsci.plugins.workflow.cps.GlobalVariable;
+
+import java.util.logging.Logger;
 
 /**
  * Something you should <strong>not copy</strong>. Write plain old {@code Step}s and leave it at that.
  */
 @Extension public class DockerDSL extends GlobalVariable {
+
+    /**
+     * Escape hatch to restore the old parameter behaviour in <code>docker</code> to &lt;= 1.26 state.
+     * Except {@link org.jenkinsci.plugins.docker.commons.credentials.ImageNameValidator#checkUserAndRepo(String)}
+     * will still be checked unless it is also bypassed with {@link org.jenkinsci.plugins.docker.commons.credentials.ImageNameValidator#SKIP}.
+     */
+    /*package*/ static /*almost final*/ boolean UNSAFE_PARAMETER_EXPANDING = Boolean.getBoolean(DockerDSL.class.getName() + ".UNSAFE_PARAMETER_EXPANDING");
 
     @Override public String getName() {
         return "docker";
@@ -48,6 +58,15 @@ import org.jenkinsci.plugins.workflow.cps.GlobalVariable;
             binding.setVariable(getName(), docker);
         }
         return docker;
+    }
+
+    private static final Logger log = Logger.getLogger(DockerDSL.class.getName());
+
+    public static boolean isUnsafeParameterExpanding() {
+        if (UNSAFE_PARAMETER_EXPANDING) {
+            log.fine("WARNING! Unsafe parameter expansion is enabled. (legacy mode)");
+        }
+        return UNSAFE_PARAMETER_EXPANDING;
     }
 
 }

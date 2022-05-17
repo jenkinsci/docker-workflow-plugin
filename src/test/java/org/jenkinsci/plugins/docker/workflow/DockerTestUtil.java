@@ -30,7 +30,13 @@ import hudson.util.StreamTaskListener;
 import hudson.util.VersionNumber;
 import org.junit.Assume;
 
+import java.io.Closeable;
 import java.io.IOException;
+import java.net.ServerSocket;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
@@ -82,6 +88,31 @@ public class DockerTestUtil {
             env.put("DOCKER_CERT_PATH", docker_host_key_dir_for_test);
         }
         return env;
+    }
+
+    /**
+     * TODO There is still a slight risk here that two JVMs in parallel could pick the same random port.
+     * @return a random, currently free, tcp port
+     */
+    public static int randomTcpPort(){
+        final int from = 49152;
+        final int to = 65535;
+
+
+        while(true){
+            int candidate = (int) ((Math.random() * (to-from)) + from);
+            if(isTcpPortFree(candidate)){
+                return candidate;
+            }
+        }
+    }
+
+    public static boolean isTcpPortFree(int port){
+        try (ServerSocket ignored = new ServerSocket(port)) {
+            return true;
+        } catch (IOException ex) {
+            return false;
+        }
     }
 
     private DockerTestUtil() {}
