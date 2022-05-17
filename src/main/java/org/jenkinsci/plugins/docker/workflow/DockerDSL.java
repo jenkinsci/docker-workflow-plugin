@@ -23,9 +23,9 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import groovy.lang.Binding;
 import hudson.Extension;
-import jenkins.util.SystemProperties;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jenkinsci.plugins.workflow.cps.GlobalVariable;
 
@@ -43,10 +43,12 @@ import java.util.logging.Logger;
      */
     /*package*/ static /*almost final*/ boolean UNSAFE_PARAMETER_EXPANDING = Boolean.getBoolean(DockerDSL.class.getName() + ".UNSAFE_PARAMETER_EXPANDING");
 
+    @NonNull
     @Override public String getName() {
         return "docker";
     }
 
+    @NonNull
     @Override public Object getValue(CpsScript script) throws Exception {
         Binding binding = script.getBinding();
         Object docker;

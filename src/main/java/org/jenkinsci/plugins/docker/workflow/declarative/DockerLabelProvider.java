@@ -25,11 +25,10 @@
 
 package org.jenkinsci.plugins.docker.workflow.declarative;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
 import hudson.ExtensionList;
 import hudson.ExtensionPoint;
 import hudson.model.Run;
-
-import javax.annotation.CheckForNull;
 
 /**
  * Provider of label expressions to use for {@code agent: docker} when no other label is provided.

@@ -25,6 +25,8 @@ package org.jenkinsci.plugins.docker.workflow;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -63,8 +65,6 @@ import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
@@ -77,14 +77,15 @@ import java.util.stream.Collectors;
 public class WithContainerStep extends AbstractStepImpl {
     
     private static final Logger LOGGER = Logger.getLogger(WithContainerStep.class.getName());
-    private final @Nonnull String image;
+    private final @NonNull String image;
     private String args;
     private String toolName;
 
-    @DataBoundConstructor public WithContainerStep(@Nonnull String image) {
+    @DataBoundConstructor public WithContainerStep(@NonNull String image) {
         this.image = image;
     }
-    
+
+    @NonNull
     public String getImage() {
         return image;
     }
@@ -228,7 +229,7 @@ public class WithContainerStep extends AbstractStepImpl {
             return ws.sibling(ws.getName() + System.getProperty(WorkspaceList.class.getName(), "@") + "tmp");
         }
 
-        @Override public void stop(@Nonnull Throwable cause) throws Exception {
+        @Override public void stop(@NonNull Throwable cause) throws Exception {
             if (container != null) {
                 LOGGER.log(Level.FINE, "stopping container " + container, cause);
                 destroy(container, launcher, getContext().get(Node.class), env, toolName);
@@ -247,7 +248,7 @@ public class WithContainerStep extends AbstractStepImpl {
         private final boolean hasEnv;
         private final boolean hasWorkdir;
 
-        Decorator(String container, EnvVars envHost, String ws, String toolName, VersionNumber dockerVersion) {
+        Decorator(String container, EnvVars envHost, String ws, @CheckForNull String toolName, VersionNumber dockerVersion) {
             this.container = container;
             this.envHost = Util.mapToEnv(envHost);
             this.ws = ws;
@@ -256,7 +257,8 @@ public class WithContainerStep extends AbstractStepImpl {
             this.hasWorkdir = dockerVersion != null && dockerVersion.compareTo(new VersionNumber("17.12")) >= 0;
         }
 
-        @Override public Launcher decorate(final Launcher launcher, final Node node) {
+        @NonNull
+        @Override public Launcher decorate(@NonNull final Launcher launcher, @NonNull final Node node) {
             return new Launcher.DecoratedLauncher(launcher) {
                 @Override public Proc launch(Launcher.ProcStarter starter) throws IOException {
                     String executable;
@@ -414,6 +416,7 @@ public class WithContainerStep extends AbstractStepImpl {
             return "withDockerContainer";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Run build steps inside a Docker container";
         }

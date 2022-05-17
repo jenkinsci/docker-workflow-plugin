@@ -26,6 +26,7 @@ package org.jenkinsci.plugins.docker.workflow;
 import java.util.Map;
 
 import com.google.inject.Inject;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -133,6 +134,7 @@ public class FromFingerprintStep extends AbstractStepImpl {
             return "dockerFingerprintFrom";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Record trace of a Docker image used in FROM";
         }
