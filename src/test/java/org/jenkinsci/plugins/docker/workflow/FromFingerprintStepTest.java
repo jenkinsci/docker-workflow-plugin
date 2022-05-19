@@ -54,9 +54,11 @@ public class FromFingerprintStepTest {
         String script = "node {\n" +
             "  sh 'mkdir buildWithFROMArgs'\n" +
             "  writeFile file: 'Dockerfile', text: '" + dockerFile + "'\n" +
+            "  withEnv(['DOCKER_BUILDKIT=0']) {\n" +
             "  def built = docker.build('my-tag') \n" +
             "  dockerFingerprintFrom dockerfile: 'Dockerfile', image: 'my-tag' \n" +
             "  echo \"built ${built.id}\"\n" +
+            "  }\n" +
             "}";
 
         assertBuild("build", script, BUSYBOX_IMAGE);
