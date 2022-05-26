@@ -56,7 +56,7 @@ import org.jenkinsci.plugins.workflow.cps.GroovySourceFileAllowlist;
 
     @Extension
     public static class DockerDSLAllowlist extends GroovySourceFileAllowlist {
-        private final String scriptUrl = DockerDSL.class.getResource("/org/jenkinsci/plugins/docker/workflow/Docker.groovy").toString();
+        private final String scriptUrl = DockerDSL.class.getResource("Docker.groovy").toString();
 
         @Override
         public boolean isAllowed(String groovyResourceUrl) {

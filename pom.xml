@@ -33,7 +33,7 @@
         <changelist>-SNAPSHOT</changelist>
         <jenkins.version>2.332.1</jenkins.version>
         <java.level>8</java.level>
-        <pipeline-model-definition-plugin.version>2.2083.ve1feea_c84e37</pipeline-model-definition-plugin.version> <!-- TODO: https://github.com/jenkinsci/pipeline-model-definition-plugin/pull/529 --> <!-- TODO: Delete this and related dependencyManagement entries once this version is included in BOM -->
+        <pipeline-model-definition-plugin.version>2.2091.v778707d02a_a_a_</pipeline-model-definition-plugin.version> <!-- TODO: https://github.com/jenkinsci/pipeline-model-definition-plugin/pull/529 --> <!-- TODO: Delete this and related dependencyManagement entries once this version is included in BOM -->
         <workflow-cps-plugin.version>2699.v7231c3b_4a_231</workflow-cps-plugin.version> <!-- TODO: https://github.com/jenkinsci/workflow-cps-plugin/pull/538 -->
     </properties>
     <repositories>
