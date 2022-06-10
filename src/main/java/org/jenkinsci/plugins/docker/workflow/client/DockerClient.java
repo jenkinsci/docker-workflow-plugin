@@ -24,6 +24,8 @@
 package org.jenkinsci.plugins.docker.workflow.client;
 
 import com.google.common.base.Optional;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.EnvVars;
 import hudson.FilePath;
@@ -52,8 +54,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.docker.commons.fingerprint.ContainerRecord;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
@@ -90,7 +90,7 @@ public class DockerClient {
     private final @CheckForNull Node node;
     private final @CheckForNull String toolName;
 
-    public DockerClient(@Nonnull Launcher launcher, @CheckForNull Node node, @CheckForNull String toolName) {
+    public DockerClient(@NonNull Launcher launcher, @CheckForNull Node node, @CheckForNull String toolName) {
         this.launcher = launcher;
         this.node = node;
         this.toolName = toolName;
@@ -110,7 +110,7 @@ public class DockerClient {
      * @param command The command to execute in the image container being run.
      * @return The container ID.
      */
-    public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, @Nonnull String... command) throws IOException, InterruptedException {
+    public String run(@NonNull EnvVars launchEnv, @NonNull String image, @CheckForNull String args, @CheckForNull String workdir, @NonNull Map<String, String> volumes, @NonNull Collection<String> volumesFromContainers, @NonNull EnvVars containerEnv, @NonNull String user, @NonNull String... command) throws IOException, InterruptedException {
         ArgumentListBuilder argb = new ArgumentListBuilder();
 
         argb.add("run", "-t", "-d");
@@ -146,7 +146,7 @@ public class DockerClient {
         }
     }
 
-    public List<String> listProcess(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
+    public List<String> listProcess(@NonNull EnvVars launchEnv, @NonNull String containerId) throws IOException, InterruptedException {
         LaunchResult result = launch(launchEnv, false, "top", containerId, "-eo", "pid,comm");
         if (result.getStatus() != 0) {
             throw new IOException(String.format("Failed to run top '%s'. Error: %s", containerId, result.getErr()));
@@ -178,7 +178,7 @@ public class DockerClient {
      * @param launchEnv Docker client launch environment.
      * @param containerId The container ID.
      */
-    public void stop(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
+    public void stop(@NonNull EnvVars launchEnv, @NonNull String containerId) throws IOException, InterruptedException {
         LaunchResult result = launch(launchEnv, false, "stop", "--time=1", containerId);
         if (result.getStatus() != 0) {
             throw new IOException(String.format("Failed to kill container '%s'.", containerId));
@@ -194,7 +194,7 @@ public class DockerClient {
      * @param launchEnv Docker client launch environment.
      * @param containerId The container ID.
      */
-    public void rm(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
+    public void rm(@NonNull EnvVars launchEnv, @NonNull String containerId) throws IOException, InterruptedException {
         LaunchResult result;
         result = launch(launchEnv, false, "rm", "-f", containerId);
         if (result.getStatus() != 0) {
@@ -209,7 +209,7 @@ public class DockerClient {
      * @param fieldPath The data path of the data required e.g. {@code .NetworkSettings.IPAddress}.
      * @return The inspected field value. Null if the command failed
      */
-    public @CheckForNull String inspect(@Nonnull EnvVars launchEnv, @Nonnull String objectId, @Nonnull String fieldPath) throws IOException, InterruptedException {
+    public @CheckForNull String inspect(@NonNull EnvVars launchEnv, @NonNull String objectId, @NonNull String fieldPath) throws IOException, InterruptedException {
         LaunchResult result = launch(launchEnv, true, "inspect", "-f", String.format("{{%s}}", fieldPath), objectId);
         if (result.getStatus() == 0) {
             return result.getOut();
@@ -228,8 +228,8 @@ public class DockerClient {
      * @throws InterruptedException Interrupted
      * @since 1.1
      */
-    public @Nonnull String inspectRequiredField(@Nonnull EnvVars launchEnv, @Nonnull String objectId, 
-            @Nonnull String fieldPath) throws IOException, InterruptedException {
+    public @NonNull String inspectRequiredField(@NonNull EnvVars launchEnv, @NonNull String objectId, 
+            @NonNull String fieldPath) throws IOException, InterruptedException {
         final String fieldValue = inspect(launchEnv, objectId, fieldPath);
         if (fieldValue == null) {
             throw new IOException("Cannot retrieve " + fieldPath + " from 'docker inspect " + objectId + "'");
@@ -237,7 +237,7 @@ public class DockerClient {
         return fieldValue;
     }
     
-    private @CheckForNull Date getCreatedDate(@Nonnull EnvVars launchEnv, @Nonnull String objectId) throws IOException, InterruptedException {
+    private @CheckForNull Date getCreatedDate(@NonNull EnvVars launchEnv, @NonNull String objectId) throws IOException, InterruptedException {
         String createdString = inspect(launchEnv, objectId, "json .Created");
         if (createdString == null) {
             return null;
@@ -273,7 +273,7 @@ public class DockerClient {
      * @return The {@link VersionNumber} instance if the version string matched the
      * expected format, otherwise {@code null}.
      */
-    protected static VersionNumber parseVersionNumber(@Nonnull String versionString) {
+    protected static VersionNumber parseVersionNumber(@NonNull String versionString) {
         Matcher matcher = pattern.matcher(versionString.trim());
         if (matcher.matches()) {
             String major = matcher.group(2);
@@ -285,13 +285,13 @@ public class DockerClient {
         }        
     }
 
-    private LaunchResult launch(@Nonnull EnvVars launchEnv, boolean quiet, @Nonnull String... args) throws IOException, InterruptedException {
+    private LaunchResult launch(@NonNull EnvVars launchEnv, boolean quiet, @NonNull String... args) throws IOException, InterruptedException {
         return launch(launchEnv, quiet, null, args);
     }
-    private LaunchResult launch(@Nonnull EnvVars launchEnv, boolean quiet, FilePath pwd, @Nonnull String... args) throws IOException, InterruptedException {
+    private LaunchResult launch(@NonNull EnvVars launchEnv, boolean quiet, FilePath pwd, @NonNull String... args) throws IOException, InterruptedException {
         return launch(launchEnv, quiet, pwd, new ArgumentListBuilder(args));
     }
-    private LaunchResult launch(@Nonnull EnvVars launchEnv, boolean quiet, FilePath pwd, @Nonnull ArgumentListBuilder args) throws IOException, InterruptedException {
+    private LaunchResult launch(@NonNull EnvVars launchEnv, boolean quiet, FilePath pwd, @NonNull ArgumentListBuilder args) throws IOException, InterruptedException {
         // Prepend the docker command
         args.prepend(DockerTool.getExecutable(toolName, node, launcher.getListener(), launchEnv));
 
@@ -355,7 +355,7 @@ public class DockerClient {
         return ControlGroup.getContainerId(cgroupFile);
     }
 
-    public ContainerRecord getContainerRecord(@Nonnull EnvVars launchEnv, String containerId) throws IOException, InterruptedException {
+    public ContainerRecord getContainerRecord(@NonNull EnvVars launchEnv, String containerId) throws IOException, InterruptedException {
         String host = inspectRequiredField(launchEnv, containerId, ".Config.Hostname");
         String containerName = inspectRequiredField(launchEnv, containerId, ".Name");
         Date created = getCreatedDate(launchEnv, containerId);
@@ -376,7 +376,7 @@ public class DockerClient {
      * @throws IOException Execution error. Also fails if cannot retrieve the requested field from the request
      * @throws InterruptedException Interrupted
      */
-    public List<String> getVolumes(@Nonnull EnvVars launchEnv, String containerID) throws IOException, InterruptedException {
+    public List<String> getVolumes(@NonNull EnvVars launchEnv, String containerID) throws IOException, InterruptedException {
         LaunchResult result = launch(launchEnv, true, "inspect", "-f", "{{range.Mounts}}{{.Destination}}\n{{end}}", containerID);
         if (result.getStatus() != 0) {
             return Collections.emptyList();
