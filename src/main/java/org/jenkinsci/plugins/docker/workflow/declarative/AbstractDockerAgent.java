@@ -131,7 +131,7 @@ public abstract class AbstractDockerAgent<D extends AbstractDockerAgent<D>> exte
      */
     @Extension
     public static class ChangelogConditionalScriptAllowlist extends GroovySourceFileAllowlist {
-        private final String scriptUrl = AbstractDockerAgent.class.getResource("/org/jenkinsci/plugins/docker/workflow/declarative/AbstractDockerPipelineScript.groovy").toString();
+        private final String scriptUrl = AbstractDockerAgent.class.getResource("AbstractDockerPipelineScript.groovy").toString();
 
         @Override
         public boolean isAllowed(String groovyResourceUrl) {
