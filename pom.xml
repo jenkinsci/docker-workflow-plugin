@@ -33,8 +33,7 @@
         <changelist>-SNAPSHOT</changelist>
         <jenkins.version>2.332.1</jenkins.version>
         <java.level>8</java.level>
-        <pipeline-model-definition-plugin.version>2.2091.v778707d02a_a_a_</pipeline-model-definition-plugin.version> <!-- TODO: https://github.com/jenkinsci/pipeline-model-definition-plugin/pull/529 --> <!-- TODO: Delete this and related dependencyManagement entries once this version is included in BOM -->
-        <workflow-cps-plugin.version>2699.v7231c3b_4a_231</workflow-cps-plugin.version> <!-- TODO: https://github.com/jenkinsci/workflow-cps-plugin/pull/538 -->
+        <pipeline-model-definition-plugin.version>2.2097.v33db_b_de764b_e</pipeline-model-definition-plugin.version> <!-- TODO: Delete this and related dependencyManagement entries once this version is included in BOM -->
     </properties>
     <repositories>
         <repository>
@@ -53,15 +52,9 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-2.332.x</artifactId>
-                <version>1382.v7d694476f340</version>
+                <version>1409.v7659b_c072f18</version>
                 <scope>import</scope>
                 <type>pom</type>
-            </dependency>
-            <dependency>
-                <!-- TODO: Remove once this version is included in BOM -->
-                <groupId>org.jenkins-ci.plugins</groupId>
-                <artifactId>script-security</artifactId>
-                <version>1172.v35f6a_0b_8207e</version>
             </dependency>
             <dependency>
                 <groupId>org.jenkinsci.plugins</groupId>
@@ -89,7 +82,6 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-cps</artifactId>
-            <version>${workflow-cps-plugin.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
@@ -122,7 +114,6 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-cps</artifactId>
-            <version>${workflow-cps-plugin.version}</version>
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
