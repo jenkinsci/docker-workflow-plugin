@@ -28,8 +28,10 @@ import java.util.Map;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import hudson.Extension;
 import org.jenkinsci.plugins.pipeline.modeldefinition.agent.DeclarativeAgent;
 import org.jenkinsci.plugins.pipeline.modeldefinition.options.DeclarativeOption;
+import org.jenkinsci.plugins.workflow.cps.GroovySourceFileAllowlist;
 import org.kohsuke.stapler.DataBoundSetter;
 
 public abstract class AbstractDockerAgent<D extends AbstractDockerAgent<D>> extends DeclarativeAgent<D> {
@@ -121,6 +123,20 @@ public abstract class AbstractDockerAgent<D extends AbstractDockerAgent<D>> exte
     @Override
     public boolean reuseRootAgent(Map<String, DeclarativeOption> options) {
         return options.get(ContainerPerStage.SYMBOL) != null;
+    }
+
+    /**
+     * AbstractDockerPipelineScript.groovy is a superclass of the Groovy scripts for subclasses of
+     * {@link AbstractDockerAgent}, but does not have any direct equivalent Java class, so we just allow it here.
+     */
+    @Extension
+    public static class ChangelogConditionalScriptAllowlist extends GroovySourceFileAllowlist {
+        private final String scriptUrl = AbstractDockerAgent.class.getResource("AbstractDockerPipelineScript.groovy").toString();
+
+        @Override
+        public boolean isAllowed(String groovyResourceUrl) {
+            return groovyResourceUrl.equals(scriptUrl);
+        }
     }
 
 }
