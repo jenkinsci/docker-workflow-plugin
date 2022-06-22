@@ -164,7 +164,7 @@ public class WithContainerStepTest {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
-                    "  withDockerContainer('httpd:2.4.12') {\n" +
+                    "  withDockerContainer('ubuntu:kinetic-20220602') {\n" +
                     "    sh 'trap \\'echo got SIGTERM\\' TERM; trap \\'echo exiting; exit 99\\' EXIT; echo sleeping now with JENKINS_SERVER_COOKIE=$JENKINS_SERVER_COOKIE; sleep 999'\n" +
                     "  }\n" +
                     "}", true));
@@ -185,8 +185,8 @@ public class WithContainerStepTest {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
-                    "  withDockerContainer('httpd:2.4.12') {\n" +
-                    "    sh \"sleep 5; ps -e -o pid,command | egrep '${pwd tmp: true}/durable-.+/script.sh' | fgrep -v grep | sort -n | tr -s ' ' | cut -d ' ' -f2 | xargs kill -9\"\n" +
+                    "  withDockerContainer('httpd:2.4.54-alpine') {\n" +
+                    "    sh \"set -e; sleep 5; ps -e -o pid,args | egrep '${pwd tmp: true}/durable-.+/script.sh' | fgrep -v grep | sort -n | tr -s ' ' | cut -d ' ' -f2 | xargs kill -9\"\n" +
                     "  }\n" +
                     "}", true));
                 Field hci = BourneShellScript.class.getDeclaredField("HEARTBEAT_CHECK_INTERVAL");

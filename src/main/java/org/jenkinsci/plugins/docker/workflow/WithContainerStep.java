@@ -350,6 +350,15 @@ public class WithContainerStep extends AbstractStepImpl {
                 @Override public void kill(Map<String,String> modelEnvVars) throws IOException, InterruptedException {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     String executable = getExecutable();
+                    // For this code to be able to successfully kill processes:
+                    // 1: The image must contain `ps`, which notably excludes slim variants of Debian.
+                    // 2. The version of `ps` being used must support `-o command`. Busybox does not (so no Alpine!).
+                    //    `-o args` seems to be a more portable equivalent, but even then, see JENKINS-52881.
+                    // 3. The version of `ps` being used must support the `e` output modifier to include environment
+                    //    variables in the command's output. Otherwise, the output only includes `jsc=<cookie here>` and
+                    //    `JENKINS_SERVER_COOKIE=$jsc`, but the output must include `JENKINS_SERVER_COOKIE=<cookie here>
+                    //    for this code to work.
+                    // In practice, this means that this code only works with images that include procps.
                     if (getInner().launch().cmds(executable, "exec", container, "ps", "-A", "-o", "pid,command", "e").stdout(baos).quiet(true).start().joinWithTimeout(DockerClient.CLIENT_TIMEOUT, TimeUnit.SECONDS, listener) != 0) {
                         throw new IOException("failed to run ps");
                     }
