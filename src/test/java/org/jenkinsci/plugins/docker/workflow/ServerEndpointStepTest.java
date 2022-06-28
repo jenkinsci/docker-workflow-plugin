@@ -34,8 +34,6 @@ import java.util.TreeMap;
 import hudson.model.Computer;
 import hudson.model.Item;
 import hudson.model.User;
-import hudson.security.ACL;
-import hudson.security.ACLContext;
 import java.util.HashMap;
 import jenkins.model.Jenkins;
 import jenkins.security.QueueItemAuthenticatorConfiguration;

@@ -23,20 +23,24 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import groovy.lang.Binding;
 import hudson.Extension;
 import org.jenkinsci.plugins.workflow.cps.CpsScript;
 import org.jenkinsci.plugins.workflow.cps.GlobalVariable;
+import org.jenkinsci.plugins.workflow.cps.GroovySourceFileAllowlist;
 
 /**
  * Something you should <strong>not copy</strong>. Write plain old {@code Step}s and leave it at that.
  */
 @Extension public class DockerDSL extends GlobalVariable {
 
+    @NonNull
     @Override public String getName() {
         return "docker";
     }
 
+    @NonNull
     @Override public Object getValue(CpsScript script) throws Exception {
         Binding binding = script.getBinding();
         Object docker;
@@ -50,4 +54,13 @@ import org.jenkinsci.plugins.workflow.cps.GlobalVariable;
         return docker;
     }
 
+    @Extension
+    public static class DockerDSLAllowlist extends GroovySourceFileAllowlist {
+        private final String scriptUrl = DockerDSL.class.getResource("Docker.groovy").toString();
+
+        @Override
+        public boolean isAllowed(String groovyResourceUrl) {
+            return groovyResourceUrl.equals(scriptUrl);
+        }
+    }
 }

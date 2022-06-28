@@ -26,6 +26,7 @@
 package org.jenkinsci.plugins.docker.workflow.declarative;
 
 import com.google.inject.Inject;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.Util;
@@ -44,8 +45,6 @@ import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest;
-
-import javax.annotation.Nullable;
 
 /**
  * The system config.

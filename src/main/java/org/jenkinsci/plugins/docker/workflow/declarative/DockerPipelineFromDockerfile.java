@@ -24,16 +24,14 @@
 
 package org.jenkinsci.plugins.docker.workflow.declarative;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
-import org.jenkinsci.plugins.docker.workflow.declarative.AbstractDockerAgent;
 import org.jenkinsci.plugins.pipeline.modeldefinition.agent.DeclarativeAgentDescriptor;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-
-import javax.annotation.Nonnull;
 
 public class DockerPipelineFromDockerfile extends AbstractDockerAgent<DockerPipelineFromDockerfile> {
     private String filename;
@@ -71,7 +69,7 @@ public class DockerPipelineFromDockerfile extends AbstractDockerAgent<DockerPipe
         this.additionalBuildArgs = additionalBuildArgs;
     }
 
-    @Nonnull
+    @NonNull
     public String getActualDir() {
         if (!StringUtils.isEmpty(dir)) {
             return dir;
@@ -80,7 +78,7 @@ public class DockerPipelineFromDockerfile extends AbstractDockerAgent<DockerPipe
         }
     }
 
-    @Nonnull
+    @NonNull
     public String getDockerfilePath(boolean isUnix) {
         StringBuilder fullPath = new StringBuilder();
         if (!StringUtils.isEmpty(dir)) {
@@ -95,7 +93,7 @@ public class DockerPipelineFromDockerfile extends AbstractDockerAgent<DockerPipe
         return fullPath.toString();
     }
 
-    @Nonnull
+    @NonNull
     public String getDockerfileAsString() {
         if (filename != null) {
             return filename;
@@ -107,7 +105,7 @@ public class DockerPipelineFromDockerfile extends AbstractDockerAgent<DockerPipe
     @Extension(ordinal = 999) @Symbol("dockerfile")
     public static class DescriptorImpl extends DeclarativeAgentDescriptor<DockerPipelineFromDockerfile> {
         @Override
-        @Nonnull
+        @NonNull
         public String getDisplayName() {
             return "Build a Dockerfile and run in a container using that image";
         }

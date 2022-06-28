@@ -23,7 +23,8 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.io.Serializable;
 
 /**
@@ -43,7 +44,7 @@ public class ImageNameTokens implements Serializable {
     public final String userAndRepo;
     public final String tag;
 
-    public ImageNameTokens(@Nonnull String name) {
+    public ImageNameTokens(@NonNull String name) {
         int tagIdx = name.lastIndexOf(':');
         if (tagIdx != -1) {
             this.userAndRepo = name.substring(0, tagIdx);

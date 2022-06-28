@@ -24,6 +24,8 @@
 package org.jenkinsci.plugins.docker.workflow;
 
 import com.google.common.collect.ImmutableSet;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -35,10 +37,9 @@ import hudson.model.TaskListener;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 import org.jenkinsci.plugins.docker.commons.credentials.KeyMaterialFactory;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
@@ -53,18 +54,19 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 public class RegistryEndpointStep extends Step {
     
-    private final @Nonnull DockerRegistryEndpoint registry;
+    private final @NonNull DockerRegistryEndpoint registry;
     private @CheckForNull String toolName;
 
-    @DataBoundConstructor public RegistryEndpointStep(@Nonnull DockerRegistryEndpoint registry) {
-        assert registry != null;
-        this.registry = registry;
+    @DataBoundConstructor public RegistryEndpointStep(@NonNull DockerRegistryEndpoint registry) {
+        this.registry = Objects.requireNonNull(registry, "registry must not be null");;
     }
-    
+
+    @NonNull
     public DockerRegistryEndpoint getRegistry() {
         return registry;
     }
 
+    @CheckForNull
     public String getToolName() {
         return toolName;
     }
@@ -111,6 +113,7 @@ public class RegistryEndpointStep extends Step {
             return "withDockerRegistry";
         }
 
+        @NonNull
         @Override public String getDisplayName() {
             return "Sets up Docker registry endpoint";
         }
