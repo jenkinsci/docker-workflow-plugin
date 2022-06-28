@@ -33,7 +33,6 @@
         <changelist>-SNAPSHOT</changelist>
         <jenkins.version>2.332.1</jenkins.version>
         <java.level>8</java.level>
-        <useBeta>true</useBeta> <!-- TODO pending release of https://github.com/jenkinsci/structs-plugin/pull/65 -->
         <pipeline-model-definition-plugin.version>2.2097.v33db_b_de764b_e</pipeline-model-definition-plugin.version> <!-- TODO: Delete this and related dependencyManagement entries once this version is included in BOM -->
     </properties>
     <repositories>
