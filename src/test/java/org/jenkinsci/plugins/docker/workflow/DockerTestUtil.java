@@ -84,6 +84,11 @@ public class DockerTestUtil {
         return env;
     }
 
+    public static EnvVars newHostEnv() {
+        EnvVars env = new EnvVars();
+        env.put("DEFAULT_DOCKER_COMMAND", "sh -c sleep INF");
+        return env;
+    }
+
     private DockerTestUtil() {}
-    
 }
