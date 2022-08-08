@@ -31,7 +31,7 @@
     <properties>
         <changelist>999999-SNAPSHOT</changelist>
         <jenkins.version>2.332.1</jenkins.version>
-        <pipeline-model-definition-plugin.version>2.2097.v33db_b_de764b_e</pipeline-model-definition-plugin.version> <!-- TODO: Delete this and related dependencyManagement entries once this version is included in BOM -->
+        <pipeline-model-definition-plugin.version>2.2114.v2654ca_721309</pipeline-model-definition-plugin.version> <!-- TODO: Delete this and related dependencyManagement entries once this version is included in BOM -->
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     </properties>
     <repositories>
