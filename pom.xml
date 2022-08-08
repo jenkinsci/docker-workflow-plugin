@@ -8,7 +8,7 @@
         <relativePath />
     </parent>
     <artifactId>docker-workflow</artifactId>
-    <version>${revision}${changelist}</version>
+    <version>${changelist}</version>
     <name>Docker Pipeline</name>
     <description>Build and use Docker containers from pipelines</description>
     <packaging>hpi</packaging>
@@ -20,19 +20,19 @@
       </license>
     </licenses>
     
-    <url>https://github.com/jenkinsci/docker-workflow-plugin</url>
+    <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
     <scm>
-      <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
-      <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
-      <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
+      <connection>scm:git:git://github.com/${gitHubRepo}.git</connection>
+      <developerConnection>scm:git:git@github.com:${gitHubRepo}.git</developerConnection>
+      <url>https://github.com/${gitHubRepo}</url>
       <tag>${scmTag}</tag>
     </scm>
 
     <properties>
-        <revision>1.30</revision>
-        <changelist>-SNAPSHOT</changelist>
+        <changelist>999999-SNAPSHOT</changelist>
         <jenkins.version>2.332.1</jenkins.version>
         <pipeline-model-definition-plugin.version>2.2097.v33db_b_de764b_e</pipeline-model-definition-plugin.version> <!-- TODO: Delete this and related dependencyManagement entries once this version is included in BOM -->
+        <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     </properties>
     <repositories>
         <repository>
