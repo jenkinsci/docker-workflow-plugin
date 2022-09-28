@@ -83,7 +83,7 @@ public class WindowsDockerClient extends DockerClient {
     }
 
     @Override
-    public Optional<String> getContainerIdIfContainerized() throws IOException, InterruptedException {
+    public Optional<String> getContainerIdIfContainerized(@NonNull EnvVars launchEnv) throws IOException, InterruptedException {
         if (node == null ||
             launch(new EnvVars(), true, null, "sc.exe", "query", "cexecsvc").getStatus() != 0) {
             return Optional.absent();

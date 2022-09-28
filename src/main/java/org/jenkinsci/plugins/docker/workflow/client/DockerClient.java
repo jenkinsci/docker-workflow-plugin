@@ -36,9 +36,11 @@ import hudson.util.VersionNumber;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -344,15 +346,47 @@ public class DockerClient {
      * it isn't containerized.
      * @see <a href="http://stackoverflow.com/a/25729598/12916">Discussion</a>
      */
-    public Optional<String> getContainerIdIfContainerized() throws IOException, InterruptedException {
+    public Optional<String> getContainerIdIfContainerized(@NonNull EnvVars launchEnv) throws IOException, InterruptedException {
         if (node == null) {
             return Optional.absent();
         }
+
+        // First, try deprecated/obsolete cgroup 1.x.  Note that cgroup 2.x, and Docker Desktop, are incompatible with this approach.
+        // If we can figure out our container Id using cgroup 1.x, use it.
         FilePath cgroupFile = node.createPath("/proc/self/cgroup");
-        if (cgroupFile == null || !cgroupFile.exists()) {
-            return Optional.absent();
+        if (cgroupFile != null && cgroupFile.exists()) {
+            try {
+                Optional<String> containerId = ControlGroup.getContainerId(cgroupFile);
+                if (containerId.isPresent()) {
+                    return containerId;
+                }
+            } catch (IOException ex) {
+                System.err.println("Caught non-critical exception attempting to read deprecated/obsolete cgroup 1.x: " + ex.getMessage());
+            }
         }
-        return ControlGroup.getContainerId(cgroupFile);
+
+        // Next, if a /.dockerenv file exists, try /etc/hostname as container Id.
+        FilePath dockerenvFile = node.createPath("/.dockerenv");
+        if (dockerenvFile != null && dockerenvFile.exists()) {
+            FilePath hostnameFile = node.createPath("/etc/hostname");
+            if (hostnameFile != null && hostnameFile.exists()) {
+                BufferedReader r = new BufferedReader(new InputStreamReader(hostnameFile.read(), StandardCharsets.UTF_8));
+                String line;
+                if ((line = r.readLine()) != null) {
+                    line = line.trim();
+                    Matcher matcher = Pattern.compile("^([a-z0-9]{12})$").matcher(line);
+                    if (matcher.find()) {
+                        String containerId = matcher.group();
+                        List<String> processes = listProcess(launchEnv, containerId);
+                        if (!processes.isEmpty()) {
+                            return Optional.of(containerId);
+                        }
+                    }
+                }
+            }
+        }
+
+        return Optional.absent();
     }
 
     public ContainerRecord getContainerRecord(@NonNull EnvVars launchEnv, String containerId) throws IOException, InterruptedException {

@@ -166,7 +166,7 @@ public class WithContainerStep extends AbstractStepImpl {
 
             Map<String, String> volumes = new LinkedHashMap<String, String>();
             Collection<String> volumesFromContainers = new LinkedHashSet<String>();
-            Optional<String> containerId = dockerClient.getContainerIdIfContainerized();
+            Optional<String> containerId = dockerClient.getContainerIdIfContainerized(env);
             if (containerId.isPresent()) {
                 listener.getLogger().println(node.getDisplayName() + " seems to be running inside container " + containerId.get());
                 final Collection<String> mountedVolumes = dockerClient.getVolumes(env, containerId.get());
