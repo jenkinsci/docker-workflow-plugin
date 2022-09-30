@@ -370,12 +370,12 @@ public class DockerClient {
         if (dockerenvFile != null && dockerenvFile.exists()) {
             FilePath hostnameFile = node.createPath("/etc/hostname");
             if (hostnameFile != null && hostnameFile.exists()) {
-                BufferedReader r = new BufferedReader(new InputStreamReader(hostnameFile.read(), StandardCharsets.UTF_8));
-                try {
+                Pattern containerIdPattern = Pattern.compile("^([a-z0-9]{12})$");
+                try (BufferedReader r = new BufferedReader(new InputStreamReader(hostnameFile.read(), StandardCharsets.UTF_8))) {
                     String line;
                     if ((line = r.readLine()) != null) {
                         line = line.trim();
-                        Matcher matcher = Pattern.compile("^([a-z0-9]{12})$").matcher(line);
+                        Matcher matcher = containerIdPattern.matcher(line);
                         if (matcher.find()) {
                             String containerId = matcher.group();
                             List<String> processes = listProcess(launchEnv, containerId);
@@ -384,8 +384,6 @@ public class DockerClient {
                             }
                         }
                     }
-                } finally {
-                    r.close();
                 }
             }
         }
