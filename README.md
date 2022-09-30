@@ -12,17 +12,6 @@ Summary
 
 A full description is available in the plugin’s [documentation](https://go.cloudbees.com/docs/plugins/docker-workflow/).
 
-Building
----
-```console
-rm -rf target               # if you want a 100% clean build
-mvn package -DskipTests
-```
-
-This will create a target/docker-workflow.hpi file, which can be uploaded manually to Jenkins by clicking Dashboard -> Manage Jenkins -> Manage Plugins -> Advanced, then scrolling down to the section titled Deploy Plugin, clicking Deploy Plugin, selecting this file, and clicking Deploy.
-
-After deploying, you will need to restart Jenkins.  When Jenkins is running in Docker, it apparently is not capable of restarting itself, so you'll have to stop the Docker container and restart it.
-
 Demo
 ---
 The plugin has an outdated Docker-based demo. See the [demo README from v1.12](https://github.com/jenkinsci/docker-workflow-plugin/tree/docker-workflow-1.12/demo) for setup and launch guidelines.
