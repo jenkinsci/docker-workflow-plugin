@@ -361,7 +361,7 @@ public class DockerClient {
                     return containerId;
                 }
             } catch (IOException ex) {
-                System.err.println("Caught non-critical exception attempting to read deprecated/obsolete cgroup 1.x: " + ex.getMessage());
+                LOGGER.log(Level.FINE, "Unable to detect container ID using cgroup v1 API, will try using cgroup v2 API", ex);
             }
         }
 
