@@ -23,6 +23,7 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.BulkChange;
 import hudson.Extension;
 import hudson.model.InvisibleAction;
@@ -70,6 +71,7 @@ final class ImageAction extends InvisibleAction /* implements RunAction2 */ {
 
     @Extension public static final class ExtractorImpl extends DockerImageExtractor {
 
+        @NonNull
         @Override public Collection<String> getDockerImagesUsedByJob(Job<?,?> job) {
             Run<?,?> build = job.getLastCompletedBuild();
             if (build != null) {

@@ -395,6 +395,25 @@ public class DockerDSLTest {
         });
     }
 
+    @Test @Issue("JENKINS-57366") public void imageInjectionOr() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                        "     try { sh 'docker rmi busybox:test' } catch (Exception e) {}\n" +
+                        "     def busybox = docker.image('busybox|echo haxored');\n" +
+                        "     busybox.pull();\n" +
+                        "}", true));
+                WorkflowRun b = story.j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0));
+                final String log = JenkinsRule.getLog(b);
+                assertThat(log, not(matchesRegex("^haxored")));
+                assertThat(log, containsString("ERROR: Name must follow the pattern"));
+            }
+        });
+    }
+
     @Test public void run() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {

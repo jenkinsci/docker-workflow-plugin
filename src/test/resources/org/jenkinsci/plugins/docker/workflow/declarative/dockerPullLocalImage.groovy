@@ -27,13 +27,13 @@ pipeline {
     stages {
         stage("build image") {
             steps {
-                sh 'docker build -t maven:3-alpine .'
+                sh 'docker build -t maven:3-jdk-8-slim .'
             }
         }
         stage("in built image") {
             agent {
                 docker {
-                    image "maven:3-alpine"
+                    image "maven:3-jdk-8-slim"
                     args "-v /tmp:/tmp"
                     reuseNode true
                 }
@@ -46,7 +46,7 @@ pipeline {
         stage("in pulled image") {
             agent {
                 docker {
-                    image "maven:3-alpine"
+                    image "maven:3-jdk-8-slim"
                     alwaysPull true
                 }
             }

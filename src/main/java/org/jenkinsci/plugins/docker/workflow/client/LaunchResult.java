@@ -23,8 +23,7 @@
  */
 package org.jenkinsci.plugins.docker.workflow.client;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Launch result.
@@ -34,8 +33,8 @@ import javax.annotation.Nonnull;
 public class LaunchResult {
 
     private int status;
-    private @Nonnull String out;
-    private @Nonnull String err;
+    private @NonNull String out;
+    private @NonNull String err;
 
     LaunchResult() {
         this(0, "", "");
@@ -56,20 +55,20 @@ public class LaunchResult {
         return this;
     }
 
-    public @Nonnull String getOut() {
+    public @NonNull String getOut() {
         return out;
     }
 
-    LaunchResult setOut(@Nonnull String out) {
+    LaunchResult setOut(@NonNull String out) {
         this.out = out.trim();
         return this;
     }
 
-    public @Nonnull String getErr() {
+    public @NonNull String getErr() {
         return err;
     }
 
-    LaunchResult setErr(@Nonnull String err) {
+    LaunchResult setErr(@NonNull String err) {
         this.err = err.trim();
         return this;
     }
