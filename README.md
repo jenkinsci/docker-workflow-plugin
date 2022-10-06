@@ -1,4 +1,4 @@
-Docker Pipeline Plugin
+Docker Workflow Plugin
 =====================================
 
 [![Jenkins Plugin](https://img.shields.io/jenkins/plugin/v/docker-workflow.svg)](https://plugins.jenkins.io/docker-workflow)
