@@ -32,9 +32,11 @@ import hudson.Launcher;
 import hudson.model.FileParameterValue;
 import hudson.model.Result;
 import hudson.model.TaskListener;
+import hudson.slaves.DumbSlave;
 import hudson.tools.ToolProperty;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.Secret;
+import hudson.util.StreamTaskListener;
 import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,6 +50,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.Matchers;
+import static org.hamcrest.Matchers.is;
 import org.jenkinsci.lib.configprovider.ConfigProvider;
 import org.jenkinsci.lib.configprovider.model.Config;
 import org.jenkinsci.plugins.configfiles.custom.CustomConfig;
@@ -66,6 +69,7 @@ import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import org.junit.Assume;
+import static org.junit.Assume.assumeTrue;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -76,6 +80,7 @@ import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.LoggerRule;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
+import org.jvnet.hudson.test.SimpleCommandLauncher;
 import org.jvnet.hudson.test.TestExtension;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -453,6 +458,37 @@ public class WithContainerStepTest {
                 return ImmutableSet.of(Launcher.class, TaskListener.class);
             }
         }
+    }
+
+    @Issue("JENKINS-64608")
+    @Test public void runningInsideContainer() throws Throwable {
+        story.then(r -> {
+            DockerTestUtil.assumeDocker();
+            assumeTrue("have docker.sock", new File("/var/run/docker.sock").exists());
+            TaskListener taskListener = StreamTaskListener.fromStderr();
+            Launcher.LocalLauncher launcher = new Launcher.LocalLauncher(taskListener);
+            int status = launcher.launch().stdout(taskListener).
+                pwd(new File(WithContainerStepTest.class.getResource("agent-with-docker/Dockerfile").toURI()).getParentFile()).
+                cmds(DockerTool.getExecutable(null, null, null, null), "build", "-t", "agent-with-docker", ".").
+                start().
+                joinWithTimeout(DockerClient.CLIENT_TIMEOUT, TimeUnit.SECONDS, taskListener);
+            Assume.assumeThat("Built agent-with-docker image", status, is(0));
+            DumbSlave s = new DumbSlave("dockerized", "/home/jenkins/agent",
+                new SimpleCommandLauncher("docker run -i --rm --init -v /var/run/docker.sock:/var/run/docker.sock agent-with-docker java -jar /usr/share/jenkins/agent.jar"));
+            r.jenkins.addNode(s);
+            r.waitOnline(s);
+            WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+            p.setDefinition(new CpsFlowDefinition(
+                "node('dockerized') {\n" +
+                "  sh 'which docker && docker version'\n" +
+                "  withDockerContainer('httpd:2.4.12') {\n" +
+                "    sh 'cp /usr/local/apache2/conf/extra/httpd-userdir.conf .; ls -la'\n" +
+                "  }\n" +
+                "  sh 'ls -la; cat *.conf'\n" +
+                "}", true));
+            WorkflowRun b = r.buildAndAssertSuccess(p);
+            r.assertLogContains("dockerized seems to be running inside container ", b);
+        });
     }
 
 }
