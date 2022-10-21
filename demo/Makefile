@@ -29,23 +29,10 @@ build-registry:
 	./gen-security-data.sh certs
 	docker build -t registry:docker-workflow-demo -f Dockerfile-registry .
 
-copy-plugins:
-	set -e; \
-	rm -rf plugins; \
-	mkdir plugins; \
-	for gav in `cat plugins.txt`; do \
-	  g=`echo $$gav | cut -f1 -d: | perl -pe 's{[.]}{/}g'`; \
-	  a=`echo $$gav | cut -f2 -d:`; \
-	  v=`echo $$gav | cut -f3 -d:`; \
-	  hpi=$$HOME/.m2/repository/$$g/$$a/$$v/$$a-$$v.hpi; \
-	  if [ \! -f $$hpi ]; then \
-	    mvn -U org.apache.maven.plugins:maven-dependency-plugin:2.5.1:get -Dartifact=$$gav:hpi -Dtransitive=false ||\
-	      (locate $$a-$$v.hpi | fgrep .m2/repository/; false); \
-	  fi; \
-	  cp -v $$hpi plugins/$$a.jpi; \
-	done
+../target/docker-workflow.hpi: ../pom.xml $(shell find ../src ../.mvn)
+	mvn -f .. -Pquick-build clean package
 
-build:	copy-plugins build-registry
+build: ../target/docker-workflow.hpi build-registry
 	docker build -t $(IMAGE):$(TAG) .
 
 # To connect a Java debugger to the Jenkins instance running in the docker container, simply add the following

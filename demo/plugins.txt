@@ -1,6 +1,0 @@
-org.jenkins-ci.plugins:authentication-tokens:1.3
-org.jenkins-ci.plugins:credentials-binding:1.12
-org.jenkins-ci.plugins:docker-commons:1.7
-org.jenkins-ci.plugins:docker-workflow:1.12
-org.jenkins-ci.plugins.icon-shim:icon-shim:2.0.3
-org.jenkins-ci.plugins:xvnc:1.24

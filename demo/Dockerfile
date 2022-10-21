@@ -22,7 +22,7 @@
 # THE SOFTWARE.
 ##
 
-FROM jenkinsci/workflow-demo:2017-06-15
+FROM jenkins/jenkins
 
 USER root
 
@@ -38,23 +38,34 @@ RUN set -x \
 	&& rm docker.tgz \
 	&& docker -v
 
+RUN cd /opt && \
+  curl -s https://dlcdn.apache.org/maven/maven-3/3.8.6/binaries/apache-maven-3.8.6-bin.tar.gz | tar xvfz - && \
+  ln -s /opt/apache-maven-3.8.6/bin/mvn /usr/bin && \
+  which mvn && \
+  mvn -version
+
 ADD repo /tmp/repo
 RUN git config --global user.email "demo@jenkins-ci.org" && git config --global user.name "Docker Workflow Demo" && cd /tmp/repo && git init && git add . && git commit -m 'demo'
 
 # Run commands identical to those in Pipeline script to warm up the cache:
-RUN echo '<settings><mirrors><mirror><id>central</id><url>http://repo.jenkins-ci.org/simple/repo1-cache/</url><mirrorOf>central</mirrorOf></mirror></mirrors></settings>' > settings.xml
-RUN /usr/local/maven/bin/mvn -s settings.xml -Dmaven.repo.local=/usr/share/jenkins/ref/jobs/docker-workflow/workspace@tmp/m2repo -f /tmp/repo/app -B -DskipTests clean package && \
-    /usr/local/maven/bin/mvn -s settings.xml -Dmaven.repo.local=/usr/share/jenkins/ref/jobs/docker-workflow/workspace@tmp/m2repo -f /tmp/repo/test -B -Dmaven.test.failure.ignore clean test
+RUN echo '<settings><mirrors><mirror><id>central</id><url>http://repo.jenkins-ci.org/public/</url><mirrorOf>*</mirrorOf></mirror></mirrors></settings>' > settings.xml
+RUN mvn -s settings.xml -Dmaven.repo.local=/usr/share/jenkins/ref/jobs/docker-workflow/workspace@tmp/m2repo -f /tmp/repo/app -B -DskipTests clean package && \
+    mvn -s settings.xml -Dmaven.repo.local=/usr/share/jenkins/ref/jobs/docker-workflow/workspace@tmp/m2repo -f /tmp/repo/test -B -Dmaven.test.failure.ignore clean test
 # TODO switch to a persistent volume as in parallel-test-executor-demo, after making sure run-demo.sh starts by deleting snapshots from it
 
-COPY plugins /usr/share/jenkins/ref/plugins
-
-# Remove the base workflow-demo "cd" job
-RUN rm -rf /usr/share/jenkins/ref/jobs/cd
+RUN jenkins-plugin-cli --plugins \
+  credentials-binding \
+  docker-workflow \
+  xvnc
+COPY docker-workflow.jpi /usr/share/jenkins/ref/plugins
 
 ADD JENKINS_HOME /usr/share/jenkins/ref
 
 COPY run-demo.sh /usr/local/bin/run-demo.sh
 ENV JAVA_OPTS -Djenkins.install.state=INITIAL_SECURITY_SETUP
+
+RUN chown -R jenkins.jenkins /usr/share/jenkins/ref /tmp/repo
+
+USER jenkins
 
 CMD /usr/local/bin/run-demo.sh
