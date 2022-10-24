@@ -30,8 +30,7 @@
 
     <properties>
         <changelist>999999-SNAPSHOT</changelist>
-        <jenkins.version>2.332.1</jenkins.version>
-        <pipeline-model-definition-plugin.version>2.2097.v33db_b_de764b_e</pipeline-model-definition-plugin.version> <!-- TODO: Delete this and related dependencyManagement entries once this version is included in BOM -->
+        <jenkins.version>2.332.1</jenkins.version>        
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     </properties>
     <repositories>
@@ -57,18 +56,15 @@
             </dependency>
             <dependency>
                 <groupId>org.jenkinsci.plugins</groupId>
-                <artifactId>pipeline-model-api</artifactId>
-                <version>${pipeline-model-definition-plugin.version}</version>
+                <artifactId>pipeline-model-api</artifactId>                
             </dependency>
              <dependency>
                 <groupId>org.jenkinsci.plugins</groupId>
-                <artifactId>pipeline-model-extensions</artifactId>
-                <version>${pipeline-model-definition-plugin.version}</version>
+                <artifactId>pipeline-model-extensions</artifactId>                
             </dependency>
              <dependency>
                 <groupId>org.jenkinsci.plugins</groupId>
-                <artifactId>pipeline-stage-tags-metadata</artifactId>
-                <version>${pipeline-model-definition-plugin.version}</version>
+                <artifactId>pipeline-stage-tags-metadata</artifactId>                
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -134,7 +130,6 @@
         <dependency>
             <groupId>org.jenkinsci.plugins</groupId>
             <artifactId>pipeline-model-definition</artifactId>
-            <version>${pipeline-model-definition-plugin.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -156,7 +151,6 @@
         <dependency>
             <groupId>org.jenkinsci.plugins</groupId>
             <artifactId>pipeline-model-definition</artifactId>
-            <version>${pipeline-model-definition-plugin.version}</version>
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
