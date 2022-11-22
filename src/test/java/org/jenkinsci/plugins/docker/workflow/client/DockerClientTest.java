@@ -59,20 +59,26 @@ public class DockerClientTest {
     public void test_run() throws IOException, InterruptedException {
         EnvVars launchEnv = DockerTestUtil.newDockerLaunchEnv();
         String containerId =
-                dockerClient.run(launchEnv, "learn/tutorial", null, null, Collections.<String, String>emptyMap(), Collections.<String>emptyList(), new EnvVars(),
+                dockerClient.run(launchEnv, "docker:20.10.9-dind", null, null, Collections.<String, String>emptyMap(), Collections.<String>emptyList(), new EnvVars(),
                         dockerClient.whoAmI(), "cat");
         Assert.assertEquals(64, containerId.length());
         ContainerRecord containerRecord = dockerClient.getContainerRecord(launchEnv, containerId);
-        Assert.assertEquals(dockerClient.inspect(launchEnv, "learn/tutorial", ".Id"), containerRecord.getImageId());
+        Assert.assertEquals(dockerClient.inspect(launchEnv, "docker:20.10.9-dind", ".Id"), containerRecord.getImageId());
         Assert.assertTrue(containerRecord.getContainerName().length() > 0);
         Assert.assertTrue(containerRecord.getHost().length() > 0);
         Assert.assertTrue(containerRecord.getCreated() > 1000000000000L);
         Assert.assertEquals(Collections.<String>emptyList(), dockerClient.getVolumes(launchEnv, containerId));
 
+        // Check that an anonymous volume was created
+        String anonymousVolumeName = dockerClient.inspect(launchEnv, containerId, "range .Mounts }}{{ .Name }}{{ end");
+        Assert.assertEquals(64, anonymousVolumeName.length());
+
         // Also test that the stop works and cleans up after itself
         Assert.assertNotNull(dockerClient.inspect(launchEnv, containerId, ".Name"));
         dockerClient.stop(launchEnv, containerId);
         Assert.assertNull(dockerClient.inspect(launchEnv, containerId, ".Name"));
+        // Check that the anonymous volume was removed
+        Assert.assertNull(dockerClient.inspect(launchEnv, anonymousVolumeName, ".Name"));
     }
 
     @Test
