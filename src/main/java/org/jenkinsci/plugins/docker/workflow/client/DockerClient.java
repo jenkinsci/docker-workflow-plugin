@@ -93,6 +93,10 @@ public class DockerClient {
     private final @CheckForNull Node node;
     private final @CheckForNull String toolName;
 
+    public static String[] getUnixCommand(EnvVars env, String defaultCmd) {
+        return env.get("DEFAULT_DOCKER_COMMAND", defaultCmd).split(" ");
+    }
+
     public DockerClient(@NonNull Launcher launcher, @CheckForNull Node node, @CheckForNull String toolName) {
         this.launcher = launcher;
         this.node = node;
