@@ -199,7 +199,7 @@ public class DockerClient {
      */
     public void rm(@NonNull EnvVars launchEnv, @NonNull String containerId) throws IOException, InterruptedException {
         LaunchResult result;
-        result = launch(launchEnv, false, "rm", "-f", containerId);
+        result = launch(launchEnv, false, "rm", "-f", "--volumes", containerId);
         if (result.getStatus() != 0) {
             throw new IOException(String.format("Failed to rm container '%s'.", containerId));
         }
