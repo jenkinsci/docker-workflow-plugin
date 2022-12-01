@@ -57,22 +57,31 @@ public class DockerClientTest {
 
     @Test
     public void test_run() throws IOException, InterruptedException {
+        // Pin to a specific sha256 hash of the image to avoid any potential issues with the image changing in the future.
+        // Original image tag: docker:20.10.9-dind
+        String image = "docker.io/library/docker@sha256:d842418d21545fde57c2512681d9bdc4ce0e54f2e0305a293ee20a9b6166932b";
         EnvVars launchEnv = DockerTestUtil.newDockerLaunchEnv();
         String containerId =
-                dockerClient.run(launchEnv, "learn/tutorial", null, null, Collections.<String, String>emptyMap(), Collections.<String>emptyList(), new EnvVars(),
+                dockerClient.run(launchEnv, image, null, null, Collections.<String, String>emptyMap(), Collections.<String>emptyList(), new EnvVars(),
                         dockerClient.whoAmI(), "cat");
         Assert.assertEquals(64, containerId.length());
         ContainerRecord containerRecord = dockerClient.getContainerRecord(launchEnv, containerId);
-        Assert.assertEquals(dockerClient.inspect(launchEnv, "learn/tutorial", ".Id"), containerRecord.getImageId());
+        Assert.assertEquals(dockerClient.inspect(launchEnv, image, ".Id"), containerRecord.getImageId());
         Assert.assertTrue(containerRecord.getContainerName().length() > 0);
         Assert.assertTrue(containerRecord.getHost().length() > 0);
         Assert.assertTrue(containerRecord.getCreated() > 1000000000000L);
-        Assert.assertEquals(Collections.<String>emptyList(), dockerClient.getVolumes(launchEnv, containerId));
+
+        // Check that an anonymous volume was created mounted at /var/lib/docker
+        Assert.assertEquals(Collections.<String>singletonList("/var/lib/docker"), dockerClient.getVolumes(launchEnv, containerId));
+        String anonymousVolumeName = dockerClient.inspect(launchEnv, containerId, "range .Mounts }}{{ .Name }}{{ end");
+        Assert.assertEquals(64, anonymousVolumeName.length());
 
         // Also test that the stop works and cleans up after itself
         Assert.assertNotNull(dockerClient.inspect(launchEnv, containerId, ".Name"));
         dockerClient.stop(launchEnv, containerId);
         Assert.assertNull(dockerClient.inspect(launchEnv, containerId, ".Name"));
+        // Check that the anonymous volume was removed
+        Assert.assertNull(dockerClient.inspect(launchEnv, anonymousVolumeName, ".Name"));
     }
 
     @Test

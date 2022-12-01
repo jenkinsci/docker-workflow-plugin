@@ -23,6 +23,7 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import java.io.IOException;
 import java.util.logging.Level;
@@ -48,7 +49,7 @@ abstract class AbstractEndpointStepExecution extends AbstractStepExecutionImpl {
         throw new AssertionError();
     }
 
-    @Override public final void stop(Throwable cause) throws Exception {
+    @Override public final void stop(@NonNull Throwable cause) throws Exception {
         // should not need to do anything special
     }
 

@@ -47,7 +47,6 @@
                 Runs <code>docker build</code> to create and tag the specified image from a <code>Dockerfile</code> in the current directory.
                 Additional <code>args</code> may be added, such as <code>'-f Dockerfile.other --pull --build-arg http_proxy=http://192.168.1.1:3128 .'</code>. Like <code>docker build</code>, <code>args</code> must end with the build context.
                 Returns the resulting <code>Image</code> object.
-                Records a <code>FROM</code> fingerprint in the build.
             </p>
         </dd>
         <dt><code>Image.id</code></dt>
@@ -62,7 +61,6 @@
                 Uses <code>docker run</code> to run the image, and returns a <code>Container</code> which you could <code>stop</code> later.
                 Additional <code>args</code> may be added, such as <code>'-p 8080:8080 --memory-swap=-1'</code>.
                 Optional <code>command</code> is equivalent to Docker command specified after the image.
-                Records a run fingerprint in the build.
             </p>
         </dd>
         <dt><code>Image.withRun[(args[, command])] {…}</code></dt>
@@ -114,7 +112,7 @@
                 Hexadecimal ID of a running container.
             </p>
         </dd>
-        <dt><code>Container.stop</code></dt>
+        <dt><code>Container.stop()</code></dt>
         <dd>
             <p>
                 Runs <code>docker stop</code> and <code>docker rm</code> to shut down a container and remove its storage.

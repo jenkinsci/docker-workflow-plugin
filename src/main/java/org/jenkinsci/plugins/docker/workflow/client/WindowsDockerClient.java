@@ -1,14 +1,15 @@
 package org.jenkinsci.plugins.docker.workflow.client;
 
 import com.google.common.base.Optional;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.Node;
+import hudson.os.WindowsUtil;
 import hudson.util.ArgumentListBuilder;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.*;
@@ -22,14 +23,14 @@ public class WindowsDockerClient extends DockerClient {
     private final Launcher launcher;
     private final Node node;
 
-    public WindowsDockerClient(@Nonnull Launcher launcher, @CheckForNull Node node, @CheckForNull String toolName) {
+    public WindowsDockerClient(@NonNull Launcher launcher, @CheckForNull Node node, @CheckForNull String toolName) {
         super(launcher, node, toolName);
         this.launcher = launcher;
         this.node = node;
     }
 
     @Override
-    public String run(@Nonnull EnvVars launchEnv, @Nonnull String image, @CheckForNull String args, @CheckForNull String workdir, @Nonnull Map<String, String> volumes, @Nonnull Collection<String> volumesFromContainers, @Nonnull EnvVars containerEnv, @Nonnull String user, @Nonnull String... command) throws IOException, InterruptedException {
+    public String run(@NonNull EnvVars launchEnv, @NonNull String image, @CheckForNull String args, @CheckForNull String workdir, @NonNull Map<String, String> volumes, @NonNull Collection<String> volumesFromContainers, @NonNull EnvVars containerEnv, @NonNull String user, @NonNull String... command) throws IOException, InterruptedException {
         ArgumentListBuilder argb = new ArgumentListBuilder("docker", "run", "-d", "-t");
         if (args != null) {
             argb.addTokenized(args);
@@ -46,7 +47,7 @@ public class WindowsDockerClient extends DockerClient {
         }
         for (Map.Entry<String, String> variable : containerEnv.entrySet()) {
             argb.add("-e");
-            argb.addMasked(variable.getKey()+"="+variable.getValue());
+            argb.addMasked(WindowsUtil.quoteArgument(variable.getKey() + "=" + variable.getValue()));
         }
         argb.add(image).add(command);
 
@@ -59,7 +60,7 @@ public class WindowsDockerClient extends DockerClient {
     }
 
     @Override
-    public List<String> listProcess(@Nonnull EnvVars launchEnv, @Nonnull String containerId) throws IOException, InterruptedException {
+    public List<String> listProcess(@NonNull EnvVars launchEnv, @NonNull String containerId) throws IOException, InterruptedException {
         LaunchResult result = launch(launchEnv, false, null, "docker", "top", containerId);
         if (result.getStatus() != 0) {
             throw new IOException(String.format("Failed to run top '%s'. Error: %s", containerId, result.getErr()));

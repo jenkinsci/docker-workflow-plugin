@@ -47,8 +47,8 @@ public class DockerUtilsTest {
 
         final String imageToUpdate = "hello-world:latest";
         final String key = "IMAGE_TO_UPDATE";
-        final String commangLine = "docker build -t hello-world --build-arg "+key+"="+imageToUpdate;
-        Map<String, String> buildArgs = DockerUtils.parseBuildArgs(dockerfile, commangLine);
+        final String commandLine = "docker build -t hello-world --build-arg "+key+"="+imageToUpdate;
+        Map<String, String> buildArgs = DockerUtils.parseBuildArgs(dockerfile, commandLine);
 
         Assert.assertThat(buildArgs.keySet(), IsCollectionWithSize.hasSize(1));
         Assert.assertThat(buildArgs.keySet(), IsCollectionContaining.hasItems(key));
@@ -62,8 +62,8 @@ public class DockerUtilsTest {
         final String registry = "";
         final String key_registry = "REGISTRY_URL";
         final String key_tag = "TAG";
-        final String commangLine = "docker build -t hello-world";
-        Map<String, String> buildArgs = DockerUtils.parseBuildArgs(dockerfile, commangLine);
+        final String commandLine = "docker build -t hello-world";
+        Map<String, String> buildArgs = DockerUtils.parseBuildArgs(dockerfile, commandLine);
 
         Assert.assertThat(buildArgs.keySet(), IsCollectionWithSize.hasSize(2));
         Assert.assertThat(buildArgs.keySet(), IsCollectionContaining.hasItems(key_registry, key_tag));
@@ -79,9 +79,9 @@ public class DockerUtilsTest {
         final String key_registry = "REGISTRY_URL";
         final String key_tag = "TAG";
         final String tag = "1.2.3";
-        final String commangLine = "docker build -t hello-world --build-arg "+key_tag+"="+tag+
+        final String commandLine = "docker build -t hello-world --build-arg "+key_tag+"="+tag+
             " --build-arg "+key_registry+"="+registry;
-        Map<String, String> buildArgs = DockerUtils.parseBuildArgs(dockerfile, commangLine);
+        Map<String, String> buildArgs = DockerUtils.parseBuildArgs(dockerfile, commandLine);
 
         Assert.assertThat(buildArgs.keySet(), IsCollectionWithSize.hasSize(2));
         Assert.assertThat(buildArgs.keySet(), IsCollectionContaining.hasItems(key_registry, key_tag));
@@ -90,9 +90,9 @@ public class DockerUtilsTest {
     }
 
     @Test public void parseBuildArgWithKeyAndEqual() throws IOException, InterruptedException {
-        final String commangLine = "docker build -t hello-world --build-arg key=";
+        final String commandLine = "docker build -t hello-world --build-arg key=";
 
-        Map<String, String> buildArgs = DockerUtils.parseBuildArgs(null, commangLine);
+        Map<String, String> buildArgs = DockerUtils.parseBuildArgs(null, commandLine);
 
         Assert.assertThat(buildArgs.keySet(), IsCollectionWithSize.hasSize(1));
         Assert.assertThat(buildArgs.keySet(), IsCollectionContaining.hasItems("key"));
@@ -100,17 +100,17 @@ public class DockerUtilsTest {
     }
 
     @Test public void parseInvalidBuildArg() throws IOException, InterruptedException {
-        final String commangLine = "docker build -t hello-world --build-arg";
+        final String commandLine = "docker build -t hello-world --build-arg";
 
         exception.expect(IllegalArgumentException.class);
-        DockerUtils.parseBuildArgs(null, commangLine);
+        DockerUtils.parseBuildArgs(null, commandLine);
     }
 
     @Test public void parseInvalidBuildArgWithKeyOnly() throws IOException, InterruptedException {
-        final String commangLine = "docker build -t hello-world --build-arg key";
+        final String commandLine = "docker build -t hello-world --build-arg key";
 
         exception.expect(IllegalArgumentException.class);
-        DockerUtils.parseBuildArgs(null, commangLine);
+        DockerUtils.parseBuildArgs(null, commandLine);
     }
 
     private Dockerfile getDockerfileDefaultArgs() throws IOException, InterruptedException {
