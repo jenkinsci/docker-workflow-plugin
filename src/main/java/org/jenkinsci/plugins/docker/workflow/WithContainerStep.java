@@ -107,7 +107,7 @@ public class WithContainerStep extends AbstractStepImpl {
         this.toolName = Util.fixEmpty(toolName);
     }
 
-    private static void destroy(String container, Launcher launcher, Node node, EnvVars launcherEnv, String toolName) throws Exception {
+    private static void destroy(String container, @NonNull Launcher launcher, Node node, EnvVars launcherEnv, String toolName) throws Exception {
         new DockerClient(launcher, node, toolName).stop(launcherEnv, container);
     }
 
@@ -410,7 +410,10 @@ public class WithContainerStep extends AbstractStepImpl {
         }
 
         @Override protected void finished(StepContext context) throws Exception {
-            destroy(container, context.get(Launcher.class), context.get(Node.class), context.get(EnvVars.class), toolName);
+            Launcher launcher = context.get(Launcher.class);
+            if (launcher != null) {
+                destroy(container, launcher, context.get(Node.class), context.get(EnvVars.class), toolName);
+            }
         }
 
     }
