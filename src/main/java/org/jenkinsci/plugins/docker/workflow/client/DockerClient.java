@@ -36,9 +36,12 @@ import hudson.util.VersionNumber;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -196,7 +199,7 @@ public class DockerClient {
      */
     public void rm(@NonNull EnvVars launchEnv, @NonNull String containerId) throws IOException, InterruptedException {
         LaunchResult result;
-        result = launch(launchEnv, false, "rm", "-f", containerId);
+        result = launch(launchEnv, false, "rm", "-f", "--volumes", containerId);
         if (result.getStatus() != 0) {
             throw new IOException(String.format("Failed to rm container '%s'.", containerId));
         }
@@ -336,6 +339,8 @@ public class DockerClient {
 
     }
 
+    private static final Pattern hostnameMount = Pattern.compile("/containers/([a-z0-9]{64})/hostname");
+
     /**
      * Checks if this {@link DockerClient} instance is running inside a container and returns the id of the container
      * if so.
@@ -349,10 +354,26 @@ public class DockerClient {
             return Optional.absent();
         }
         FilePath cgroupFile = node.createPath("/proc/self/cgroup");
-        if (cgroupFile == null || !cgroupFile.exists()) {
-            return Optional.absent();
+        if (cgroupFile != null && cgroupFile.exists()) {
+            Optional<String> containerId = ControlGroup.getContainerId(cgroupFile);
+            if (containerId.isPresent()) {
+                return containerId;
+            }
         }
-        return ControlGroup.getContainerId(cgroupFile);
+        // cgroup v2
+        FilePath mountInfo = node.createPath("/proc/1/mountinfo");
+        if (mountInfo != null && mountInfo.exists()) {
+            try (InputStream is = mountInfo.read(); Reader r = new InputStreamReader(is, StandardCharsets.UTF_8); BufferedReader br = new BufferedReader(r)) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    Matcher m = hostnameMount.matcher(line);
+                    if (m.find()) {
+                        return Optional.of(m.group(1));
+                    }
+                }
+            }
+        }
+        return Optional.absent();
     }
 
     public ContainerRecord getContainerRecord(@NonNull EnvVars launchEnv, String containerId) throws IOException, InterruptedException {
