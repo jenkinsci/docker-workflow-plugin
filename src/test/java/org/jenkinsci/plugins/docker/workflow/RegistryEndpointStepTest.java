@@ -70,13 +70,18 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import org.jenkinsci.plugins.structs.describable.DescribableModel;
+import org.jvnet.hudson.test.LoggerRule;
 
 public class RegistryEndpointStepTest {
 
     @Rule public JenkinsRule r = new JenkinsRule();
+    @Rule public LoggerRule logging = new LoggerRule();
 
     @Issue("JENKINS-51395")
     @Test public void configRoundTrip() throws Exception {
+        logging.record(DescribableModel.class, Level.FINE);
         { // Recommended syntax.
             SnippetizerTester st = new SnippetizerTester(r);
             RegistryEndpointStep step = new RegistryEndpointStep(new DockerRegistryEndpoint("https://myreg/", null));
