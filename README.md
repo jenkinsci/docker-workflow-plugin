@@ -5,6 +5,8 @@ Docker Pipeline Plugin
 [![GitHub release](https://img.shields.io/github/release/jenkinsci/docker-workflow-plugin.svg?label=changelog)](https://github.com/jenkinsci/docker-workflow-plugin/releases/latest)
 [![Jenkins Plugin Installs](https://img.shields.io/jenkins/plugin/i/docker-workflow.svg?color=blue)](https://plugins.jenkins.io/docker-workflow)
 
+***NOTE: this plugin is deprecated. It is advised to use docker CLI commands from `sh` steps rather than relying on the DSL.***
+
 Jenkins plugin which allows building, testing, and using Docker images from Jenkins Pipeline projects.
 
 Summary
