@@ -180,6 +180,22 @@ public class DockerAgentTest extends AbstractModelDefTest {
                 .go();
     }
 
+    @Issue("https://github.com/jenkinsci/docker-workflow-plugin/pull/57#issuecomment-1507755385")
+    @Test
+    public void userHandbookDockerfile() throws Exception {
+        DockerTestUtil.assumeDocker();
+
+        sampleRepo.write("Dockerfile", "FROM node:16.13.1-alpine\nRUN apk add -U subversion\n");
+        sampleRepo.git("init");
+        sampleRepo.git("add", "Dockerfile");
+        sampleRepo.git("commit", "--message=Dockerfile");
+
+        expect("org/jenkinsci/plugins/docker/workflow/declarative/userHandbookDockerfile")
+                .logContains("[Pipeline] { (Test)",
+                        "svn, version ")
+                .go();
+    }
+
     @Test
     public void additionalDockerBuildArgs() throws Exception {
         DockerTestUtil.assumeDocker();
