@@ -1,4 +1,10 @@
-buildPlugin(platforms: [
-    'linux',
-    'maven-windows' // TODO Docker-based tests fail when using Docker on Windows. The maven-windows agents do not have Docker installed so tests that require Docker are skipped.
+/*
+ See the documentation for more options:
+ https://github.com/jenkins-infra/pipeline-library/
+*/
+buildPlugin(
+  useContainerAgent: true, // Set to `false` if you need to use Docker for containerized tests
+  configurations: [
+    [platform: 'linux', jdk: 17],
+    [platform: 'windows', jdk: 11],
 ])
