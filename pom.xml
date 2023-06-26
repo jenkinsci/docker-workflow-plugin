@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.51</version>
+        <version>4.67</version>
         <relativePath />
     </parent>
     <artifactId>docker-workflow</artifactId>
@@ -30,7 +30,7 @@
 
     <properties>
         <changelist>999999-SNAPSHOT</changelist>
-        <jenkins.version>2.332.1</jenkins.version>        
+        <jenkins.version>2.361.4</jenkins.version>        
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     </properties>
     <repositories>
@@ -49,22 +49,10 @@
         <dependencies>
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.332.x</artifactId>
-                <version>1643.v1cffef51df73</version>
+                <artifactId>bom-2.361.x</artifactId>
+                <version>2102.v854b_fec19c92</version>
                 <scope>import</scope>
                 <type>pom</type>
-            </dependency>
-            <dependency>
-                <groupId>org.jenkinsci.plugins</groupId>
-                <artifactId>pipeline-model-api</artifactId>                
-            </dependency>
-             <dependency>
-                <groupId>org.jenkinsci.plugins</groupId>
-                <artifactId>pipeline-model-extensions</artifactId>                
-            </dependency>
-             <dependency>
-                <groupId>org.jenkinsci.plugins</groupId>
-                <artifactId>pipeline-stage-tags-metadata</artifactId>                
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -72,7 +60,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>docker-commons</artifactId>
-            <version>1.21</version>
+            <version>419.v8e3cd84ef49c</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
