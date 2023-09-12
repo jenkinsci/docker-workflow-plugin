@@ -29,6 +29,14 @@ public class WindowsDockerClient extends DockerClient {
         this.node = node;
     }
 
+    private String getDockerFormattedPath(@NonNull String path){
+        path=path.replace(":", "/");
+        if(path.charAt(0)!='/'){
+            path="/"+path.substring(1);
+        }
+        return path;
+    }
+
     @Override
     public String run(@NonNull EnvVars launchEnv, @NonNull String image, @CheckForNull String args, @CheckForNull String workdir, @NonNull Map<String, String> volumes, @NonNull Collection<String> volumesFromContainers, @NonNull EnvVars containerEnv, @NonNull String user, @NonNull String... command) throws IOException, InterruptedException {
         ArgumentListBuilder argb = new ArgumentListBuilder("docker", "run", "-d", "-t");
@@ -37,10 +45,10 @@ public class WindowsDockerClient extends DockerClient {
         }
 
         if (workdir != null) {
-            argb.add("-w", workdir);
+            argb.add("-w", getDockerFormattedPath(workdir));
         }
         for (Map.Entry<String, String> volume : volumes.entrySet()) {
-            argb.add("-v", volume.getKey() + ":" + volume.getValue());
+            argb.add("-v", getDockerFormattedPath(volume.getKey()) + ":" + getDockerFormattedPath(volume.getValue()));
         }
         for (String containerId : volumesFromContainers) {
             argb.add("--volumes-from", containerId);
