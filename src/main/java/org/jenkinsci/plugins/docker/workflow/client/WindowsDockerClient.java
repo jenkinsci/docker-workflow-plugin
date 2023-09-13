@@ -31,9 +31,6 @@ public class WindowsDockerClient extends DockerClient {
 
     private String getDockerFormattedPath(@NonNull String path){
         path=path.replace(":", "/");
-        if(path.charAt(0)!='/'){
-            path="/"+path.substring(1);
-        }
         return path;
     }
 
