@@ -30,7 +30,7 @@ public class WindowsDockerClient extends DockerClient {
     }
 
     private String getDockerFormattedPath(@NonNull String path){
-        path=path.replaceAll(":", "").replaceAll("\"", "");
+        path=path.replaceAll(":", "").replaceAll("\"", "").replaceAll("\"", "");
         if(!path.startsWith("/")){
             path="/"+path;
         }
@@ -121,7 +121,11 @@ public class WindowsDockerClient extends DockerClient {
     }
 
     private LaunchResult launch(EnvVars env, boolean quiet, FilePath workDir, String... args) throws IOException, InterruptedException {
-        return launch(env, quiet, workDir, new ArgumentListBuilder(args));
+        String[] newArgs = new String[args.length];
+        for (int i = 0; i < args.length; i++) {
+            newArgs[i]=getDockerFormattedPath(args[i]);
+        }
+        return launch(env, quiet, workDir, new ArgumentListBuilder(newArgs));
     }
     private LaunchResult launch(EnvVars env, boolean quiet, FilePath workDir, ArgumentListBuilder argb) throws IOException, InterruptedException {
         if (LOGGER.isLoggable(Level.FINE)) {
