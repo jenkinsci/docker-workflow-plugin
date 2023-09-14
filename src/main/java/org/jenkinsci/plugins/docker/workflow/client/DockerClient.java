@@ -189,6 +189,7 @@ public class DockerClient {
         if (!SKIP_RM_ON_STOP) {
             rm(launchEnv, containerId);
         }
+        throw new IOException(String.format("Failed to kill container '%s'.", containerId));
     }
 
     /**

@@ -161,7 +161,9 @@ public class WithContainerStep extends AbstractStepImpl {
             }
 
             FilePath tempDir = tempDir(workspace);
+
             tempDir.mkdirs();
+
             String tmp = getPath(tempDir);
 
             Map<String, String> volumes = new LinkedHashMap<String, String>();
@@ -196,7 +198,8 @@ public class WithContainerStep extends AbstractStepImpl {
                 volumes.put(tmp, tmp);
             }
 
-            String command = launcher.isUnix() ? "cat" : "cmd.exe";
+            String command = "cat";
+            //String command = launcher.isUnix() ? "cat" : "cmd.exe";
             container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ command);
             final List<String> ps = dockerClient.listProcess(env, container);
             if (!ps.contains(command)) {

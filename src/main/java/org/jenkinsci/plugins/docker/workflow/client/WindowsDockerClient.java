@@ -30,7 +30,10 @@ public class WindowsDockerClient extends DockerClient {
     }
 
     private String getDockerFormattedPath(@NonNull String path){
-        path=path.replace(":", "/");
+        path=path.replaceAll(":", "").replaceAll("\"", "");
+        if(!path.startsWith("/")){
+            path="/"+path;
+        }
         return path;
     }
 
@@ -60,7 +63,7 @@ public class WindowsDockerClient extends DockerClient {
         if (result.getStatus() == 0) {
             return result.getOut();
         } else {
-            throw new IOException(String.format("Failed to run image '%s'. Error: %s", image, result.getErr()));
+            throw new IOException(String.format("(WindowsClient) Failed to run image '%s'. Error: %s", image, result.getErr()));
         }
     }
 
@@ -68,7 +71,7 @@ public class WindowsDockerClient extends DockerClient {
     public List<String> listProcess(@NonNull EnvVars launchEnv, @NonNull String containerId) throws IOException, InterruptedException {
         LaunchResult result = launch(launchEnv, false, null, "docker", "top", containerId);
         if (result.getStatus() != 0) {
-            throw new IOException(String.format("Failed to run top '%s'. Error: %s", containerId, result.getErr()));
+            throw new IOException(String.format("(WindowsClient) Failed to run top '%s'. Error: %s", containerId, result.getErr()));
         }
         List<String> processes = new ArrayList<>();
         try (Reader r = new StringReader(result.getOut());
