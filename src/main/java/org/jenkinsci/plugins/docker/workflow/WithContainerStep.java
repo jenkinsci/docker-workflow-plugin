@@ -199,6 +199,7 @@ public class WithContainerStep extends AbstractStepImpl {
             }
 
             String command = "cat";
+            //this command will run on the container, not the agent. 'cat' is the correct command
             //String command = launcher.isUnix() ? "cat" : "cmd.exe";
             container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ command);
             final List<String> ps = dockerClient.listProcess(env, container);

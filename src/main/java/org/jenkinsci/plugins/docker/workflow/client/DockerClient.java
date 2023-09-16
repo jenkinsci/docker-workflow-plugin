@@ -181,15 +181,24 @@ public class DockerClient {
      * @param launchEnv Docker client launch environment.
      * @param containerId The container ID.
      */
-    public void stop(@NonNull EnvVars launchEnv, @NonNull String containerId) throws IOException, InterruptedException {
-        LaunchResult result = launch(launchEnv, false, "stop", "--time=1", containerId);
-        if (result.getStatus() != 0) {
-            throw new IOException(String.format("Failed to kill container '%s'.", containerId));
+        public void stop(@NonNull EnvVars launchEnv, @NonNull String containerId) throws IOException, InterruptedException {
+            stop(launchEnv, containerId, 1);
         }
+        public void stop(@NonNull EnvVars launchEnv, @NonNull String containerId, @NonNull int stopTime) throws IOException, InterruptedException {
+        LaunchResult result = launch(launchEnv, false, "docker", "stop", String.format("--time=%s", stopTime), containerId);
+        // ~ This approach for checking container shutdown status does not wait for the container to shut down. We should be using the inspect method
+        // instead ~
+        //if (result.getStatus() != 0) {
+        //    throw new IOException(String.format("Failed to kill container '%s'.  ==== %s", containerId, result.getStatus()));
+        //}
+        Thread.sleep((long)stopTime*1100);
+        if(inspect(launchEnv, containerId, ".Name")==null){
+            throw new IOException(String.format("Container '%s' failed to kill.", containerId));
+        }
+
         if (!SKIP_RM_ON_STOP) {
             rm(launchEnv, containerId);
         }
-        throw new IOException(String.format("Failed to kill container '%s'.", containerId));
     }
 
     /**

@@ -144,7 +144,7 @@ public class DockerDSLTest {
                         "  sh 'mvn -version'\n" +
                         "}", true));
 
-                story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertBuildStatusSuccess(p.scheduleBuild2(10));
             }
         });
     }

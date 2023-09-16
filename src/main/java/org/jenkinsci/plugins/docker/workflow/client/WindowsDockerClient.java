@@ -30,8 +30,8 @@ public class WindowsDockerClient extends DockerClient {
     }
 
     private String getDockerFormattedPath(@NonNull String path){
-        path=path.replaceAll(":", "").replaceAll("\"", "").replaceAll("\"", "");
-        if(!path.startsWith("/")){
+        path=path.replaceAll(":", "");
+        if(!path.startsWith("/")&&path.contains("/")){
             path="/"+path;
         }
         return path;
@@ -75,7 +75,7 @@ public class WindowsDockerClient extends DockerClient {
         }
         List<String> processes = new ArrayList<>();
         try (Reader r = new StringReader(result.getOut());
-             BufferedReader in = new BufferedReader(r)) {
+            BufferedReader in = new BufferedReader(r)) {
             String line;
             in.readLine(); // ps header
             while ((line = in.readLine()) != null) {
