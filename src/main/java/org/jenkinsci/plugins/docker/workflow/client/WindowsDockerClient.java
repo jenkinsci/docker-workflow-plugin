@@ -29,6 +29,14 @@ public class WindowsDockerClient extends DockerClient {
         this.node = node;
     }
 
+    private String getDockerFormattedPath(@NonNull String path){
+        path=path.replaceAll(":", "");
+        if(!path.startsWith("/")&&path.contains("/")){
+            path="/"+path;
+        }
+        return path;
+    }
+
     @Override
     public String run(@NonNull EnvVars launchEnv, @NonNull String image, @CheckForNull String args, @CheckForNull String workdir, @NonNull Map<String, String> volumes, @NonNull Collection<String> volumesFromContainers, @NonNull EnvVars containerEnv, @NonNull String user, @NonNull String... command) throws IOException, InterruptedException {
         ArgumentListBuilder argb = new ArgumentListBuilder("docker", "run", "-d", "-t");
@@ -37,10 +45,10 @@ public class WindowsDockerClient extends DockerClient {
         }
 
         if (workdir != null) {
-            argb.add("-w", workdir);
+            argb.add("-w", getDockerFormattedPath(workdir));
         }
         for (Map.Entry<String, String> volume : volumes.entrySet()) {
-            argb.add("-v", volume.getKey() + ":" + volume.getValue());
+            argb.add("-v", getDockerFormattedPath(volume.getKey()) + ":" + getDockerFormattedPath(volume.getValue()));
         }
         for (String containerId : volumesFromContainers) {
             argb.add("--volumes-from", containerId);
@@ -113,7 +121,11 @@ public class WindowsDockerClient extends DockerClient {
     }
 
     private LaunchResult launch(EnvVars env, boolean quiet, FilePath workDir, String... args) throws IOException, InterruptedException {
-        return launch(env, quiet, workDir, new ArgumentListBuilder(args));
+        String[] newArgs = new String[args.length];
+        for (int i = 0; i < args.length; i++) {
+            newArgs[i]=getDockerFormattedPath(args[i]);
+        }
+        return launch(env, quiet, workDir, new ArgumentListBuilder(newArgs));
     }
     private LaunchResult launch(EnvVars env, boolean quiet, FilePath workDir, ArgumentListBuilder argb) throws IOException, InterruptedException {
         if (LOGGER.isLoggable(Level.FINE)) {
