@@ -185,7 +185,7 @@ public class DockerClient {
         stop(launchEnv, containerId, 1);
     }
     public void stop(@NonNull EnvVars launchEnv, @NonNull String containerId, @NonNull int stopTime) throws IOException, InterruptedException {
-        LaunchResult result = launch(launchEnv, false, "docker", "stop", String.format("--time=%s", stopTime), containerId);
+        launch(launchEnv, false, "docker", "stop", String.format("--time=%s", stopTime), containerId);
         Thread.sleep((long)stopTime*1100);
         if(inspect(launchEnv, containerId, ".Name")==null){
             throw new IOException(String.format("Container '%s' failed to kill.", containerId));
