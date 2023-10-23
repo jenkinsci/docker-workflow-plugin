@@ -260,8 +260,8 @@ public class DockerClient {
      * @return The {@link VersionNumber} instance if the version string matches the expected format,
      * otherwise {@code null}.
      */
-    public @CheckForNull VersionNumber version() throws IOException, InterruptedException {
-        LaunchResult result = launch(new EnvVars(), true, "-v");
+    public @CheckForNull VersionNumber version(EnvVars env) throws IOException, InterruptedException {
+        LaunchResult result = launch(env, true, "-v");
         if (result.getStatus() == 0) {
             return parseVersionNumber(result.getOut());
         } else {
