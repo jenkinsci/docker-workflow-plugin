@@ -26,5 +26,6 @@ import org.jenkinsci.plugins.docker.workflow.declarative.DeclarativeDockerUtils
 
 
 echo "Docker Label is: ${DeclarativeDockerUtils.getLabel()}"
+echo "Docker Run Additional Arguments are: ${DeclarativeDockerUtils.getAdditionalRunArgs()}"
 echo "Registry URL is: ${DeclarativeDockerUtils.getRegistryUrl()}"
 echo "Registry Creds ID is: ${DeclarativeDockerUtils.getRegistryCredentialsId()}"
