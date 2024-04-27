@@ -30,7 +30,7 @@ pipeline {
     agent {
         docker {
             label "thisspec"
-            image "httpd:2.4.12"
+            image "httpd:2.4.59"
             args "-v /tmp:/tmp"
         }
     }
