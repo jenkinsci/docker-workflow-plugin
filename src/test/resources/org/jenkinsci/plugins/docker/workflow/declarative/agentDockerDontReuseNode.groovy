@@ -40,7 +40,7 @@ pipeline {
             agent {
                 docker {
                     label "other-docker"
-                    image "httpd:2.4.12"
+                    image "httpd:2.4.59"
                     reuseNode true
                 }
             }

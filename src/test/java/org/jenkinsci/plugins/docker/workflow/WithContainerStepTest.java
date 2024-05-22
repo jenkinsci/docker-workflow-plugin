@@ -111,7 +111,7 @@ public class WithContainerStepTest {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
-                    "  withDockerContainer('httpd:2.4.12') {\n" +
+                    "  withDockerContainer('httpd:2.4.59') {\n" +
                     "    sh 'cp /usr/local/apache2/conf/extra/httpd-userdir.conf .; ls -la'\n" +
                     "  }\n" +
                     "  sh 'ls -la; cat *.conf'\n" +
@@ -135,7 +135,7 @@ public class WithContainerStepTest {
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
                     "  timeout(time: 20, unit: 'SECONDS') {\n" +
-                    "    withDockerContainer('httpd:2.4.12') {\n" +
+                    "    withDockerContainer('httpd:2.4.59') {\n" +
                     "      sh 'sleep infinity'\n" +
                     "    }\n" +
                     "  }\n" +
@@ -215,7 +215,7 @@ public class WithContainerStepTest {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
-                    "  withDockerContainer('httpd:2.4.12') {\n" +
+                    "  withDockerContainer('httpd:2.4.59') {\n" +
                     "    semaphore 'wait'\n" +
                     "    sh 'cat /usr/local/apache2/conf/extra/httpd-userdir.conf'\n" +
                     "  }\n" +
@@ -481,7 +481,7 @@ public class WithContainerStepTest {
             p.setDefinition(new CpsFlowDefinition(
                 "node('dockerized') {\n" +
                 "  sh 'which docker && docker version'\n" +
-                "  withDockerContainer('httpd:2.4.12') {\n" +
+                "  withDockerContainer('httpd:2.4.59') {\n" +
                 "    sh 'cp /usr/local/apache2/conf/extra/httpd-userdir.conf .; ls -la'\n" +
                 "  }\n" +
                 "  sh 'ls -la; cat *.conf'\n" +

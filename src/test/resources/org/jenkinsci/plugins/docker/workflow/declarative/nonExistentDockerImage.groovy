@@ -25,7 +25,7 @@
 pipeline {
     agent {
         docker {
-            image "httpdIDontExist:2.4.12"
+            image "httpdIDontExist:2.4.59"
             args "-v /tmp:/tmp"
         }
     }

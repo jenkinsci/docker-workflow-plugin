@@ -26,7 +26,7 @@ pipeline {
     agent {
         docker {
             alwaysPull true
-            image "httpd:2.4.12"
+            image "httpd:2.4.59"
             registryUrl "https://index.docker.io/v2/"
             args "-v /tmp:/tmp"
         }

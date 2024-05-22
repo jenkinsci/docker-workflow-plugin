@@ -113,7 +113,7 @@ public class DockerDSLTest {
                 assumeDocker();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
-                    "def r = docker.image('httpd:2.4.12').inside {\n" +
+                    "def r = docker.image('httpd:2.4.59').inside {\n" +
                     "  semaphore 'wait'\n" +
                     "  sh 'cat /usr/local/apache2/conf/extra/httpd-userdir.conf'\n" +
                     "  42\n" +
@@ -185,7 +185,7 @@ public class DockerDSLTest {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
-                    "  def img = docker.image('httpd:2.4.12')\n" +
+                    "  def img = docker.image('httpd:2.4.59')\n" +
                     "  img.run().stop()\n" +
                     "  img.run('--memory-swap=-1').stop()\n" +
                     "  img.withRun {}\n" +
@@ -204,7 +204,7 @@ public class DockerDSLTest {
                 assumeDocker();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
-                    "def r = docker.image('httpd:2.4.12').withRun {c ->\n" +
+                    "def r = docker.image('httpd:2.4.59').withRun {c ->\n" +
                     "  semaphore 'wait'\n" +
                     "  sh \"docker exec ${c.id} cat /usr/local/apache2/conf/extra/httpd-userdir.conf\"\n" +
                     "  42\n" +
@@ -346,7 +346,7 @@ public class DockerDSLTest {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                 "docker.withTool('default') {\n" +
-                "  docker.image('httpd:2.4.12').withRun {}\n" +
+                "  docker.image('httpd:2.4.59').withRun {}\n" +
                 "  sh 'echo PATH=$PATH'\n" +
                 "}", true));
                 story.j.assertLogContains("PATH=/usr/bin:", story.j.assertBuildStatusSuccess(p.scheduleBuild2(0)));
@@ -437,7 +437,7 @@ public class DockerDSLTest {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
-                        "  def img = docker.image('httpd:2.4.12')\n" +
+                        "  def img = docker.image('httpd:2.4.59')\n" +
                         "  def port = img.withRun('-p 12345:80') { c -> c.port(80) }\n" +
                         "  echo \"container running on ${port}\"" +
                     "}", true));

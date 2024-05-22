@@ -27,7 +27,7 @@ pipeline {
         docker {
             alwaysPull true
             registryCredentialsId "dockerhub"
-            image "jtaboada/httpd:2.4.12"
+            image "jtaboada/httpd:2.4.59"
             args "-v /tmp:/tmp"
         }
     }
