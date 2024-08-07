@@ -146,7 +146,7 @@ public class WithContainerStep extends AbstractStepImpl {
                 ? new DockerClient(launcher, node, toolName)
                 : new WindowsDockerClient(launcher, node, toolName);
 
-            VersionNumber dockerVersion = dockerClient.version();
+            VersionNumber dockerVersion = dockerClient.version(env);
             if (dockerVersion != null) {
                 if (dockerVersion.isOlderThan(new VersionNumber("1.7"))) {
                     throw new AbortException("The docker version is less than v1.7. Pipeline functions requiring 'docker exec' (e.g. 'docker.inside') or SELinux labeling will not work.");
