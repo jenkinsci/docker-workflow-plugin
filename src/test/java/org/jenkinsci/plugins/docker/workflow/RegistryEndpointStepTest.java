@@ -72,12 +72,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import org.jenkinsci.plugins.structs.describable.DescribableModel;
+import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.LoggerRule;
 
 public class RegistryEndpointStepTest {
 
     @Rule public JenkinsRule r = new JenkinsRule();
     @Rule public LoggerRule logging = new LoggerRule();
+    @Rule public BuildWatcher bw = new BuildWatcher();
 
     @Issue("JENKINS-51395")
     @Test public void configRoundTrip() throws Exception {
@@ -123,19 +125,21 @@ public class RegistryEndpointStepTest {
     public void stepExecutionWithCredentials() throws Exception {
         assumeNotWindows();
 
-        IdCredentials registryCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "registryCreds", null, "me", "pass");
+        IdCredentials registryCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "registryCreds", null, "me", "s3cr3t");
         CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), registryCredentials);
 
         WorkflowJob p = r.createProject(WorkflowJob.class, "prj");
         p.setDefinition(new CpsFlowDefinition(
                 "node {\n" +
-                        "  mockDockerLoginWithEcho {\n" +
+                        "  mockDockerLogin {\n" +
                         "    withDockerRegistry(url: 'https://my-reg:1234', credentialsId: 'registryCreds') {\n" +
                         "    }\n" +
                         "  }\n" +
                         "}", true));
         WorkflowRun b = r.buildAndAssertSuccess(p);
-        r.assertLogContains("docker login -u me -p pass https://my-reg:1234", r.assertBuildStatusSuccess(r.waitForCompletion(b)));
+        r.assertBuildStatusSuccess(r.waitForCompletion(b));
+        r.assertLogContains("docker login -u me -p ******** https://my-reg:1234", b);
+        r.assertLogNotContains("s3cr3t", b);
     }
 
     @Test
@@ -151,11 +155,11 @@ public class RegistryEndpointStepTest {
                 .grant(Item.CONFIGURE).everywhere().to("alice");
         r.getInstance().setAuthorizationStrategy(auth);
 
-        IdCredentials registryCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "registryCreds", null, "me", "pass");
+        IdCredentials registryCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "registryCreds", null, "me", "s3cr3t");
         CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), registryCredentials);
 
         String script = "node {\n" +
-                "  mockDockerLoginWithEcho {\n" +
+                "  mockDockerLogin {\n" +
                 "    withDockerRegistry(url: 'https://my-reg:1234', credentialsId: 'registryCreds') {\n" +
                 "    }\n" +
                 "  }\n" +
@@ -172,16 +176,17 @@ public class RegistryEndpointStepTest {
 
         // Alice has Credentials.USE_ITEM permission and should be able to use the credential.
         WorkflowRun b1 = r.buildAndAssertSuccess(p1);
-        r.assertLogContains("docker login -u me -p pass https://my-reg:1234", b1);
+        r.assertLogContains("docker login -u me -p ******** https://my-reg:1234", b1);
+        r.assertLogNotContains("s3cr3t", b1);
 
         // Bob does not have Credentials.USE_ITEM permission and should not be able to use the credential.
         r.assertBuildStatus(Result.FAILURE, p2.scheduleBuild2(0));
     }
 
-    public static class MockLauncherWithEchoStep extends Step {
+    public static class MockLauncherStep extends Step {
         
         @DataBoundConstructor
-        public MockLauncherWithEchoStep() {}
+        public MockLauncherStep() {}
 
         @Override
         public StepExecution start(StepContext stepContext) {
@@ -191,9 +196,9 @@ public class RegistryEndpointStepTest {
         public static class Execution extends StepExecution {
             private static final long serialVersionUID = 1;
 
-            private final transient MockLauncherWithEchoStep step;
+            private final transient MockLauncherStep step;
 
-            Execution(MockLauncherWithEchoStep step, StepContext context) {
+            Execution(MockLauncherStep step, StepContext context) {
                 super(context);
                 this.step = step;
             }
@@ -215,7 +220,7 @@ public class RegistryEndpointStepTest {
             private static final long serialVersionUID = 1;
             @NonNull
             @Override public Launcher decorate(@NonNull Launcher launcher, @NonNull Node node) {
-                return launcher.decorateByPrefix("echo");
+                return launcher.decorateByPrefix("true");
             }
         }
         @TestExtension public static class DescriptorImpl extends StepDescriptor {
@@ -226,11 +231,11 @@ public class RegistryEndpointStepTest {
             }
 
             @Override public String getFunctionName() {
-                return "mockDockerLoginWithEcho";
+                return "mockDockerLogin";
             }
             @NonNull
             @Override public String getDisplayName() {
-                return "Mock Docker Login with Echo";
+                return "Mock Docker Login";
             }
             @Override public boolean takesImplicitBlockArgument() {
                 return true;
