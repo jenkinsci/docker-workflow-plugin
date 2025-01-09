@@ -42,16 +42,6 @@ import hudson.model.TaskListener;
 import hudson.os.WindowsUtil;
 import hudson.slaves.WorkspaceList;
 import hudson.util.VersionNumber;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import org.jenkinsci.plugins.docker.workflow.client.WindowsDockerClient;
@@ -69,6 +59,16 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -277,7 +277,11 @@ public class WithContainerStep extends AbstractStepImpl {
                                 if (hasWorkdir) {
                                     prefix.add("--workdir");
                                     masksPrefixList.add(false);
-                                    prefix.add(path);
+                                    if (super.isUnix()) {
+                                        prefix.add(path);
+                                    } else {
+                                        prefix.add(WindowsUtil.quoteArgument(path));
+                                    }
                                     masksPrefixList.add(false);
                                 } else {
                                     String safePath = path.replace("'", "'\"'\"'");
@@ -333,8 +337,20 @@ public class WithContainerStep extends AbstractStepImpl {
                         originalMasks = new boolean[starter.cmds().size()];
                     }
 
-                    // Adapted from decorateByPrefix:
-                    starter.cmds().addAll(0, prefix);
+                    List<String> cmds = new ArrayList<>();
+                    cmds.addAll(prefix);
+
+                    if (!super.isUnix() && starter.cmds().size() >= 3 && "cmd".equals(starter.cmds().get(0)) && "/c".equalsIgnoreCase(starter.cmds().get(1))) {
+                        // JENKINS-75102 Docker exec on Windows processes character escaping differently.
+                        // Modify launch to work with special characters in a way that docker exec can handle.
+                        cmds.addAll(starter.cmds().subList(0, 2));
+                        cmds.add("call");
+                        cmds.addAll(starter.cmds().subList(2, starter.cmds().size()).stream()
+                            .map(cmd -> cmd.replaceAll("\"\"(.*)\"\"", "\"$1\"")).collect(Collectors.toList()));
+                    } else {
+                        cmds.addAll(starter.cmds());
+                    }
+                    starter.cmds(cmds);
 
                     boolean[] masks = new boolean[originalMasks.length + prefix.size()];
                     boolean[] masksPrefix = new boolean[masksPrefixList.size()];
