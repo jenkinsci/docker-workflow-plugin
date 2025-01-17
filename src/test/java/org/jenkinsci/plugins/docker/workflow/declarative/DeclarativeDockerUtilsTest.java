@@ -33,6 +33,7 @@ import com.cloudbees.plugins.credentials.domains.Domain;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import hudson.ExtensionList;
 import hudson.Functions;
+import hudson.model.Descriptor.FormException;
 import hudson.model.Slave;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 import org.jenkinsci.plugins.docker.workflow.DockerTestUtil;
@@ -51,12 +52,23 @@ import static org.junit.Assert.assertThat;
  * And related configurations like {@link DockerPropertiesProvider}.
  */
 public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
-    private static final UsernamePasswordCredentialsImpl globalCred = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL,
-            "globalCreds", "sample", "bobby", "s3cr37");
-    private static final UsernamePasswordCredentialsImpl folderCred = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL,
-            "folderCreds", "other sample", "andrew", "s0mething");
-    private static final UsernamePasswordCredentialsImpl grandParentCred = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL,
-            "grandParentCreds", "yet another sample", "leopold", "idunno");
+
+    private static final UsernamePasswordCredentialsImpl globalCred;
+    private static final UsernamePasswordCredentialsImpl folderCred;
+    private static final UsernamePasswordCredentialsImpl grandParentCred;
+
+    static {
+        try {
+            globalCred = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL,
+                    "globalCreds", "sample", "bobby", "s3cr37");
+            folderCred = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL,
+                    "folderCreds", "other sample", "andrew", "s0mething");
+            grandParentCred = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL,
+                    "grandParentCreds", "yet another sample", "leopold", "idunno");
+        } catch (FormException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @BeforeClass
     public static void setup() throws Exception {
