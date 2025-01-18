@@ -27,13 +27,13 @@ pipeline {
     stages {
         stage("build image") {
             steps {
-                sh 'docker build -t maven:3-jdk-8-slim .'
+                sh 'docker build -t maven:3-eclipse-temurin-17-alpine .'
             }
         }
         stage("in built image") {
             agent {
                 docker {
-                    image "maven:3-jdk-8-slim"
+                    image "maven:3-eclipse-temurin-17-alpine"
                     args "-v /tmp:/tmp"
                     reuseNode true
                 }
@@ -46,7 +46,7 @@ pipeline {
         stage("in pulled image") {
             agent {
                 docker {
-                    image "maven:3-jdk-8-slim"
+                    image "maven:3-eclipse-temurin-17-alpine"
                     alwaysPull true
                 }
             }
