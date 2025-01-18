@@ -167,7 +167,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
     public void fromDockerfile() throws Exception {
         DockerTestUtil.assumeDocker();
 
-        sampleRepo.write("Dockerfile", "FROM ubuntu:14.04\n\nRUN echo 'HI THERE' > /hi-there\n\n");
+        sampleRepo.write("Dockerfile", "FROM ubuntu:noble\n\nRUN echo 'HI THERE' > /hi-there\n\n");
         sampleRepo.git("init");
         sampleRepo.git("add", "Dockerfile");
         sampleRepo.git("commit", "--message=Dockerfile");
@@ -185,7 +185,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
     public void userHandbookDockerfile() throws Exception {
         DockerTestUtil.assumeDocker();
 
-        sampleRepo.write("Dockerfile", "FROM node:16.13.1-alpine\nRUN apk add -U subversion\n");
+        sampleRepo.write("Dockerfile", "FROM node:22.13.0-alpine\nRUN apk add -U subversion\n");
         sampleRepo.git("init");
         sampleRepo.git("add", "Dockerfile");
         sampleRepo.git("commit", "--message=Dockerfile");
@@ -200,7 +200,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
     public void additionalDockerBuildArgs() throws Exception {
         DockerTestUtil.assumeDocker();
 
-        sampleRepo.write("Dockerfile", "FROM ubuntu:14.04\n\nARG someArg=thisArgHere\n\nRUN echo \"hi there, $someArg\" > /hi-there\n\n");
+        sampleRepo.write("Dockerfile", "FROM ubuntu:noble\n\nARG someArg=thisArgHere\n\nRUN echo \"hi there, $someArg\" > /hi-there\n\n");
         sampleRepo.git("init");
         sampleRepo.git("add", "Dockerfile");
         sampleRepo.git("commit", "--message=Dockerfile");
@@ -219,7 +219,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
     public void additionalDockerBuildArgsImageHash() throws Exception {
         DockerTestUtil.assumeDocker();
 
-        sampleRepo.write("Dockerfile",  "FROM ubuntu:14.04\n\nARG someArg=thisArgHere\n\nRUN echo \"hi there, $someArg\" > /hi-there\n\n");
+        sampleRepo.write("Dockerfile",  "FROM ubuntu:noble\n\nARG someArg=thisArgHere\n\nRUN echo \"hi there, $someArg\" > /hi-there\n\n");
         sampleRepo.git("init");
         sampleRepo.git("add", "Dockerfile");
         sampleRepo.git("commit", "--message=Dockerfile");
@@ -230,11 +230,11 @@ public class DockerAgentTest extends AbstractModelDefTest {
                 .withProjectName("parallelImageHashTest")
                 .logContains("[Pipeline] { (foo)",
                         "-v /tmp:/tmp",
-                        "docker build -t 8343c0815beb7a50c3676f09d7175d903a57f11b --build-arg someArg=thisOtherArg",
+                        "docker build -t 02a5b681aa9d457d1a8ebf2d61f4af0061dad300 --build-arg someArg=thisOtherArg",
                         "The answer is 42",
                         "hi there, thisOtherArg",
                         "[Pipeline] { (bar)",
-                        "docker build -t 4f8d74de557925eb9aacdfdf671b5e9de11b6086 --build-arg someArg=thisDifferentArg",
+                        "docker build -t 36193f504228c0f319bb867146b391dd8e04aec6 --build-arg someArg=thisDifferentArg",
                         "The answer is 43",
                         "hi there, thisDifferentArg")
                 .logNotContains("hi there, thisArgHere")
@@ -246,7 +246,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
     public void fromDockerfileInOtherDir() throws Exception {
         DockerTestUtil.assumeDocker();
 
-        sampleRepo.write("subdir/Dockerfile", "FROM ubuntu:14.04\n\nRUN echo 'HI THERE' > /hi-there\n\n");
+        sampleRepo.write("subdir/Dockerfile", "FROM ubuntu:noble\n\nRUN echo 'HI THERE' > /hi-there\n\n");
         sampleRepo.git("init");
         sampleRepo.git("add", "subdir/Dockerfile");
         sampleRepo.git("commit", "--message=Dockerfile");
@@ -264,7 +264,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
     public void dirSepInDockerfileName() throws Exception {
         DockerTestUtil.assumeDocker();
 
-        sampleRepo.write("subdir/Dockerfile", "FROM ubuntu:14.04\n\nRUN echo 'HI THERE' > /hi-there\n\n");
+        sampleRepo.write("subdir/Dockerfile", "FROM ubuntu:noble\n\nRUN echo 'HI THERE' > /hi-there\n\n");
         sampleRepo.git("init");
         sampleRepo.git("add", "subdir/Dockerfile");
         sampleRepo.git("commit", "--message=Dockerfile");
@@ -281,7 +281,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
     public void fromDockerfileNoArgs() throws Exception {
         DockerTestUtil.assumeDocker();
 
-        sampleRepo.write("Dockerfile", "FROM ubuntu:14.04\n\nRUN echo 'HI THERE' > /hi-there\n\n");
+        sampleRepo.write("Dockerfile", "FROM ubuntu:noble\n\nRUN echo 'HI THERE' > /hi-there\n\n");
         sampleRepo.git("init");
         sampleRepo.git("add", "Dockerfile");
         sampleRepo.git("commit", "--message=Dockerfile");
@@ -296,7 +296,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
     @Test
     public void fromAlternateDockerfile() throws Exception {
         DockerTestUtil.assumeDocker();
-        sampleRepo.write("Dockerfile.alternate", "FROM ubuntu:14.04\n\nRUN echo 'HI THERE' > /hi-there\n\n");
+        sampleRepo.write("Dockerfile.alternate", "FROM ubuntu:noble\n\nRUN echo 'HI THERE' > /hi-there\n\n");
         sampleRepo.git("init");
         sampleRepo.git("add", "Dockerfile.alternate");
         sampleRepo.git("commit", "--message=Dockerfile");
@@ -326,7 +326,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
     public void dockerPullLocalImage() throws Exception {
         DockerTestUtil.assumeDocker();
 
-        sampleRepo.write("Dockerfile", "FROM ubuntu:14.04\n\nRUN echo 'HI THERE' > /hi-there\n\n");
+        sampleRepo.write("Dockerfile", "FROM ubuntu:noble\n\nRUN echo 'HI THERE' > /hi-there\n\n");
         sampleRepo.git("init");
         sampleRepo.git("add", "Dockerfile");
         sampleRepo.git("commit", "--message=Dockerfile");
