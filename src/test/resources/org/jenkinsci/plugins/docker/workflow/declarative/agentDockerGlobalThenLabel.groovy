@@ -29,7 +29,7 @@
 pipeline {
     agent {
         docker {
-            image 'maven:3.5.0-jdk-8-alpine'
+            image 'maven:3.9.9-eclipse-temurin-17-alpine'
             label 'docker'
         }
     }
