@@ -337,20 +337,8 @@ public class WithContainerStep extends AbstractStepImpl {
                         originalMasks = new boolean[starter.cmds().size()];
                     }
 
-                    List<String> cmds = new ArrayList<>();
-                    cmds.addAll(prefix);
-
-                    if (!super.isUnix() && starter.cmds().size() >= 3 && "cmd".equals(starter.cmds().get(0)) && "/c".equalsIgnoreCase(starter.cmds().get(1))) {
-                        // JENKINS-75102 Docker exec on Windows processes character escaping differently.
-                        // Modify launch to work with special characters in a way that docker exec can handle.
-                        cmds.addAll(starter.cmds().subList(0, 2));
-                        cmds.add("call");
-                        cmds.addAll(starter.cmds().subList(2, starter.cmds().size()).stream()
-                            .map(cmd -> cmd.replaceAll("\"\"(.*)\"\"", "\"$1\"")).collect(Collectors.toList()));
-                    } else {
-                        cmds.addAll(starter.cmds());
-                    }
-                    starter.cmds(cmds);
+                    // Adapted from decorateByPrefix:
+                    starter.cmds().addAll(0, prefix);
 
                     boolean[] masks = new boolean[originalMasks.length + prefix.size()];
                     boolean[] masksPrefix = new boolean[masksPrefixList.size()];
