@@ -491,4 +491,29 @@ public class WithContainerStepTest {
         });
     }
 
+    @Issue("JENKINS-75102")
+    @Test public void windowsRunningWindowsContainerSpaceInPath() {
+        // Launching batch scripts through cmd /c in docker exec gets tricky with special characters
+        // By default, the path of the temporary Jenkins install and workspace have a space in a folder name and a prj@tmp folder
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                DockerTestUtil.assumeWindows();
+                DockerTestUtil.assumeDocker();
+                DockerTestUtil.assumeDockerServerOSMode("windows");
+
+                // Kernel must match when running Windows containers on docker on Windows
+                String releaseTag = DockerTestUtil.getWindowsImageTag();
+
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                        "  withDockerContainer('mcr.microsoft.com/windows/nanoserver:" + releaseTag + "') { \n" +
+                        "    bat 'echo ran OK' \n" +
+                        "  }\n" +
+                        "}", true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertLogContains("ran OK", b);
+            }
+        });
+    }
 }
