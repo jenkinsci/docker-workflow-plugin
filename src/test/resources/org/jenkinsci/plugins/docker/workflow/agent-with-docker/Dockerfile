@@ -1,4 +1,4 @@
-FROM jenkins/agent:4.10-5-jdk11
+FROM jenkins/agent:3206.3208.v409508a_675ff-1-jdk17
 USER root
 RUN cat /etc/os-release
 # TODO https://github.com/moby/moby/issues/15717 alas; no curl or wget in image
