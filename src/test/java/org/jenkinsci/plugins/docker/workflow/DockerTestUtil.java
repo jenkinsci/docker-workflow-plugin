@@ -31,6 +31,7 @@ import hudson.util.VersionNumber;
 import org.junit.Assume;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -39,7 +40,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.hamcrest.Matchers;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 
 /**
@@ -58,33 +58,20 @@ public class DockerTestUtil {
         "10.0.26100.2605"  // 2025
     );
 
+    public enum DockerOsMode {
+        LINUX,
+        WINDOWS
+    }
 
     public static void assumeDocker() throws Exception {
-        assumeDocker(new VersionNumber(DEFAULT_MINIMUM_VERSION));
-    }
-    
-    public static void assumeDocker(VersionNumber minimumVersion) throws Exception {
-        Launcher.LocalLauncher localLauncher = new Launcher.LocalLauncher(StreamTaskListener.NULL);
-        try {
-            int status = localLauncher
-                .launch()
-                .cmds(DockerTool.getExecutable(null, null, null, null), "ps")
-                .start()
-                .joinWithTimeout(DockerClient.CLIENT_TIMEOUT, TimeUnit.SECONDS, localLauncher.getListener());
-            Assume.assumeTrue("Docker working", status == 0);
-        } catch (IOException x) {
-            Assume.assumeNoException("have Docker installed", x);
-        }
-        DockerClient dockerClient = new DockerClient(localLauncher, null, null);
-        Assume.assumeFalse("Docker version not < " + minimumVersion.toString(), dockerClient.version().isOlderThan(minimumVersion));
+        assumeDocker(DockerOsMode.LINUX, new VersionNumber(DEFAULT_MINIMUM_VERSION));
     }
 
-    /**
-      * Used to assume docker Windows is running in a particular os mode
-      * @param os The os [windows, linux]
-      * @throws Exception
-      */
-    public static void assumeDockerServerOSMode(String os) throws Exception {
+    public static void assumeDocker(DockerOsMode osMode) throws Exception {
+        assumeDocker(osMode, new VersionNumber(DEFAULT_MINIMUM_VERSION));
+    }
+
+    public static void assumeDocker(DockerOsMode osMode, VersionNumber minimumVersion) throws Exception {
         Launcher.LocalLauncher localLauncher = new Launcher.LocalLauncher(StreamTaskListener.NULL);
         try {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -94,11 +81,14 @@ public class DockerTestUtil {
                 .stdout(out)
                 .start()
                 .joinWithTimeout(DockerClient.CLIENT_TIMEOUT, TimeUnit.SECONDS, localLauncher.getListener());
+            DockerOsMode cmdOsMode = DockerOsMode.valueOf(out.toString().trim().toUpperCase());
             Assume.assumeTrue("Docker working", status == 0);
-            Assume.assumeThat("Docker running in " + os + " mode", out.toString().trim(), Matchers.equalToIgnoringCase(os));
+            Assume.assumeTrue("Docker os mode " + osMode, osMode == cmdOsMode);
         } catch (IOException x) {
-            Assume.assumeNoException("Docker retrieve OS", x);
+            Assume.assumeNoException("have Docker installed", x);
         }
+        DockerClient dockerClient = new DockerClient(localLauncher, null, null);
+        Assume.assumeFalse("Docker version not < " + minimumVersion.toString(), dockerClient.version().isOlderThan(minimumVersion));
     }
 
     public static void assumeWindows() throws Exception {
@@ -107,6 +97,10 @@ public class DockerTestUtil {
 
     public static void assumeNotWindows() throws Exception {
         Assume.assumeFalse(System.getProperty("os.name").toLowerCase().contains("windows"));
+    }
+
+    public static void assumeDrive(char drive) throws Exception {
+        Assume.assumeTrue(new File(drive + ":/").exists());
     }
 
     public static String getWindowsKernelVersion() throws Exception {

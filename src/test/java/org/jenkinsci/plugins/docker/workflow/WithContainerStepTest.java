@@ -299,7 +299,7 @@ public class WithContainerStepTest {
     @Test public void cd() throws Exception {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                DockerTestUtil.assumeDocker(new VersionNumber("17.12"));
+                DockerTestUtil.assumeDocker(DockerTestUtil.DockerOsMode.LINUX, new VersionNumber("17.12"));
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                     "node {\n" +
@@ -498,8 +498,7 @@ public class WithContainerStepTest {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
                 DockerTestUtil.assumeWindows();
-                DockerTestUtil.assumeDocker();
-                DockerTestUtil.assumeDockerServerOSMode("windows");
+                DockerTestUtil.assumeDocker(DockerTestUtil.DockerOsMode.WINDOWS);
 
                 // Kernel must match when running Windows containers on docker on Windows
                 String releaseTag = DockerTestUtil.getWindowsImageTag();
