@@ -270,7 +270,7 @@ public class DockerDSLTest {
     @Test public void buildWithMultiStage() {
         story.addStep(new Statement() {
             @Override public void evaluate() throws Throwable {
-                assumeDocker(new VersionNumber("17.05"));
+                assumeDocker(DockerTestUtil.DockerOsMode.LINUX, new VersionNumber("17.05"));
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
                         "node {\n" +
