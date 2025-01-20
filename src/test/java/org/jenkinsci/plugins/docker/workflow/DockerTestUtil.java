@@ -24,12 +24,10 @@
 package org.jenkinsci.plugins.docker.workflow;
 
 import hudson.EnvVars;
+import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import hudson.Launcher;
 import hudson.util.StreamTaskListener;
 import hudson.util.VersionNumber;
-import org.hamcrest.Matchers;
-import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
-import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import org.junit.Assume;
 
 import java.io.ByteArrayOutputStream;
@@ -40,6 +38,9 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.hamcrest.Matchers;
+import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 
 /**
  * @author <a href="mailto:tom.fennelly@gmail.com">tom.fennelly@gmail.com</a>
