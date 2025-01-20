@@ -30,6 +30,7 @@ import org.htmlunit.WebResponse;
 import org.htmlunit.util.NameValuePair;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.Describable;
+import jakarta.servlet.ServletRequest;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -137,7 +138,7 @@ public class DockerDirectiveGeneratorTest {
         List<NameValuePair> params = new ArrayList<NameValuePair>();
         params.add(new NameValuePair("json", staplerJsonForDescr(desc).toString()));
         // WebClient.addCrumb *replaces* rather than *adds*:
-        params.add(new NameValuePair(r.jenkins.getCrumbIssuer().getDescriptor().getCrumbRequestField(), r.jenkins.getCrumbIssuer().getCrumb(null)));
+        params.add(new NameValuePair(r.jenkins.getCrumbIssuer().getDescriptor().getCrumbRequestField(), r.jenkins.getCrumbIssuer().getCrumb((ServletRequest) null)));
         wrs.setRequestParameters(params);
         WebResponse response = wc.getPage(wrs).getWebResponse();
         assertEquals("text/plain", response.getContentType());
