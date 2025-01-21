@@ -116,7 +116,7 @@ public class DockerClient {
     public String run(@NonNull EnvVars launchEnv, @NonNull String image, @CheckForNull String args, @CheckForNull String workdir, @NonNull Map<String, String> volumes, @NonNull Collection<String> volumesFromContainers, @NonNull EnvVars containerEnv, @NonNull String user, @NonNull String... command) throws IOException, InterruptedException {
         ArgumentListBuilder argb = new ArgumentListBuilder();
 
-        argb.add("run", "-t", "-d");
+        argb.add("run", "-t", "-d", "--init");
 
         // Username might be empty because we are running on Windows
         if (StringUtils.isNotEmpty(user)) {
