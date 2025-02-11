@@ -39,7 +39,6 @@ import hudson.model.Result;
 import hudson.model.User;
 import jenkins.model.Jenkins;
 import jenkins.security.QueueItemAuthenticatorConfiguration;
-import org.acegisecurity.Authentication;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.SnippetizerTester;
@@ -67,8 +66,6 @@ import org.jvnet.hudson.test.TestExtension;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import org.jenkinsci.plugins.structs.describable.DescribableModel;
@@ -169,10 +166,13 @@ public class RegistryEndpointStepTest {
         WorkflowJob p2 = r.createProject(WorkflowJob.class, "prj2");
         p2.setDefinition(new CpsFlowDefinition(script, true));
 
-        Map<String, Authentication> jobsToAuths = new HashMap<>();
-        jobsToAuths.put(p1.getFullName(), User.getById("alice", true).impersonate());
-        jobsToAuths.put(p2.getFullName(), User.getById("bob", true).impersonate());
-        QueueItemAuthenticatorConfiguration.get().getAuthenticators().replace(new MockQueueItemAuthenticator(jobsToAuths));
+        QueueItemAuthenticatorConfiguration.get()
+                .getAuthenticators()
+                .replace(new MockQueueItemAuthenticator()
+                        .authenticate(
+                                p1.getFullName(), User.getById("alice", true).impersonate2())
+                        .authenticate(
+                                p2.getFullName(), User.getById("bob", true).impersonate2()));
 
         // Alice has Credentials.USE_ITEM permission and should be able to use the credential.
         WorkflowRun b1 = r.buildAndAssertSuccess(p1);
