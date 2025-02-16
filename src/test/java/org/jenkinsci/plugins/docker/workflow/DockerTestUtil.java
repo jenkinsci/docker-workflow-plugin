@@ -74,8 +74,14 @@ public class DockerTestUtil {
     public static void assumeDocker(DockerOsMode osMode, VersionNumber minimumVersion) throws Exception {
         Launcher.LocalLauncher localLauncher = new Launcher.LocalLauncher(StreamTaskListener.NULL);
         try {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
             int status = localLauncher
+                .launch()
+                .cmds(DockerTool.getExecutable(null, null, null, null), "ps")
+                .start()
+                .joinWithTimeout(DockerClient.CLIENT_TIMEOUT, TimeUnit.SECONDS, localLauncher.getListener());
+            Assume.assumeTrue("Docker working", status == 0);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            status = localLauncher
                 .launch()
                 .cmds(DockerTool.getExecutable(null, null, null, null), "version", "-f", "{{.Server.Os}}")
                 .stdout(out)
