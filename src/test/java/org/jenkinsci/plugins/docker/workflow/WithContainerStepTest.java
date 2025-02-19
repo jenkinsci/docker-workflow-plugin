@@ -38,6 +38,8 @@ import hudson.util.ArgumentListBuilder;
 import hudson.util.Secret;
 import hudson.util.StreamTaskListener;
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.logging.Level;
@@ -69,6 +71,7 @@ import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import org.junit.Assume;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -512,6 +515,39 @@ public class WithContainerStepTest {
                         "}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
                 story.j.assertLogContains("ran OK", b);
+            }
+        });
+    }
+
+    @Issue("JENKINS-74912")
+    @Test public void windowsRunningWindowsContainerAlternateDriveWorkspace() {
+        // Run with another drive ("D") if it is mounted
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                DockerTestUtil.assumeWindows();
+                DockerTestUtil.assumeDocker(DockerTestUtil.DockerOsMode.WINDOWS);
+                DockerTestUtil.assumeDrive('D');
+
+                // Manually create instead of using a Rule since not all executions will have the D drive mounted
+                Path tempDir = Files.createTempDirectory(Path.of("D:/"), "j ws");
+                tempDir.toFile().deleteOnExit();
+
+                // Kernel must match when running Windows containers on docker on Windows
+                String releaseTag = DockerTestUtil.getWindowsImageTag();
+
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                        "  ws('" + tempDir.toString().replace("\\", "\\\\") + "') {\n" +
+                        "    withDockerContainer('mcr.microsoft.com/windows/nanoserver:" + releaseTag + "') { \n" +
+                        "      bat 'echo bar > foo.txt' \n" +
+                        "      bat 'echo ran OK' \n" +
+                        "    }\n" +
+                        "  }\n" +
+                        "}", true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertLogContains("ran OK", b);
+                assertTrue("Mounted workspace contains foo.txt", tempDir.resolve("foo.txt").toFile().exists());
             }
         });
     }
