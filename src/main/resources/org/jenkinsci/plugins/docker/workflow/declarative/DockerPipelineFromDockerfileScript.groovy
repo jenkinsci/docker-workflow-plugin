@@ -37,49 +37,43 @@ class DockerPipelineFromDockerfileScript extends AbstractDockerPipelineScript<Do
     }
 
     @Override
-    Closure runImage(Closure body) {
-        return {
-            def img = null
-            if (!Utils.withinAStage()) {
-                script.stage(SyntheticStageNames.agentSetup()) {
-                    try {
-                        img = buildImage().call()
-                    } catch (Exception e) {
-                        Utils.markStageFailedAndContinued(SyntheticStageNames.agentSetup())
-                        throw e
-                    }
+    void runImage(Closure body) {
+        def img = null
+        if (!Utils.withinAStage()) {
+            script.stage(SyntheticStageNames.agentSetup()) {
+                try {
+                    img = buildImage()
+                } catch (Exception e) {
+                    Utils.markStageFailedAndContinued(SyntheticStageNames.agentSetup())
+                    throw e
                 }
-            } else {
-                img = buildImage().call()
             }
-            if (img != null) {
-                img.inside(describable.args, {
-                    body.call()
-                })
-            }
+        } else {
+            img = buildImage()
+        }
+        if (img != null) {
+            img.inside(describable.args, body)
         }
     }
 
-    private Closure buildImage() {
-        return {
-            boolean isUnix = script.isUnix()
-            def dockerfilePath = describable.getDockerfilePath(isUnix)
-            try {
-                RunWrapper runWrapper = (RunWrapper)script.getProperty("currentBuild")
-                def additionalBuildArgs = describable.getAdditionalBuildArgs() ? " ${describable.additionalBuildArgs}" : ""
-                def hash = Utils.stringToSHA1("${runWrapper.fullProjectName}\n${script.readFile("${dockerfilePath}")}\n${additionalBuildArgs}")
-                def imgName = "${hash}"
-                def commandLine = "docker build -t ${imgName}${additionalBuildArgs} -f \"${dockerfilePath}\" \"${describable.getActualDir()}\""
-                if (isUnix)
-                    script.sh commandLine
-                else
-                    script.bat commandLine
+    private def buildImage() {
+        boolean isUnix = script.isUnix()
+        def dockerfilePath = describable.getDockerfilePath(isUnix)
+        try {
+            RunWrapper runWrapper = (RunWrapper)script.getProperty("currentBuild")
+            def additionalBuildArgs = describable.getAdditionalBuildArgs() ? " ${describable.additionalBuildArgs}" : ""
+            def hash = Utils.stringToSHA1("${runWrapper.fullProjectName}\n${script.readFile("${dockerfilePath}")}\n${additionalBuildArgs}")
+            def imgName = "${hash}"
+            def commandLine = "docker build -t ${imgName}${additionalBuildArgs} -f \"${dockerfilePath}\" \"${describable.getActualDir()}\""
+            if (isUnix)
+                script.sh commandLine
+            else
+                script.bat commandLine
 
-                return script.getProperty("docker").image(imgName)
-            } catch (FileNotFoundException f) {
-                script.error("No Dockerfile found at ${dockerfilePath} in repository - failing.")
-                return null
-            }
+            return script.getProperty("docker").image(imgName)
+        } catch (FileNotFoundException f) {
+            script.error("No Dockerfile found at ${dockerfilePath} in repository - failing.")
+            return null
         }
     }
 }
