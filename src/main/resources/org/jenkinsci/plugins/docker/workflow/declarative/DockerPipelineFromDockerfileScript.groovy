@@ -56,7 +56,7 @@ class DockerPipelineFromDockerfileScript extends AbstractDockerPipelineScript<Do
         }
     }
 
-    private void buildImage() {
+    private def buildImage() {
         boolean isUnix = script.isUnix()
         def dockerfilePath = describable.getDockerfilePath(isUnix)
         try {
