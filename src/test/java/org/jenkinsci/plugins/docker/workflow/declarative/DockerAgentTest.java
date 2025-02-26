@@ -39,6 +39,7 @@ import java.util.List;
 import org.jenkinsci.plugins.docker.workflow.DockerTestUtil;
 import org.jenkinsci.plugins.pipeline.modeldefinition.AbstractModelDefTest;
 import static org.jenkinsci.plugins.pipeline.modeldefinition.AbstractModelDefTest.j;
+import static org.junit.Assume.assumeTrue;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -52,7 +53,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
     private static Slave s;
     private static Slave s2;
 
-    private static String password;
+    private static String username, password;
     @BeforeClass
     public static void setUpAgent() throws Exception {
         s = j.createOnlineSlave();
@@ -68,12 +69,13 @@ public class DockerAgentTest extends AbstractModelDefTest {
         //setup credentials for docker registry
         CredentialsStore store = CredentialsProvider.lookupStores(j.jenkins).iterator().next();
 
+        username = System.getProperty("docker.username");
         password = System.getProperty("docker.password");
 
-        if(password != null) {
+        if (username != null && password != null) {
             UsernamePasswordCredentialsImpl globalCred =
                     new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL,
-                            "dockerhub", "real", "jtaboada", password);
+                            "dockerhub", "real", username, password);
 
             store.addCredentials(Domain.global(), globalCred);
 
@@ -87,9 +89,8 @@ public class DockerAgentTest extends AbstractModelDefTest {
 
     @Test
     public void agentDockerWithCreds() throws Exception {
-        //If there is no password, the test is ignored
-        if(password != null)
-            agentDocker("org/jenkinsci/plugins/docker/workflow/declarative/agentDockerWithCreds", "-v /tmp:/tmp");
+        assumeTrue(username != null && password != null);
+        agentDocker("org/jenkinsci/plugins/docker/workflow/declarative/agentDockerWithCreds", "-v /tmp:/tmp");
     }
 
     @Test
