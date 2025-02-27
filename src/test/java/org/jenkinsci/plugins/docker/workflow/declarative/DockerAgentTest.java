@@ -25,11 +25,6 @@
 package org.jenkinsci.plugins.docker.workflow.declarative;
 
 import com.cloudbees.hudson.plugins.folder.Folder;
-import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.CredentialsScope;
-import com.cloudbees.plugins.credentials.CredentialsStore;
-import com.cloudbees.plugins.credentials.domains.Domain;
-import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import hudson.model.Result;
 import hudson.model.Slave;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
@@ -39,7 +34,6 @@ import java.util.List;
 import org.jenkinsci.plugins.docker.workflow.DockerTestUtil;
 import org.jenkinsci.plugins.pipeline.modeldefinition.AbstractModelDefTest;
 import static org.jenkinsci.plugins.pipeline.modeldefinition.AbstractModelDefTest.j;
-import static org.junit.Assume.assumeTrue;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -53,7 +47,6 @@ public class DockerAgentTest extends AbstractModelDefTest {
     private static Slave s;
     private static Slave s2;
 
-    private static String username, password;
     @BeforeClass
     public static void setUpAgent() throws Exception {
         s = j.createOnlineSlave();
@@ -66,20 +59,6 @@ public class DockerAgentTest extends AbstractModelDefTest {
         s2.setLabelString("other-docker");
         s2.getNodeProperties().add(new EnvironmentVariablesNodeProperty(new EnvironmentVariablesNodeProperty.Entry("ONAGENT", "true"),
                 new EnvironmentVariablesNodeProperty.Entry("WHICH_AGENT", "second")));
-        //setup credentials for docker registry
-        CredentialsStore store = CredentialsProvider.lookupStores(j.jenkins).iterator().next();
-
-        username = System.getProperty("docker.username");
-        password = System.getProperty("docker.password");
-
-        if (username != null && password != null) {
-            UsernamePasswordCredentialsImpl globalCred =
-                    new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL,
-                            "dockerhub", "real", username, password);
-
-            store.addCredentials(Domain.global(), globalCred);
-
-        }
     }
 
     @Test
@@ -87,11 +66,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
         agentDocker("org/jenkinsci/plugins/docker/workflow/declarative/agentDocker", "-v /tmp:/tmp");
     }
 
-    @Test
-    public void agentDockerWithCreds() throws Exception {
-        assumeTrue(username != null && password != null);
-        agentDocker("org/jenkinsci/plugins/docker/workflow/declarative/agentDockerWithCreds", "-v /tmp:/tmp");
-    }
+    // TODO write test of registryCredentialsId, e.g. using a registry in Testcontainers, or MockLauncherStep as in RegistryEndpointStepTest
 
     @Test
     public void agentDockerWithRegistryNoCreds() throws Exception {
