@@ -142,7 +142,7 @@ public abstract class AbstractDockerAgent<D extends AbstractDockerAgent<D>> exte
         }
     }
 
-    @Extension public static final class Compat implements CompatibilityLoader {
+    @Extension(optional = true) public static final class Compat implements CompatibilityLoader {
         private static final Set<String> CLASSES = Set.of(
             "org.jenkinsci.plugins.docker.workflow.declarative.AbstractDockerPipelineScript",
             "org.jenkinsci.plugins.docker.workflow.declarative.DockerPipelineScript",
