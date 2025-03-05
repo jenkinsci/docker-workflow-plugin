@@ -31,6 +31,7 @@ import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.Node;
+import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.VersionNumber;
 import java.io.BufferedReader;
@@ -318,6 +319,12 @@ public class DockerClient {
         return result;
     }
 
+    private String executeCommand(String... command) throws IOException, InterruptedException {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        launcher.launch().cmds(command).quiet(true).stdout(output).start().joinWithTimeout(CLIENT_TIMEOUT, TimeUnit.SECONDS, launcher.getListener());
+        return output.toString(Charset.defaultCharset()).trim();
+    }
+
     /**
      * Who is executing this {@link DockerClient} instance.
      *
@@ -328,15 +335,28 @@ public class DockerClient {
             // Windows does not support username
             return "";
         }
-        ByteArrayOutputStream userId = new ByteArrayOutputStream();
-        launcher.launch().cmds("id", "-u").quiet(true).stdout(userId).start().joinWithTimeout(CLIENT_TIMEOUT, TimeUnit.SECONDS, launcher.getListener());
 
-        ByteArrayOutputStream groupId = new ByteArrayOutputStream();
-        launcher.launch().cmds("id", "-g").quiet(true).stdout(groupId).start().joinWithTimeout(CLIENT_TIMEOUT, TimeUnit.SECONDS, launcher.getListener());
+        TaskListener listener = launcher.getListener();
+        final String rootlessId = "0:0";
+        // First, check if under the hood it's Podman or Docker
+        String engine = executeCommand("docker", "--version");
+        if (engine.toLowerCase().contains("podman")) {
+            listener.getLogger().println("Container engine is Podman with build in rootless mode");
+            return rootlessId;
+        }
+        else {
+            String rootless = executeCommand("docker", "info", "-f", "{{.SecurityOptions}}" );
+            if (rootless.toLowerCase().contains("rootless")) {
+                listener.getLogger().println("Container engine is Docker with rootless mode");
+                return rootlessId;
+            }
+        }
 
-        final String charsetName = Charset.defaultCharset().name();
-        return String.format("%s:%s", userId.toString(charsetName).trim(), groupId.toString(charsetName).trim());
+        // Else not rootless, return the current user/group ids
+        String userId = executeCommand("id", "-u");
+        String groupId = executeCommand("id", "-g");
 
+        return String.format("%s:%s", userId, groupId);
     }
 
     private static final Pattern hostnameMount = Pattern.compile("/containers/([a-z0-9]{64})/hostname");
