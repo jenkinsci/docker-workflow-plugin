@@ -340,6 +340,7 @@ public class DockerClient {
     }
 
     private static final Pattern hostnameMount = Pattern.compile("/containers/([a-z0-9]{64})/hostname");
+    private static final Pattern hostnameMountPodman = Pattern.compile("/containers/overlay-containers/([a-z0-9]{64})/userdata/hostname");
 
     /**
      * Checks if this {@link DockerClient} instance is running inside a container and returns the id of the container
@@ -369,6 +370,11 @@ public class DockerClient {
                     Matcher m = hostnameMount.matcher(line);
                     if (m.find()) {
                         return Optional.of(m.group(1));
+                    }
+
+                    Matcher mp = hostnameMountPodman.matcher(line);
+                    if (mp.find()) {
+                        return Optional.of(mp.group(1));
                     }
                 }
             }
