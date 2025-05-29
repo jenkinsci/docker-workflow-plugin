@@ -23,11 +23,14 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.EnvVars;
+import hudson.FilePath;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jenkinsci.plugins.docker.commons.credentials.KeyMaterial;
+import org.jenkinsci.plugins.docker.commons.credentials.KeyMaterial2;
 import org.jenkinsci.plugins.docker.commons.credentials.KeyMaterialFactory;
 import org.jenkinsci.plugins.workflow.steps.EnvironmentExpander;
 import org.jenkinsci.plugins.workflow.steps.GeneralNonBlockingStepExecution;
@@ -50,19 +53,19 @@ abstract class AbstractEndpointStepExecution2 extends GeneralNonBlockingStepExec
 
     private void doStart() throws Exception {
         KeyMaterialFactory keyMaterialFactory = newKeyMaterialFactory();
-        KeyMaterial material = keyMaterialFactory.materialize();
+        KeyMaterial2 material = keyMaterialFactory.materialize2();
         getContext().newBodyInvoker().
-                withContext(EnvironmentExpander.merge(getContext().get(EnvironmentExpander.class), new Expander(material))).
-                withCallback(new Callback(material)).
+                withContext(EnvironmentExpander.merge(getContext().get(EnvironmentExpander.class), new Expander2(material))).
+                withCallback(new Callback2(material)).
                 start();
     }
 
-    private static class Expander extends EnvironmentExpander {
+    private static class Expander2 extends EnvironmentExpander {
 
         private static final long serialVersionUID = 1;
-        private final KeyMaterial material;
+        private final KeyMaterial2 material;
 
-        Expander(KeyMaterial material) {
+        Expander2(KeyMaterial2 material) {
             this.material = material;
         }
 
@@ -72,13 +75,51 @@ abstract class AbstractEndpointStepExecution2 extends GeneralNonBlockingStepExec
 
     }
 
+    private class Callback2 extends TailCall {
+
+        private static final long serialVersionUID = 1;
+        private final KeyMaterial2 material;
+
+        Callback2(KeyMaterial2 material) {
+            this.material = material;
+        }
+
+        @Override protected void finished(StepContext context) throws Exception {
+            try {
+                material.close(context.get(FilePath.class).getChannel());
+            } catch (IOException | InterruptedException x) {
+                Logger.getLogger(AbstractEndpointStepExecution2.class.getName()).log(Level.WARNING, null, x);
+            }
+        }
+
+    }
+
+    @SuppressFBWarnings(value = {"NP_UNWRITTEN_FIELD", "UWF_NULL_FIELD"})
+    @Deprecated
+    private static class Expander extends EnvironmentExpander {
+
+        private static final long serialVersionUID = 1;
+        private final KeyMaterial material = null;
+
+        private Expander() {
+            assert false : "only deserialized";
+        }
+
+        @Override public void expand(EnvVars env) throws IOException, InterruptedException {
+            env.putAll(material.env());
+        }
+
+    }
+
+    @SuppressFBWarnings(value = {"NP_UNWRITTEN_FIELD", "UWF_NULL_FIELD"})
+    @Deprecated
     private class Callback extends TailCall {
 
         private static final long serialVersionUID = 1;
-        private final KeyMaterial material;
+        private final KeyMaterial material = null;
 
-        Callback(KeyMaterial material) {
-            this.material = material;
+        private Callback() {
+            assert false : "only deserialized";
         }
 
         @Override protected void finished(StepContext context) throws Exception {
