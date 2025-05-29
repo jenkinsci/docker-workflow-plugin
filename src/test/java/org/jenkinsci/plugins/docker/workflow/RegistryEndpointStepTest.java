@@ -270,7 +270,6 @@ public class RegistryEndpointStepTest {
         }
     }
 
-
     public static class MockLauncherStep extends Step {
         
         @DataBoundConstructor
