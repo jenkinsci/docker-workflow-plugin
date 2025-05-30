@@ -23,6 +23,7 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
+import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
@@ -37,6 +38,9 @@ import hudson.model.Item;
 import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.User;
+import hudson.plugins.sshslaves.SSHLauncher;
+import hudson.slaves.DumbSlave;
+import java.io.ByteArrayOutputStream;
 import jenkins.model.Jenkins;
 import jenkins.security.QueueItemAuthenticatorConfiguration;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
@@ -59,28 +63,43 @@ import static org.junit.Assert.assertNotNull;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.Issue;
-import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.MockAuthorizationStrategy;
 import org.jvnet.hudson.test.MockQueueItemAuthenticator;
 import org.jvnet.hudson.test.TestExtension;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Set;
 import java.util.logging.Level;
+import org.apache.commons.text.StringEscapeUtils;
+import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.writer.openssh.OpenSSHKeyPairResourceWriter;
+import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeDocker;
 import org.jenkinsci.plugins.structs.describable.DescribableModel;
+import org.jenkinsci.plugins.workflow.support.pickles.FilePathPickle;
+import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
+import org.junit.ClassRule;
 import org.jvnet.hudson.test.BuildWatcher;
+import org.jvnet.hudson.test.JenkinsSessionRule;
 import org.jvnet.hudson.test.LoggerRule;
+import org.testcontainers.containers.GenericContainer;
 
 public class RegistryEndpointStepTest {
 
-    @Rule public JenkinsRule r = new JenkinsRule();
+    @Rule public final JenkinsSessionRule rr = new JenkinsSessionRule();
     @Rule public LoggerRule logging = new LoggerRule();
-    @Rule public BuildWatcher bw = new BuildWatcher();
+    @ClassRule public static BuildWatcher bw = new BuildWatcher();
 
     @Issue("JENKINS-51395")
-    @Test public void configRoundTrip() throws Exception {
+    @Test public void configRoundTrip() throws Throwable {
         logging.record(DescribableModel.class, Level.FINE);
+        rr.then(r -> {
         { // Recommended syntax.
             SnippetizerTester st = new SnippetizerTester(r);
             RegistryEndpointStep step = new RegistryEndpointStep(new DockerRegistryEndpoint("https://myreg/", null));
@@ -116,12 +135,14 @@ public class RegistryEndpointStepTest {
             assertEquals("registryCreds", registry.getCredentialsId());
             // TODO check toolName
         }
+        });
     }
 
     @Test
-    public void stepExecutionWithCredentials() throws Exception {
+    public void stepExecutionWithCredentials() throws Throwable {
         assumeNotWindows();
 
+        rr.then(r -> {
         IdCredentials registryCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "registryCreds", null, "me", "s3cr3t");
         CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), registryCredentials);
 
@@ -137,12 +158,14 @@ public class RegistryEndpointStepTest {
         r.assertBuildStatusSuccess(r.waitForCompletion(b));
         r.assertLogContains("docker login -u me -p ******** https://my-reg:1234", b);
         r.assertLogNotContains("s3cr3t", b);
+        });
     }
 
     @Test
-    public void stepExecutionWithCredentialsAndQueueItemAuthenticator() throws Exception {
+    public void stepExecutionWithCredentialsAndQueueItemAuthenticator() throws Throwable {
         assumeNotWindows();
 
+        rr.then(r -> {
         r.getInstance().setSecurityRealm(r.createDummySecurityRealm());
         MockAuthorizationStrategy auth = new MockAuthorizationStrategy()
                 .grant(Jenkins.READ).everywhere().to("alice", "bob")
@@ -181,6 +204,70 @@ public class RegistryEndpointStepTest {
 
         // Bob does not have Credentials.USE_ITEM permission and should not be able to use the credential.
         r.assertBuildStatus(Result.FAILURE, p2.scheduleBuild2(0));
+        });
+    }
+
+    @Issue("JENKINS-75679")
+    @Test public void noFilePathPickle() throws Throwable {
+        assumeDocker();
+        try (var agent = new SSHAgentContainer()) {
+            agent.start();
+            rr.then(r -> {
+                agent.register("remote");
+                var registryCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "registryCreds", null, "me", "s3cr3t");
+                CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), registryCredentials);
+                var p = r.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition(
+                    """
+                    node('remote') {
+                      mockDockerLogin {
+                        withDockerRegistry(url: 'https://my-reg:1234', credentialsId: 'registryCreds') {
+                          semaphore 'wait'
+                        }
+                      }
+                    }
+                    """, true));
+                var b = p.scheduleBuild2(0).waitForStart();
+                SemaphoreStep.waitForStart("wait/1", b);
+            });
+            @SuppressWarnings("deprecation")
+            var verboten = FilePathPickle.class.getName();
+            assertThat(StringEscapeUtils.escapeJava(Files.readString(rr.getHome().toPath().resolve("jobs/p/builds/1/program.dat"), StandardCharsets.ISO_8859_1)), not(containsString(verboten)));
+            rr.then(r -> {
+                var b = r.jenkins.getItemByFullName("p", WorkflowJob.class).getBuildByNumber(1);
+                SemaphoreStep.success("wait/1", null);
+                r.assertBuildStatusSuccess(r.waitForCompletion(b));
+                r.assertLogContains("docker login -u me -p ******** https://my-reg:1234", b);
+                r.assertLogNotContains("s3cr3t", b);
+            });
+        }
+    }
+
+    private static final class SSHAgentContainer extends GenericContainer<SSHAgentContainer> {
+        private final String priv;
+        SSHAgentContainer() {
+            super("jenkins/ssh-agent:6.17.0");
+            try {
+                var kp = KeyUtils.generateKeyPair(KeyPairProvider.SSH_RSA, 2048);
+                var kprw = new OpenSSHKeyPairResourceWriter();
+                var baos = new ByteArrayOutputStream();
+                kprw.writePublicKey(kp, null, baos);
+                var pub = baos.toString(StandardCharsets.US_ASCII);
+                baos.reset();
+                kprw.writePrivateKey(kp, null, null, baos);
+                priv = baos.toString(StandardCharsets.US_ASCII);
+                withEnv("JENKINS_AGENT_SSH_PUBKEY", pub);
+                withExposedPorts(22);
+            } catch (Exception x) {
+                throw new AssertionError(x);
+            }
+        }
+        void register(String name) throws Exception{
+            var creds = new BasicSSHUserPrivateKey(CredentialsScope.GLOBAL, null, "jenkins", new BasicSSHUserPrivateKey.DirectEntryPrivateKeySource(priv), null, null);
+            CredentialsProvider.lookupStores(Jenkins.get()).iterator().next().addCredentials(Domain.global(), creds);
+            var port = getMappedPort(22);
+            Jenkins.get().addNode(new DumbSlave(name, "/home/jenkins/agent", new SSHLauncher(getHost(), port, creds.getId())));
+        }
     }
 
     public static class MockLauncherStep extends Step {
