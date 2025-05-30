@@ -61,7 +61,7 @@
             <dependency>
                 <groupId>org.jenkins-ci.plugins</groupId>
                 <artifactId>docker-commons</artifactId>
-                <version>454.v2171c32a_8cdd</version> <!-- TODO https://github.com/jenkinsci/docker-commons-plugin/pull/166 -->
+                <version>457.v0f62a_94f11a_3</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
