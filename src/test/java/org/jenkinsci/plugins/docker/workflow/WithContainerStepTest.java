@@ -265,6 +265,52 @@ public class WithContainerStepTest {
         });
     }
 
+    @Test public void withInitAndExecAsUser() throws Exception {
+        story.addStep(new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                DockerTestUtil.assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                        "  def gid = sh(script: 'id -g', returnStdout: true).trim()\n" +
+                        "  def uid = sh(script: 'id -u', returnStdout: true).trim()\n" +
+                        "  def gname = sh(script: 'id -g -n', returnStdout: true).trim()\n" +
+                        "  def uname = sh(script: 'id -u -n', returnStdout: true).trim()\n" +
+                        "  def args = \"-e BUILDER_UID=${uid} -e BUILDER_GID=${gid} -e BUILDER_USER=${uname} -e BUILDER_GROUP=${gname}\"\n" +
+                        "  withDockerContainer(args: args, image: 'dockcross/base:latest') {\n" +
+                        "    sh 'touch /home/${BUILDER_USER}/test && id'\n" +
+                        "  }\n" +
+                        "}", true));
+                WorkflowRun b = story.j.assertBuildStatus(Result.FAILURE, p.scheduleBuild2(0));
+            }
+        });
+    }
+
+    @Test public void withInitAsRootAndExecAsUser() throws Exception {
+        story.addStep(new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                DockerTestUtil.assumeDocker();
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                        "  def gid = sh(script: 'id -g', returnStdout: true).trim()\n" +
+                        "  def uid = sh(script: 'id -u', returnStdout: true).trim()\n" +
+                        "  def gname = sh(script: 'id -g -n', returnStdout: true).trim()\n" +
+                        "  def uname = sh(script: 'id -u -n', returnStdout: true).trim()\n" +
+                        "  def args = \"-u root:root -e BUILDER_UID=${uid} -e BUILDER_GID=${gid} -e BUILDER_USER=${uname} -e BUILDER_GROUP=${gname}\"\n" +
+                        "  withDockerContainer(args: args, image: 'dockcross/base:latest') {\n" +
+                        "    sh 'touch /home/${BUILDER_USER}/test && id'\n" +
+                        "  }\n" +
+                        "}", true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0).get());
+                story.j.assertLogContains("uid=100", b);
+            }
+        });
+    }
+
+
     @Issue("JENKINS-27152")
     @Test public void configFile() throws Exception {
         story.addStep(new Statement() {
