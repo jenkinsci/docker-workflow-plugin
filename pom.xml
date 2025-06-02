@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>5.9</version>
+        <version>5.12</version>
         <relativePath/>
     </parent>
     <artifactId>docker-workflow</artifactId>
@@ -56,6 +56,12 @@
                 <version>4488.v7fe26526366e</version>
                 <scope>import</scope>
                 <type>pom</type>
+            </dependency>
+            <!-- TODO until in BOM: -->
+            <dependency>
+                <groupId>org.jenkins-ci.plugins</groupId>
+                <artifactId>docker-commons</artifactId>
+                <version>457.v0f62a_94f11a_3</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -154,12 +160,23 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <scope>test</scope>
-         </dependency>
-         <dependency>
+        </dependency>
+        <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
             <scope>test</scope>
-         </dependency>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>ssh-slaves</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>1.21.0</version>
+            <scope>test</scope>
+        </dependency>
         <!-- Required because git plugin optionally depends on a recent version of matrix-project, and if we do not depend
         on matrix-project here, an older version is installed automatically as a detached plugin, causing git plugin to fail to load. -->
         <dependency>
