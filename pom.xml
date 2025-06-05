@@ -167,6 +167,12 @@
             <version>1.21.0</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>5.18.0</version>
+            <scope>test</scope>
+        </dependency>
         <!-- Required because git plugin optionally depends on a recent version of matrix-project, and if we do not depend
         on matrix-project here, an older version is installed automatically as a detached plugin, causing git plugin to fail to load. -->
         <dependency>
