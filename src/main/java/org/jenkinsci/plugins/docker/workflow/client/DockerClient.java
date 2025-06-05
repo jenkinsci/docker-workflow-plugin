@@ -143,7 +143,10 @@ public class DockerClient {
 
         LaunchResult result = launch(launchEnv, false, null, argb);
         if (result.getStatus() == 0) {
-            return result.getOut();
+            // Take only the first line containing the container ID.
+            // Otherwise, we might capture the "leaked file descriptors" message.
+            // See https://issues.jenkins.io/browse/JENKINS-63628 for more info.
+            return result.getOut().split("\n")[0];
         } else {
             throw new IOException(String.format("Failed to run image '%s'. Error: %s", image, result.getErr()));
         }
