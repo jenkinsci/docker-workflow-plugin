@@ -57,12 +57,6 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
-            <!-- TODO until in BOM: -->
-            <dependency>
-                <groupId>org.jenkins-ci.plugins</groupId>
-                <artifactId>docker-commons</artifactId>
-                <version>457.v0f62a_94f11a_3</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
     <dependencies>
