@@ -336,27 +336,33 @@ public class DockerClient {
             return "";
         }
 
-        TaskListener listener = launcher.getListener();
-        final String rootlessId = "0:0";
-        // First, check if under the hood it's Podman or Docker
-        String engine = executeCommand("docker", "--version");
-        if (engine.toLowerCase().contains("podman")) {
-            listener.getLogger().println("Container engine is Podman with build in rootless mode");
-            return rootlessId;
-        }
-        else {
-            String rootless = executeCommand("docker", "info", "-f", "{{.SecurityOptions}}" );
-            if (rootless.toLowerCase().contains("rootless")) {
-                listener.getLogger().println("Container engine is Docker with rootless mode");
-                return rootlessId;
-            }
-        }
-
-        // Else not rootless, return the current user/group ids
         String userId = executeCommand("id", "-u");
         String groupId = executeCommand("id", "-g");
 
         return String.format("%s:%s", userId, groupId);
+    }
+
+    public String getEngine() throws IOException, InterruptedException {
+
+        String engine = "docker";
+
+        String cmd = executeCommand("docker", "--version");
+        if (cmd.toLowerCase().contains("podman")) {
+            engine = "podman";
+        }
+        else {
+            String rootless = executeCommand("docker", "info", "-f", "{{.SecurityOptions}}" );
+            if (rootless.toLowerCase().contains("rootless")) {
+                engine = "docker-rootless";
+            }
+        }
+
+        return engine;
+    }
+
+    public boolean isRootless() throws IOException, InterruptedException {
+        String engine = getEngine();
+        return engine.equals("docker-rootless") || engine.equals("podman");
     }
 
     private static final Pattern hostnameMount = Pattern.compile("/containers/([a-z0-9]{64})/hostname");
