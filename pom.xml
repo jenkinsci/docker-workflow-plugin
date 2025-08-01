@@ -57,6 +57,18 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
+            <!-- TODO until in BOM -->
+            <dependency>
+                <groupId>org.jenkins-ci.plugins</groupId>
+                <artifactId>ssh-slaves</artifactId>
+                <version>3.1071.v0d059c7b_c555</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jenkins-ci.plugins</groupId>
+                <artifactId>ssh-slaves</artifactId>
+                <classifier>tests</classifier>
+                <version>3.1071.v0d059c7b_c555</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
     <dependencies>
@@ -153,6 +165,12 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>ssh-slaves</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>ssh-slaves</artifactId>
+            <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
         <dependency>
