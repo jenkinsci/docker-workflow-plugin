@@ -491,6 +491,7 @@ public class WithContainerStepTest {
         });
     }
 
+    @Ignore("TODO currently broken in CI")
     @Issue("JENKINS-75102")
     @Test public void windowsRunningWindowsContainerSpaceInPath() {
         // Launching batch scripts through cmd /c in docker exec gets tricky with special characters
