@@ -29,8 +29,11 @@ import java.util.Map;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
+import java.net.URL;
+import java.util.Set;
 import org.jenkinsci.plugins.pipeline.modeldefinition.agent.DeclarativeAgent;
 import org.jenkinsci.plugins.pipeline.modeldefinition.options.DeclarativeOption;
+import org.jenkinsci.plugins.pipeline.modeldefinition.parser.CompatibilityLoader;
 import org.jenkinsci.plugins.workflow.cps.GroovySourceFileAllowlist;
 import org.kohsuke.stapler.DataBoundSetter;
 
@@ -136,6 +139,20 @@ public abstract class AbstractDockerAgent<D extends AbstractDockerAgent<D>> exte
         @Override
         public boolean isAllowed(String groovyResourceUrl) {
             return groovyResourceUrl.equals(scriptUrl);
+        }
+    }
+
+    @Extension(optional = true) public static final class Compat implements CompatibilityLoader {
+        private static final Set<String> CLASSES = Set.of(
+            "org.jenkinsci.plugins.docker.workflow.declarative.AbstractDockerPipelineScript",
+            "org.jenkinsci.plugins.docker.workflow.declarative.DockerPipelineScript",
+            "org.jenkinsci.plugins.docker.workflow.declarative.DockerPipelineFromDockerfileScript");
+        @Override public URL loadGroovySource(String clazz) {
+            if (CLASSES.contains(clazz)) {
+                return AbstractDockerAgent.class.getResource("compat/" + clazz.replaceFirst(".+[.]", "") + ".groovy");
+            } else {
+                return null;
+            }
         }
     }
 

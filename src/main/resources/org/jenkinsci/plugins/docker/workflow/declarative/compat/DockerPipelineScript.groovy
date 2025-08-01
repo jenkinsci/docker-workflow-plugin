@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2017, CloudBees, Inc.
+ * Copyright (c) 2016, CloudBees, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,39 +25,35 @@
 
 package org.jenkinsci.plugins.docker.workflow.declarative
 
-import hudson.FilePath
-import org.jenkinsci.plugins.pipeline.modeldefinition.agent.DeclarativeAgentScript2
+import org.jenkinsci.plugins.pipeline.modeldefinition.SyntheticStageNames
+import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
 import org.jenkinsci.plugins.workflow.cps.CpsScript
 
-abstract class AbstractDockerPipelineScript<A extends AbstractDockerAgent<A>> extends DeclarativeAgentScript2<A> {
+class DockerPipelineScript extends AbstractDockerPipelineScript<DockerPipeline> {
 
-    AbstractDockerPipelineScript(CpsScript s, A a) {
+    DockerPipelineScript(CpsScript s, DockerPipeline a) {
         super(s, a)
     }
 
     @Override
-    void run(Closure body) {
-        if (describable.reuseNode && script.getContext(FilePath.class) != null) {
-            configureRegistry(body)
-        } else if (describable.containerPerStageRoot) {
-            DeclarativeDockerUtils.getLabelScript(describable, script).run(body)
-        } else {
-            DeclarativeDockerUtils.getLabelScript(describable, script).run {
-                configureRegistry(body)
+    Closure runImage(Closure body) {
+        return {
+            if (!Utils.withinAStage() && describable.alwaysPull) {
+                script.stage(SyntheticStageNames.agentSetup()) {
+                    try {
+                        script.getProperty("docker").image(describable.image).pull()
+                    } catch (Exception e) {
+                        Utils.markStageFailedAndContinued(SyntheticStageNames.agentSetup())
+                        throw e
+                    }
+                }
             }
+            if (Utils.withinAStage() && describable.alwaysPull) {
+                script.getProperty("docker").image(describable.image).pull()
+            }
+            script.getProperty("docker").image(describable.image).inside(describable.args, {
+                body.call()
+            })
         }
     }
-
-    protected void configureRegistry(Closure body) {
-        DeclarativeDockerUtils.DockerRegistry registry = DeclarativeDockerUtils.DockerRegistry.build(describable.registryUrl, describable.registryCredentialsId)
-        if (registry.hasData()) {
-            script.getProperty("docker").withRegistry(registry.registry, registry.credential) {
-                runImage(body)
-            }
-        } else {
-            runImage(body)
-        }
-    }
-
-    protected abstract void runImage(Closure body)
 }

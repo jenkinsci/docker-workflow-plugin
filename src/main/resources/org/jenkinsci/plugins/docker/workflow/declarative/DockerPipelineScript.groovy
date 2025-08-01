@@ -36,24 +36,20 @@ class DockerPipelineScript extends AbstractDockerPipelineScript<DockerPipeline> 
     }
 
     @Override
-    Closure runImage(Closure body) {
-        return {
-            if (!Utils.withinAStage() && describable.alwaysPull) {
-                script.stage(SyntheticStageNames.agentSetup()) {
-                    try {
-                        script.getProperty("docker").image(describable.image).pull()
-                    } catch (Exception e) {
-                        Utils.markStageFailedAndContinued(SyntheticStageNames.agentSetup())
-                        throw e
-                    }
+    void runImage(Closure body) {
+        if (!Utils.withinAStage() && describable.alwaysPull) {
+            script.stage(SyntheticStageNames.agentSetup()) {
+                try {
+                    script.getProperty("docker").image(describable.image).pull()
+                } catch (Exception e) {
+                    Utils.markStageFailedAndContinued(SyntheticStageNames.agentSetup())
+                    throw e
                 }
             }
-            if (Utils.withinAStage() && describable.alwaysPull) {
-                script.getProperty("docker").image(describable.image).pull()
-            }
-            script.getProperty("docker").image(describable.image).inside(describable.args, {
-                body.call()
-            })
         }
+        if (Utils.withinAStage() && describable.alwaysPull) {
+            script.getProperty("docker").image(describable.image).pull()
+        }
+        script.getProperty("docker").image(describable.image).inside(describable.args, body)
     }
 }

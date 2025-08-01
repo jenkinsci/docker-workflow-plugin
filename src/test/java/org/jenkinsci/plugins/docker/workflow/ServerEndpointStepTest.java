@@ -34,10 +34,8 @@ import java.util.TreeMap;
 import hudson.model.Computer;
 import hudson.model.Item;
 import hudson.model.User;
-import java.util.HashMap;
 import jenkins.model.Jenkins;
 import jenkins.security.QueueItemAuthenticatorConfiguration;
-import org.acegisecurity.Authentication;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerServerCredentials;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerServerEndpoint;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -161,10 +159,14 @@ public class ServerEndpointStepTest {
             WorkflowJob p2 = story.j.jenkins.createProject(WorkflowJob.class, "prj2");
             p2.setDefinition(new CpsFlowDefinition(script, true));
 
-            Map<String, Authentication> jobsToAuths = new HashMap<>();
-            jobsToAuths.put(p1.getFullName(), User.getById("alice", true).impersonate());
-            jobsToAuths.put(p2.getFullName(), User.getById("bob", true).impersonate());
-            QueueItemAuthenticatorConfiguration.get().getAuthenticators().replace(new MockQueueItemAuthenticator(jobsToAuths));
+            QueueItemAuthenticatorConfiguration.get()
+                    .getAuthenticators()
+                    .replace(new MockQueueItemAuthenticator()
+                            .authenticate(
+                                    p1.getFullName(),
+                                    User.getById("alice", true).impersonate2())
+                            .authenticate(
+                                    p2.getFullName(), User.getById("bob", true).impersonate2()));
 
             // Alice has Credentials.USE_ITEM permission and should be able to use the credential.
             WorkflowRun b1 = story.j.buildAndAssertSuccess(p1);

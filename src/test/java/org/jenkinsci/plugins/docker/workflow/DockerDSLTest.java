@@ -46,7 +46,10 @@ import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.NoSuchFileException;
 import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
@@ -100,8 +103,14 @@ public class DockerDSLTest {
             String qualifiedName = prefix + kid.getName();
             if (kid.isDirectory()) {
                 grep(kid, text, qualifiedName + "/", matches);
-            } else if (kid.isFile() && FileUtils.readFileToString(kid).contains(text)) {
-                matches.add(qualifiedName);
+            } else {
+                try {
+                    if (FileUtils.readFileToString(kid, StandardCharsets.UTF_8).contains(text)) {
+                        matches.add(qualifiedName);
+                    }
+                } catch (FileNotFoundException | NoSuchFileException x) {
+                    // ignore, e.g. tmp file
+                }
             }
         }
     }

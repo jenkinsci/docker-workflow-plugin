@@ -26,38 +26,44 @@
 package org.jenkinsci.plugins.docker.workflow.declarative
 
 import hudson.FilePath
-import org.jenkinsci.plugins.pipeline.modeldefinition.agent.DeclarativeAgentScript2
+import org.jenkinsci.plugins.pipeline.modeldefinition.agent.DeclarativeAgentScript
 import org.jenkinsci.plugins.workflow.cps.CpsScript
 
-abstract class AbstractDockerPipelineScript<A extends AbstractDockerAgent<A>> extends DeclarativeAgentScript2<A> {
+abstract class AbstractDockerPipelineScript<A extends AbstractDockerAgent<A>> extends DeclarativeAgentScript<A> {
 
     AbstractDockerPipelineScript(CpsScript s, A a) {
         super(s, a)
     }
 
     @Override
-    void run(Closure body) {
+    Closure run(Closure body) {
         if (describable.reuseNode && script.getContext(FilePath.class) != null) {
-            configureRegistry(body)
+            return {
+                configureRegistry(body).call()
+            }
         } else if (describable.containerPerStageRoot) {
-            DeclarativeDockerUtils.getLabelScript(describable, script).run(body)
+            return DeclarativeDockerUtils.getLabelScript(describable, script).run {
+                body.call()
+            }
         } else {
-            DeclarativeDockerUtils.getLabelScript(describable, script).run {
-                configureRegistry(body)
+            return DeclarativeDockerUtils.getLabelScript(describable, script).run {
+                configureRegistry(body).call()
             }
         }
     }
 
-    protected void configureRegistry(Closure body) {
-        DeclarativeDockerUtils.DockerRegistry registry = DeclarativeDockerUtils.DockerRegistry.build(describable.registryUrl, describable.registryCredentialsId)
-        if (registry.hasData()) {
-            script.getProperty("docker").withRegistry(registry.registry, registry.credential) {
-                runImage(body)
+    protected Closure configureRegistry(Closure body) {
+        return {
+            DeclarativeDockerUtils.DockerRegistry registry = DeclarativeDockerUtils.DockerRegistry.build(describable.registryUrl, describable.registryCredentialsId)
+            if (registry.hasData()) {
+                script.getProperty("docker").withRegistry(registry.registry, registry.credential) {
+                    runImage(body).call()
+                }
+            } else {
+                runImage(body).call()
             }
-        } else {
-            runImage(body)
         }
     }
 
-    protected abstract void runImage(Closure body)
+    protected abstract Closure runImage(Closure body)
 }
