@@ -197,7 +197,16 @@ public class WithContainerStep extends AbstractStepImpl {
             }
 
             String command = launcher.isUnix() ? "cat" : "cmd.exe";
-            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ command);
+            String whoAmI  = dockerClient.whoAmI();
+            if (dockerClient.isRootless()) {
+                listener.getLogger().println("Running in rootless mode.");
+                whoAmI = "";
+                if (dockerClient.getEngine().equals("podman")) {
+                    listener.getLogger().println("Podman detected.");
+                    step.args = step.args == null ? "--userns=keep-id" : "--userns=keep-id " + step.args;
+                }
+            }
+            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, whoAmI, /* expected to hang until killed */ command);
             final List<String> ps = dockerClient.listProcess(env, container);
             if (!ps.contains(command)) {
                 listener.error(
