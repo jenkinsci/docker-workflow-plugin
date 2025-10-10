@@ -33,20 +33,22 @@ import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runners.model.Statement;
-import org.jvnet.hudson.test.RestartableJenkinsRule;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.jvnet.hudson.test.junit.jupiter.JenkinsSessionExtension;
 
 import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeDocker;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class FromFingerprintStepTest {
-    @Rule public RestartableJenkinsRule story = new RestartableJenkinsRule();
+class FromFingerprintStepTest {
+
+    @RegisterExtension
+    private final JenkinsSessionExtension story = new JenkinsSessionExtension();
 
     private static final String BUSYBOX_IMAGE = "quay.io/prometheus/busybox:latest";
 
-    @Test public void build() throws Exception {
+    @Test
+    void build() throws Throwable {
         String dockerFile = "" + 
             "FROM "+ BUSYBOX_IMAGE +"\\n" +
             "RUN echo 1";
@@ -64,24 +66,22 @@ public class FromFingerprintStepTest {
         assertBuild("build", script, BUSYBOX_IMAGE);
     }
 
-    private void assertBuild(final String projectName, final String pipelineCode, final String fromImage) throws Exception {
-        story.addStep(new Statement() {
-            @Override
-            public void evaluate() throws Throwable {
+    private void assertBuild(final String projectName, final String pipelineCode, final String fromImage) throws Throwable {
+        story.then(r -> {
                 assumeDocker();
 
-                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, projectName);
+                WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, projectName);
                 p.setDefinition(new CpsFlowDefinition(pipelineCode, true));
-                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
                 DockerClient client = new DockerClient(new LocalLauncher(StreamTaskListener.NULL), null, null);
                 String ancestorImageId = client.inspect(new EnvVars(), fromImage, ".Id");
-                story.j.assertLogContains(ancestorImageId.replaceFirst("^sha256:", "").substring(0, 12), b);
+                r.assertLogContains(ancestorImageId.replaceFirst("^sha256:", "").substring(0, 12), b);
                 Fingerprint f = DockerFingerprints.of(ancestorImageId);
                 assertNotNull(f);
                 DockerDescendantFingerprintFacet descendantFacet = f.getFacet(DockerDescendantFingerprintFacet.class);
                 assertNotNull(descendantFacet);
             }
-        });
+        );
     }
 
 }

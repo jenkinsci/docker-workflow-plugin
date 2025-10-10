@@ -28,9 +28,9 @@ import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import hudson.Launcher;
 import hudson.util.StreamTaskListener;
 import hudson.util.VersionNumber;
-import org.junit.Assume;
 
 import java.io.ByteArrayOutputStream;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -42,14 +42,18 @@ import java.util.regex.Pattern;
 
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 /**
  * @author <a href="mailto:tom.fennelly@gmail.com">tom.fennelly@gmail.com</a>
  */
 public class DockerTestUtil {
-    public static String DEFAULT_MINIMUM_VERSION = "1.3";
+
+    public static final String DEFAULT_MINIMUM_VERSION = "1.3";
 
     // Major Windows kernel versions. See https://hub.docker.com/r/microsoft/windows-nanoserver
-    private static List<String> MAJOR_WINDOWS_KERNEL_VERSIONS = Arrays.asList(
+    private static final List<String> MAJOR_WINDOWS_KERNEL_VERSIONS = Arrays.asList(
         "10.0.17763.6659", // 1809
         "10.0.18363.1556", // 1909
         "10.0.19041.1415", // 2004
@@ -79,7 +83,7 @@ public class DockerTestUtil {
                 .cmds(DockerTool.getExecutable(null, null, null, null), "ps")
                 .start()
                 .joinWithTimeout(DockerClient.CLIENT_TIMEOUT, TimeUnit.SECONDS, localLauncher.getListener());
-            Assume.assumeTrue("Docker working", status == 0);
+            assumeTrue(status == 0, "Docker working");
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             status = localLauncher
                 .launch()
@@ -88,25 +92,25 @@ public class DockerTestUtil {
                 .start()
                 .joinWithTimeout(DockerClient.CLIENT_TIMEOUT, TimeUnit.SECONDS, localLauncher.getListener());
             DockerOsMode cmdOsMode = DockerOsMode.valueOf(out.toString().trim().toUpperCase());
-            Assume.assumeTrue("Docker working", status == 0);
-            Assume.assumeTrue("Docker os mode " + osMode, osMode == cmdOsMode);
+            assumeTrue(status == 0, "Docker working");
+            assumeTrue(osMode == cmdOsMode, "Docker os mode " + osMode);
         } catch (IOException x) {
-            Assume.assumeNoException("have Docker installed", x);
+            assumeTrue(false, "have Docker installed: " + x);
         }
         DockerClient dockerClient = new DockerClient(localLauncher, null, null);
-        Assume.assumeFalse("Docker version not < " + minimumVersion.toString(), dockerClient.version().isOlderThan(minimumVersion));
+        assumeFalse(dockerClient.version().isOlderThan(minimumVersion), "Docker version not < " + minimumVersion.toString());
     }
 
-    public static void assumeWindows() throws Exception {
-        Assume.assumeTrue(System.getProperty("os.name").toLowerCase().contains("windows"));
+    public static void assumeWindows() {
+        assumeTrue(System.getProperty("os.name").toLowerCase().contains("windows"));
     }
 
-    public static void assumeNotWindows() throws Exception {
-        Assume.assumeFalse(System.getProperty("os.name").toLowerCase().contains("windows"));
+    public static void assumeNotWindows() {
+        assumeFalse(System.getProperty("os.name").toLowerCase().contains("windows"));
     }
 
-    public static void assumeDrive(char drive) throws Exception {
-        Assume.assumeTrue(new File(drive + ":/").exists());
+    public static void assumeDrive(char drive) {
+        assumeTrue(new File(drive + ":/").exists());
     }
 
     public static String getWindowsKernelVersion() throws Exception {

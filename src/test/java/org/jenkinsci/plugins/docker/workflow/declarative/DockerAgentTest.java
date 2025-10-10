@@ -33,7 +33,6 @@ import java.util.Arrays;
 import java.util.List;
 import org.jenkinsci.plugins.docker.workflow.DockerTestUtil;
 import org.jenkinsci.plugins.pipeline.modeldefinition.AbstractModelDefTest;
-import static org.jenkinsci.plugins.pipeline.modeldefinition.AbstractModelDefTest.j;
 import static org.junit.Assume.assumeThat;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -329,7 +328,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
         logContains.addAll(Arrays.asList(additionalLogContains));
 
         expect(jenkinsfile)
-                .logContains(logContains.toArray(new String[logContains.size()]))
+                .logContains(logContains.toArray(new String[0]))
                 .go();
     }
 
