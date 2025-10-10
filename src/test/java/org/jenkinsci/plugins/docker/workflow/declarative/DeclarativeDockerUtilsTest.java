@@ -36,6 +36,7 @@ import hudson.Functions;
 import hudson.model.Descriptor.FormException;
 import hudson.model.Slave;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
+
 import org.jenkinsci.plugins.docker.workflow.DockerTestUtil;
 import org.jenkinsci.plugins.pipeline.modeldefinition.AbstractModelDefTest;
 import org.junit.Assume;
@@ -177,7 +178,7 @@ public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
 
     @Test
     public void runsOnCorrectSlave() throws Exception {
-        DockerTestUtil.assumeDocker();
+        DockerTestUtil.assumeDockerJUnit4();
         Slave s = j.createOnlineSlave();
         s.setLabelString("notthis");
         env(s).put("DOCKER_INDICATOR", "WRONG").set();
@@ -193,7 +194,7 @@ public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
 
     @Test
     public void runsOnSpecifiedSlave() throws Exception {
-        DockerTestUtil.assumeDocker();
+        DockerTestUtil.assumeDockerJUnit4();
         Slave s = j.createOnlineSlave();
         s.setLabelString("thisspec");
         env(s).put("DOCKER_INDICATOR", "SPECIFIED").set();

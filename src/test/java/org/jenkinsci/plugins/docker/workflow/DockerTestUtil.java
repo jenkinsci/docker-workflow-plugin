@@ -41,6 +41,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
+import org.junit.AssumptionViolatedException;
+import org.opentest4j.TestAbortedException;
 
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -65,6 +67,14 @@ public class DockerTestUtil {
     public enum DockerOsMode {
         LINUX,
         WINDOWS
+    }
+
+    public static void assumeDockerJUnit4() throws Exception {
+        try {
+            assumeDocker();
+        } catch (TestAbortedException ex) {
+            throw new AssumptionViolatedException(ex.getMessage());
+        }
     }
 
     public static void assumeDocker() throws Exception {

@@ -51,7 +51,7 @@ public class DockerBasicModelDefTest extends AbstractModelDefTest {
 
     @Test
     public void dockerGlobalVariable() throws Exception {
-        DockerTestUtil.assumeDocker();
+        DockerTestUtil.assumeDockerJUnit4();
 
         expect("org/jenkinsci/plugins/docker/workflow/declarative/dockerGlobalVariable")
                 .logContains("[Pipeline] { (foo)", "image: ubuntu")
