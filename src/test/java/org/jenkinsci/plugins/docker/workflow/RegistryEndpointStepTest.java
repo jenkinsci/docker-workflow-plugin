@@ -23,7 +23,6 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
-import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
@@ -38,9 +37,6 @@ import hudson.model.Item;
 import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.User;
-import hudson.plugins.sshslaves.SSHLauncher;
-import hudson.slaves.DumbSlave;
-import java.io.ByteArrayOutputStream;
 import jenkins.model.Jenkins;
 import jenkins.security.QueueItemAuthenticatorConfiguration;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
@@ -74,13 +70,9 @@ import java.nio.file.Files;
 import java.util.Set;
 import java.util.logging.Level;
 import org.apache.commons.text.StringEscapeUtils;
-import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.config.keys.writer.openssh.OpenSSHKeyPairResourceWriter;
-import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
-import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeDocker;
 import org.jenkinsci.plugins.structs.describable.DescribableModel;
 import org.jenkinsci.plugins.workflow.support.pickles.FilePathPickle;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
@@ -88,7 +80,7 @@ import org.junit.ClassRule;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.JenkinsSessionRule;
 import org.jvnet.hudson.test.LoggerRule;
-import org.testcontainers.containers.GenericContainer;
+import test.ssh_agent.OutboundAgent;
 
 public class RegistryEndpointStepTest {
 
@@ -209,11 +201,10 @@ public class RegistryEndpointStepTest {
 
     @Issue("JENKINS-75679")
     @Test public void noFilePathPickle() throws Throwable {
-        assumeDocker();
-        try (var agent = new SSHAgentContainer()) {
-            agent.start();
+        try (var agent = new OutboundAgent()) {
+            var connectionDetails = agent.start();
             rr.then(r -> {
-                agent.register("remote");
+                OutboundAgent.createAgent(r, "remote", connectionDetails);
                 var registryCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "registryCreds", null, "me", "s3cr3t");
                 CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), registryCredentials);
                 var p = r.createProject(WorkflowJob.class, "p");
@@ -240,33 +231,6 @@ public class RegistryEndpointStepTest {
                 r.assertLogContains("docker login -u me -p ******** https://my-reg:1234", b);
                 r.assertLogNotContains("s3cr3t", b);
             });
-        }
-    }
-
-    private static final class SSHAgentContainer extends GenericContainer<SSHAgentContainer> {
-        private final String priv;
-        SSHAgentContainer() {
-            super("jenkins/ssh-agent:6.17.0");
-            try {
-                var kp = KeyUtils.generateKeyPair(KeyPairProvider.SSH_RSA, 2048);
-                var kprw = new OpenSSHKeyPairResourceWriter();
-                var baos = new ByteArrayOutputStream();
-                kprw.writePublicKey(kp, null, baos);
-                var pub = baos.toString(StandardCharsets.US_ASCII);
-                baos.reset();
-                kprw.writePrivateKey(kp, null, null, baos);
-                priv = baos.toString(StandardCharsets.US_ASCII);
-                withEnv("JENKINS_AGENT_SSH_PUBKEY", pub);
-                withExposedPorts(22);
-            } catch (Exception x) {
-                throw new AssertionError(x);
-            }
-        }
-        void register(String name) throws Exception{
-            var creds = new BasicSSHUserPrivateKey(CredentialsScope.GLOBAL, null, "jenkins", new BasicSSHUserPrivateKey.DirectEntryPrivateKeySource(priv), null, null);
-            CredentialsProvider.lookupStores(Jenkins.get()).iterator().next().addCredentials(Domain.global(), creds);
-            var port = getMappedPort(22);
-            Jenkins.get().addNode(new DumbSlave(name, "/home/jenkins/agent", new SSHLauncher(getHost(), port, creds.getId())));
         }
     }
 
