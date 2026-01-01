@@ -37,7 +37,7 @@ public class DockerPostStageTest extends AbstractModelDefTest {
     @Issue("JENKINS-46276")
     @Test
     public void withAgentNoneAndAgentDocker() throws Exception {
-        DockerTestUtil.assumeDocker();
+        DockerTestUtil.assumeDockerJUnit4();
         expect("org/jenkinsci/plugins/docker/workflow/declarative/withAgentNoneAndAgentDocker")
                 .logNotContains("Required context class hudson.FilePath is missing").go();
     }

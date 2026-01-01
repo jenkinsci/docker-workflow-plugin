@@ -23,45 +23,46 @@
  */
 package org.jenkinsci.plugins.docker.workflow;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:tom.fennelly@gmail.com">tom.fennelly@gmail.com</a>
  */
-public class ImageNameTokensTest {
-    
+class ImageNameTokensTest {
+
     @Test
-    public void test_no_tag() {
+    void test_no_tag() {
         ImageNameTokens name = new ImageNameTokens("busybox");
 
-        Assert.assertEquals("busybox", name.userAndRepo);
-        Assert.assertEquals("latest", name.tag);
+        assertEquals("busybox", name.userAndRepo);
+        assertEquals("latest", name.tag);
     }
-    
+
     @Test
-    public void test_empty_tag() {
+    void test_empty_tag() {
         ImageNameTokens name = new ImageNameTokens("busybox:");
 
-        Assert.assertEquals("busybox", name.userAndRepo);
-        Assert.assertEquals("latest", name.tag);
+        assertEquals("busybox", name.userAndRepo);
+        assertEquals("latest", name.tag);
     }
-    
+
     @Test
-    public void test_with_tag() {
+    void test_with_tag() {
         ImageNameTokens name = new ImageNameTokens("busybox:staging");
 
-        Assert.assertEquals("busybox", name.userAndRepo);
-        Assert.assertEquals("staging", name.tag);
+        assertEquals("busybox", name.userAndRepo);
+        assertEquals("staging", name.tag);
 
         name = new ImageNameTokens("spring-petclinic:1");
 
-        Assert.assertEquals("spring-petclinic", name.userAndRepo);
-        Assert.assertEquals("1", name.tag);
+        assertEquals("spring-petclinic", name.userAndRepo);
+        assertEquals("1", name.tag);
 
         name = new ImageNameTokens("examplecorp/spring-petclinic:1");
 
-        Assert.assertEquals("examplecorp/spring-petclinic", name.userAndRepo);
-        Assert.assertEquals("1", name.tag);
+        assertEquals("examplecorp/spring-petclinic", name.userAndRepo);
+        assertEquals("1", name.tag);
     }
 }
