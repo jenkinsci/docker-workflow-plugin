@@ -209,6 +209,14 @@ class Docker implements Serializable {
             this.isUnix = isUnix;
         }
 
+        public <V> V inside(Closure<V> body) {
+            docker.node {
+                docker.script.withRunningDockerContainer(containerId: id, toolName: docker.script.env.DOCKER_TOOL_NAME) {
+                    body()
+                }
+            }
+        }
+
         public void stop() {
             docker.script.withEnv(["JD_ID=${id}"]) {
                 docker.shell(isUnix, 'docker stop "' + docker.asEnv(isUnix,'JD_ID') + '" && docker rm -f --volumes "' + docker.asEnv(isUnix, 'JD_ID') + '"')
