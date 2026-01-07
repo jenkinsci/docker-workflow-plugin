@@ -1,0 +1,133 @@
+1099 1098 0:50 / /proc rw,nosuid,nodev,noexec,relatime - proc proc rw
+1100 1098 0:51 / /sys rw,nosuid,nodev,noexec,relatime - sysfs sysfs rw,seclabel
+1101 1098 0:52 / /dev rw,nosuid - tmpfs tmpfs rw,context="system_u:object_r:container_file_t:s0:c1022,c1023",size=65536k,mode=755,uid=1002,gid=1002,inode64
+976 1101 0:5 /vcsa5 /dev/vcsa5 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+977 1101 0:5 /vcsa6 /dev/vcsa6 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+978 1098 0:40 /containers/overlay-containers/32199af8e73b51d2b9f7cc0cf2c2bb4ef1792c54a656f1c4da53858698396fd6/userdata/hosts /etc/hosts rw,nosuid,nodev,relatime - tmpfs tmpfs rw,seclabel,size=1611168k,nr_inodes=402792,mode=700,uid=1002,gid=1002,inode64
+979 1098 0:40 /containers/overlay-containers/32199af8e73b51d2b9f7cc0cf2c2bb4ef1792c54a656f1c4da53858698396fd6/userdata/resolv.conf /etc/resolv.conf rw,nosuid,nodev,relatime - tmpfs tmpfs rw,seclabel,size=1611168k,nr_inodes=402792,mode=700,uid=1002,gid=1002,inode64
+980 1098 0:40 /containers/overlay-containers/32199af8e73b51d2b9f7cc0cf2c2bb4ef1792c54a656f1c4da53858698396fd6/userdata/hostname /etc/hostname rw,nosuid,nodev,relatime - tmpfs tmpfs rw,seclabel,size=1611168k,nr_inodes=402792,mode=700,uid=1002,gid=1002,inode64
+981 1098 0:40 /containers/overlay-containers/32199af8e73b51d2b9f7cc0cf2c2bb4ef1792c54a656f1c4da53858698396fd6/userdata/run/secrets /run/secrets rw,nosuid,nodev,relatime - tmpfs tmpfs rw,seclabel,size=1611168k,nr_inodes=402792,mode=700,uid=1002,gid=1002,inode64
+982 1098 0:40 /containers/overlay-containers/32199af8e73b51d2b9f7cc0cf2c2bb4ef1792c54a656f1c4da53858698396fd6/userdata/.containerenv /run/.containerenv rw,nosuid,nodev,relatime - tmpfs tmpfs rw,seclabel,size=1611168k,nr_inodes=402792,mode=700,uid=1002,gid=1002,inode64
+983 1101 0:45 / /dev/shm rw,nosuid,nodev,noexec,relatime - tmpfs shm rw,context="system_u:object_r:container_file_t:s0:c1022,c1023",size=64000k,uid=1002,gid=1002,inode64
+1102 1101 0:49 / /dev/mqueue rw,nosuid,nodev,noexec,relatime - mqueue mqueue rw,seclabel
+1103 1101 0:53 / /dev/pts rw,nosuid,noexec,relatime - devpts devpts rw,context="system_u:object_r:container_file_t:s0:c1022,c1023",gid=165540,mode=620,ptmxmode=666
+984 1098 253:0 /usr/share/zoneinfo/Europe/Berlin//deleted /etc/localtime ro,relatime - xfs /dev/mapper/vg_root-root rw,seclabel,attr2,inode64,logbufs=8,logbsize=32k,noquota
+986 1101 0:5 /zero /dev/zero rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+987 1101 0:5 /watchdog0 /dev/watchdog0 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+988 1101 0:5 /watchdog /dev/watchdog rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+989 1101 0:5 /vport0p1 /dev/vport0p1 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+990 1101 0:5 /vhost-vsock /dev/vhost-vsock rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+991 1101 0:5 /cpu_dma_latency /dev/cpu_dma_latency rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+992 1101 0:5 /dm-0 /dev/dm-0 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+993 1101 0:5 /dm-1 /dev/dm-1 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+994 1101 0:5 /dm-2 /dev/dm-2 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+995 1101 0:5 /dm-3 /dev/dm-3 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+996 1101 0:5 /vhost-net /dev/vhost-net rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+997 1101 0:5 /vhci /dev/vhci rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+998 1101 0:5 /fb0 /dev/fb0 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+999 1101 0:5 /full /dev/full rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1000 1101 0:5 /fuse /dev/fuse rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1001 1101 0:5 /hidraw0 /dev/hidraw0 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1002 1101 0:5 /sr0 /dev/sr0 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1003 1101 0:5 /hwrng /dev/hwrng rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1004 1101 0:5 /vga_arbiter /dev/vga_arbiter rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1005 1101 0:5 /ttyS1 /dev/ttyS1 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1006 1101 0:5 /vcsu6 /dev/vcsu6 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1007 1101 0:5 /vcsu5 /dev/vcsu5 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1008 1101 0:5 /vcsu4 /dev/vcsu4 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1009 1101 0:5 /vcsu3 /dev/vcsu3 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1010 1101 0:5 /vcsu2 /dev/vcsu2 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1011 1101 0:5 /vcsu1 /dev/vcsu1 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1012 1101 0:5 /vcsu /dev/vcsu rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1013 1101 0:5 /autofs /dev/autofs rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1014 1101 0:5 /kmsg /dev/kmsg rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1015 1101 0:5 /loop-control /dev/loop-control rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1016 1101 0:5 /vcsa4 /dev/vcsa4 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1017 1101 0:5 /mcelog /dev/mcelog rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1018 1101 0:5 /mem /dev/mem rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1019 1101 0:5 /vcsa3 /dev/vcsa3 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1020 1101 0:5 /null /dev/null rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1021 1101 0:5 /nvram /dev/nvram rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1022 1101 0:5 /port /dev/port rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1023 1101 0:5 /ppp /dev/ppp rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1024 1101 0:5 /random /dev/random rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1025 1101 0:5 /rfkill /dev/rfkill rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1026 1101 0:5 /rtc0 /dev/rtc0 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1027 1101 0:5 /sda /dev/sda rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1028 1101 0:5 /ttyS0 /dev/ttyS0 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1029 1101 0:5 /sda2 /dev/sda2 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1030 1101 0:5 /sg0 /dev/sg0 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1031 1101 0:5 /sg1 /dev/sg1 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1032 1101 0:5 /snapshot /dev/snapshot rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1033 1101 0:5 /vcsa2 /dev/vcsa2 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1034 1101 0:5 /vcsa1 /dev/vcsa1 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1035 1101 0:5 /vcsa /dev/vcsa rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1036 1101 0:5 /hpet /dev/hpet rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1037 1101 0:5 /sda1 /dev/sda1 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1038 1101 0:5 /vcs6 /dev/vcs6 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1039 1101 0:5 /ttyS2 /dev/ttyS2 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1040 1101 0:5 /ttyS3 /dev/ttyS3 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1041 1101 0:5 /udmabuf /dev/udmabuf rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1042 1101 0:5 /uhid /dev/uhid rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1043 1101 0:5 /uinput /dev/uinput rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1044 1101 0:5 /urandom /dev/urandom rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1045 1101 0:5 /usbmon0 /dev/usbmon0 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1046 1101 0:5 /usbmon1 /dev/usbmon1 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1047 1101 0:5 /usbmon2 /dev/usbmon2 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1048 1101 0:5 /usbmon3 /dev/usbmon3 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1049 1101 0:5 /usbmon4 /dev/usbmon4 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1050 1101 0:5 /usbmon5 /dev/usbmon5 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1051 1101 0:5 /usbmon6 /dev/usbmon6 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1052 1101 0:5 /usbmon7 /dev/usbmon7 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1053 1101 0:5 /usbmon8 /dev/usbmon8 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1054 1101 0:5 /userfaultfd /dev/userfaultfd rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1055 1101 0:5 /vcs /dev/vcs rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1056 1101 0:5 /vcs1 /dev/vcs1 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1057 1101 0:5 /vcs2 /dev/vcs2 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1058 1101 0:5 /vcs3 /dev/vcs3 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1059 1101 0:5 /vcs4 /dev/vcs4 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1060 1101 0:5 /vcs5 /dev/vcs5 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1061 1101 0:5 /bsg/2:0:0:0 /dev/bsg/2:0:0:0 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1062 1101 0:5 /dri/card0 /dev/dri/card0 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1063 1101 0:5 /snd/seq /dev/snd/seq rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1064 1101 0:5 /snd/controlC0 /dev/snd/controlC0 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1065 1101 0:5 /net/tun /dev/net/tun rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1066 1101 0:5 /mapper/control /dev/mapper/control rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1067 1101 0:5 /input/mouse2 /dev/input/mouse2 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1068 1101 0:5 /input/event4 /dev/input/event4 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1069 1101 0:5 /dma_heap/system /dev/dma_heap/system rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1070 1101 0:5 /input/mouse0 /dev/input/mouse0 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1071 1101 0:5 /input/mice /dev/input/mice rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1072 1101 0:5 /input/event5 /dev/input/event5 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1104 1100 0:25 / /sys/fs/cgroup rw,nosuid,nodev,noexec,relatime - cgroup2 cgroup2 rw,seclabel,nsdelegate,memory_recursiveprot
+1073 1101 0:5 /input/event3 /dev/input/event3 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1074 1101 0:5 /input/event2 /dev/input/event2 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1075 1101 0:5 /vfio/vfio /dev/vfio/vfio rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1076 1101 0:5 /input/event0 /dev/input/event0 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1077 1101 0:5 /bsg/0:0:0:0 /dev/bsg/0:0:0:0 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1078 1101 0:5 /input/mouse1 /dev/input/mouse1 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1079 1101 0:5 /snd/timer /dev/snd/timer rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1080 1101 0:5 /input/event1 /dev/input/event1 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1081 1101 0:5 /cpu/2/cpuid /dev/cpu/2/cpuid rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1082 1101 0:5 /cpu/3/cpuid /dev/cpu/3/cpuid rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1083 1101 0:5 /cpu/2/msr /dev/cpu/2/msr rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1084 1101 0:5 /cpu/1/cpuid /dev/cpu/1/cpuid rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1085 1101 0:5 /cpu/1/msr /dev/cpu/1/msr rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1086 1101 0:5 /cpu/0/cpuid /dev/cpu/0/cpuid rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1087 1101 0:5 /cpu/0/msr /dev/cpu/0/msr rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1088 1101 0:5 /cpu/3/msr /dev/cpu/3/msr rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1089 1101 0:5 /bus/usb/001/001 /dev/bus/usb/001/001 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1090 1101 0:5 /bus/usb/003/001 /dev/bus/usb/003/001 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1091 1101 0:5 /bus/usb/002/001 /dev/bus/usb/002/001 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1092 1101 0:5 /bus/usb/007/001 /dev/bus/usb/007/001 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1093 1101 0:5 /bus/usb/006/001 /dev/bus/usb/006/001 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1094 1101 0:5 /bus/usb/005/001 /dev/bus/usb/005/001 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1095 1101 0:5 /bus/usb/004/001 /dev/bus/usb/004/001 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1096 1101 0:5 /bus/usb/001/002 /dev/bus/usb/001/002 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1097 1101 0:5 /bus/usb/008/001 /dev/bus/usb/008/001 rw,nosuid,noexec master:8 - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1105 1020 0:5 /null /dev/null rw,nosuid,noexec - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1106 986 0:5 /zero /dev/zero rw,nosuid,noexec - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1107 999 0:5 /full /dev/full rw,nosuid,noexec - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1108 1101 0:5 /tty /dev/tty rw,nosuid,noexec - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1109 1024 0:5 /random /dev/random rw,nosuid,noexec - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
+1110 1044 0:5 /urandom /dev/urandom rw,nosuid,noexec - devtmpfs devtmpfs rw,seclabel,size=4096k,nr_inodes=2008713,mode=755,inode64
