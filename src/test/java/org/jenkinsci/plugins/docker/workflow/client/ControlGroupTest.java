@@ -1,19 +1,20 @@
 package org.jenkinsci.plugins.docker.workflow.client;
 
 import com.google.common.base.Optional;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.io.StringReader;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
-public class ControlGroupTest {
+class ControlGroupTest {
 
     @Test
-    public void test_cgroup_string_matching() throws IOException {
+    void test_cgroup_string_matching() throws Exception {
 
         final String[] possibleCgroupStrings = new String[] {
             "2:cpu:/docker/3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b",
@@ -31,8 +32,8 @@ public class ControlGroupTest {
         for (final String possibleCgroupString : possibleCgroupStrings) {
             final Optional<String> containerId = ControlGroup.getContainerId(new StringReader(possibleCgroupString));
 
-            Assert.assertTrue("pattern didn't match containerId " + possibleCgroupString, containerId.isPresent());
-            Assert.assertEquals("3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b", containerId.get());
+            assertTrue(containerId.isPresent(), "pattern didn't match containerId " + possibleCgroupString);
+            assertEquals("3dd988081e7149463c043b5d9c57d7309e079c5e9290f91feba1cc45a04d6a5b", containerId.get());
         }
 
     }

@@ -28,54 +28,49 @@ import com.cloudbees.hudson.plugins.folder.Folder;
 import hudson.ExtensionList;
 import hudson.diagnosis.OldDataMonitor;
 import java.util.Collections;
-import org.junit.Test;
-import static org.junit.Assert.*;
-import org.junit.Rule;
-import org.junit.runners.model.Statement;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.Issue;
-import org.jvnet.hudson.test.RestartableJenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.JenkinsSessionExtension;
 import org.jvnet.hudson.test.recipes.LocalData;
 
-public class GlobalConfigTest {
+class GlobalConfigTest {
 
-    @Rule
-    public RestartableJenkinsRule story = new RestartableJenkinsRule();
+    @RegisterExtension
+    private final JenkinsSessionExtension story = new JenkinsSessionExtension();
 
     @Issue("JENKINS-42027")
     @Test
-    public void globalConfigPersists() throws Exception {
-        story.addStep(new Statement() {
-            @Override
-            public void evaluate() throws Throwable {
+    void globalConfigPersists() throws Throwable {
+        story.then(r -> {
                 GlobalConfig.get().setDockerLabel("config_docker");
                 GlobalConfig.get().save();
             }
-        });
+        );
 
-        story.addStep(new Statement() {
-            @Override
-            public void evaluate() throws Throwable {
-                assertEquals("config_docker", GlobalConfig.get().getDockerLabel());
-            }
-        });
+        story.then(r -> assertEquals("config_docker", GlobalConfig.get().getDockerLabel())
+        );
     }
 
     @Issue("https://github.com/jenkinsci/docker-workflow-plugin/pull/202#issuecomment-597156438")
     @LocalData
     @Test
-    public void oldPackages() {
+    void oldPackages() throws Throwable {
         story.then(r -> {
-            assertEquals("GlobalConfig is translated", "docker", GlobalConfig.get().getDockerLabel());
+            assertEquals("docker", GlobalConfig.get().getDockerLabel(), "GlobalConfig is translated");
             assertEquals("https://myreg/", GlobalConfig.get().getRegistry().getUrl());
             assertEquals("myreg", GlobalConfig.get().getRegistry().getCredentialsId());
             Folder d = r.jenkins.getItemByFullName("d", Folder.class);
             assertNotNull(d);
             FolderConfig c = d.getProperties().get(FolderConfig.class);
-            assertNotNull("FolderConfig is translated", c);
+            assertNotNull(c, "FolderConfig is translated");
             assertEquals("dokker", c.getDockerLabel());
             assertEquals("https://yourreg/", c.getRegistry().getUrl());
             assertEquals("yourreg", c.getRegistry().getCredentialsId());
-            assertEquals("there is no old data", Collections.emptySet(), ExtensionList.lookupSingleton(OldDataMonitor.class).getData().keySet());
+            assertEquals(Collections.emptySet(), ExtensionList.lookupSingleton(OldDataMonitor.class).getData().keySet(), "there is no old data");
         });
     }
 

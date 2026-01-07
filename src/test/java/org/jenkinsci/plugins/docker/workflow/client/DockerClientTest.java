@@ -25,14 +25,16 @@ package org.jenkinsci.plugins.docker.workflow.client;
 
 import org.jenkinsci.plugins.docker.workflow.DockerTestUtil;
 import hudson.EnvVars;
+
+import static org.junit.jupiter.api.Assertions.*;
+
 import hudson.Launcher;
 import hudson.model.TaskListener;
 import hudson.util.StreamTaskListener;
 import hudson.util.VersionNumber;
 import org.jenkinsci.plugins.docker.commons.fingerprint.ContainerRecord;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -40,12 +42,12 @@ import java.util.Collections;
 /**
  * @author <a href="mailto:tom.fennelly@gmail.com">tom.fennelly@gmail.com</a>
  */
-public class DockerClientTest {
+class DockerClientTest {
 
     private DockerClient dockerClient;
-    
-    @Before
-    public void setup() throws Exception {
+
+    @BeforeEach
+    void setup() throws Exception {
         DockerTestUtil.assumeDocker();
 
         // Set stuff up for the test
@@ -56,44 +58,44 @@ public class DockerClientTest {
     }
 
     @Test
-    public void test_run() throws IOException, InterruptedException {
+    void test_run() throws Exception {
         // Pin to a specific sha256 hash of the image to avoid any potential issues with the image changing in the future.
         // Original image tag: docker:20.10.9-dind
         String image = "docker.io/library/docker@sha256:d842418d21545fde57c2512681d9bdc4ce0e54f2e0305a293ee20a9b6166932b";
         EnvVars launchEnv = DockerTestUtil.newDockerLaunchEnv();
         String containerId =
-                dockerClient.run(launchEnv, image, null, null, Collections.<String, String>emptyMap(), Collections.<String>emptyList(), new EnvVars(),
+                dockerClient.run(launchEnv, image, null, null, Collections.emptyMap(), Collections.emptyList(), new EnvVars(),
                         dockerClient.whoAmI(), "cat");
-        Assert.assertEquals(64, containerId.length());
+        assertEquals(64, containerId.length());
         ContainerRecord containerRecord = dockerClient.getContainerRecord(launchEnv, containerId);
-        Assert.assertEquals(dockerClient.inspect(launchEnv, image, ".Id"), containerRecord.getImageId());
-        Assert.assertTrue(containerRecord.getContainerName().length() > 0);
-        Assert.assertTrue(containerRecord.getHost().length() > 0);
-        Assert.assertTrue(containerRecord.getCreated() > 1000000000000L);
+        assertEquals(dockerClient.inspect(launchEnv, image, ".Id"), containerRecord.getImageId());
+        assertFalse(containerRecord.getContainerName().isEmpty());
+        assertFalse(containerRecord.getHost().isEmpty());
+        assertTrue(containerRecord.getCreated() > 1000000000000L);
 
         // Check that an anonymous volume was created mounted at /var/lib/docker
-        Assert.assertEquals(Collections.<String>singletonList("/var/lib/docker"), dockerClient.getVolumes(launchEnv, containerId));
+        assertEquals(Collections.singletonList("/var/lib/docker"), dockerClient.getVolumes(launchEnv, containerId));
         String anonymousVolumeName = dockerClient.inspect(launchEnv, containerId, "range .Mounts }}{{ .Name }}{{ end");
-        Assert.assertEquals(64, anonymousVolumeName.length());
+        assertEquals(64, anonymousVolumeName.length());
 
         // Also test that the stop works and cleans up after itself
-        Assert.assertNotNull(dockerClient.inspect(launchEnv, containerId, ".Name"));
+        assertNotNull(dockerClient.inspect(launchEnv, containerId, ".Name"));
         dockerClient.stop(launchEnv, containerId);
-        Assert.assertNull(dockerClient.inspect(launchEnv, containerId, ".Name"));
+        assertNull(dockerClient.inspect(launchEnv, containerId, ".Name"));
         // Check that the anonymous volume was removed
-        Assert.assertNull(dockerClient.inspect(launchEnv, anonymousVolumeName, ".Name"));
+        assertNull(dockerClient.inspect(launchEnv, anonymousVolumeName, ".Name"));
     }
 
     @Test
-    public void test_valid_version() {
+    void test_valid_version() {
         VersionNumber dockerVersion = DockerClient.parseVersionNumber("Docker version 1.5.0, build a8a31ef");
-        Assert.assertFalse(dockerVersion.isOlderThan(new VersionNumber("1.1")));
-        Assert.assertFalse(dockerVersion.isOlderThan(new VersionNumber("1.5")));
-        Assert.assertTrue(dockerVersion.isOlderThan(new VersionNumber("1.10")));
+        assertFalse(dockerVersion.isOlderThan(new VersionNumber("1.1")));
+        assertFalse(dockerVersion.isOlderThan(new VersionNumber("1.5")));
+        assertTrue(dockerVersion.isOlderThan(new VersionNumber("1.10")));
     }
-    
+
     @Test
-    public void test_invalid_version() {
-        Assert.assertNull(DockerClient.parseVersionNumber("xxx"));
+    void test_invalid_version() {
+        assertNull(DockerClient.parseVersionNumber("xxx"));
     }
 }
