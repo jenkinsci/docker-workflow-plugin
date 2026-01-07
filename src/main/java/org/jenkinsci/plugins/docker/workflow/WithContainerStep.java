@@ -285,7 +285,11 @@ public class WithContainerStep extends AbstractStepImpl {
                                     masksPrefixList.add(false);
                                 } else {
                                     String safePath = path.replace("'", "'\"'\"'");
-                                    starter.cmds().addAll(0, Arrays.asList("sh", "-c", "cd '" + safePath + "'; exec \"$@\"", "--"));
+                                    if (super.isUnix()) {
+                                        starter.cmds().addAll(0, Arrays.asList("sh", "-c", "cd '" + safePath + "'; exec \"$@\"", "--"));
+                                    } else {
+                                        starter.cmds().addAll(0, Arrays.asList("cmd", "/c", "cd \"" + safePath + "\"", "&&"));
+                                    }
                                 }
                             }
                         }
@@ -344,9 +348,17 @@ public class WithContainerStep extends AbstractStepImpl {
                         // JENKINS-75102 Docker exec on Windows processes character escaping differently.
                         // Modify launch to work with special characters in a way that docker exec can handle.
                         cmds.addAll(starter.cmds().subList(0, 2));
-                        cmds.add("call");
-                        cmds.addAll(starter.cmds().subList(2, starter.cmds().size()).stream()
-                            .map(cmd -> cmd.replaceAll("\"\"(.*)\"\"", "\"$1\"")).collect(Collectors.toList()));
+                        if (hasWorkdir) {
+                            cmds.add("call");
+                            cmds.addAll(starter.cmds().subList(2, starter.cmds().size()).stream()
+                                .map(cmd -> cmd.replaceAll("\"\"(.*)\"\"", "\"$1\"")).collect(Collectors.toList()));
+                        } else {
+                            cmds.addAll(starter.cmds().subList(2, 4));
+                            cmds.add("call");
+                            // Skip the duplicate "cmd /c" as we concatenate using && instead
+                            cmds.addAll(starter.cmds().subList(6, starter.cmds().size()).stream()
+                                .map(cmd -> cmd.replaceAll("\"\"(.*)\"\"", "\"$1\"")).collect(Collectors.toList()));
+                        }
                     } else {
                         cmds.addAll(starter.cmds());
                     }
