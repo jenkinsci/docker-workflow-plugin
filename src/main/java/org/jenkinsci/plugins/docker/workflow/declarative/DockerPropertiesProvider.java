@@ -44,6 +44,9 @@ public abstract class DockerPropertiesProvider implements ExtensionPoint {
     @CheckForNull
     public abstract String getLabel(@Nullable Run run);
 
+    @CheckForNull
+    public abstract String getAdditionalRunArgs(@Nullable Run run);
+
     public static ExtensionList<DockerPropertiesProvider> all() {
         return ExtensionList.lookup(DockerPropertiesProvider.class);
     }
