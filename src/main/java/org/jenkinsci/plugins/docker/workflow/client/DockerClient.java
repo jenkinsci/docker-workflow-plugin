@@ -261,7 +261,7 @@ public class DockerClient {
      * otherwise {@code null}.
      */
     public @CheckForNull VersionNumber version() throws IOException, InterruptedException {
-        LaunchResult result = launch(new EnvVars(), true, "-v");
+        LaunchResult result = launch(new EnvVars(), true, "--version");
         if (result.getStatus() == 0) {
             return parseVersionNumber(result.getOut());
         } else {
