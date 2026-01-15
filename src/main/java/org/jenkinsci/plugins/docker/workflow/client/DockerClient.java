@@ -57,7 +57,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.plugins.docker.commons.fingerprint.ContainerRecord;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 import org.kohsuke.accmod.Restricted;

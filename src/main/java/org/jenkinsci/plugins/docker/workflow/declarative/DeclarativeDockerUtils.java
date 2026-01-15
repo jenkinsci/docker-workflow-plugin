@@ -26,7 +26,7 @@ package org.jenkinsci.plugins.docker.workflow.declarative;
 
 import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.model.Run;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.plugins.pipeline.modeldefinition.agent.impl.Label;
 import org.jenkinsci.plugins.pipeline.modeldefinition.withscript.WithScriptScript;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;

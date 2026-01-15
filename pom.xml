@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>5.2102.v5f5fe09fccf1</version>
+        <version>6.2116.v7501b_67dc517</version>
         <relativePath/>
     </parent>
     <artifactId>docker-workflow</artifactId>
@@ -35,6 +35,7 @@
         <jenkins.version>${jenkins.baseline}.3</jenkins.version>
         <useBeta>true</useBeta>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
+        <ban-commons-lang-2.skip>false</ban-commons-lang-2.skip>
     </properties>
     <repositories>
         <repository>
@@ -72,6 +73,10 @@
         </dependencies>
     </dependencyManagement>
     <dependencies>
+    <dependency>
+      <groupId>io.jenkins.plugins</groupId>
+      <artifactId>commons-lang3-api</artifactId>
+    </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>docker-commons</artifactId>
