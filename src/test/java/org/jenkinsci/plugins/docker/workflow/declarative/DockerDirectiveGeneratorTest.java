@@ -42,36 +42,40 @@ import org.jenkinsci.plugins.pipeline.modeldefinition.generator.AgentDirective;
 import org.jenkinsci.plugins.pipeline.modeldefinition.generator.DirectiveGenerator;
 import org.jenkinsci.plugins.structs.describable.DescribableModel;
 import org.jenkinsci.plugins.structs.describable.DescribableParameter;
-import static org.junit.Assert.assertEquals;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.ToolInstallations;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
 /**
  * Adapted from {@link org.jenkinsci.plugins.pipeline.modeldefinition.generator.DirectiveGeneratorTest}.
  */
-public class DockerDirectiveGeneratorTest {
+@WithJenkins
+class DockerDirectiveGeneratorTest {
 
-    @ClassRule
-    public static JenkinsRule r = new JenkinsRule();
+    private static JenkinsRule r;
 
-    @BeforeClass
-    public static void setUp() throws Exception {
+    @BeforeAll
+    static void setUp(JenkinsRule rule) throws Exception {
+        r = rule;
         ToolInstallations.configureMaven3();
     }
 
     @Test
-    public void simpleAgentDocker() throws Exception {
+    void simpleAgentDocker() throws Exception {
         AgentDirective agent = new AgentDirective(new DockerPipeline("some-image"));
-        assertGenerateDirective(agent, "agent {\n" +
-                "  docker 'some-image'\n" +
-                "}");
+        assertGenerateDirective(agent, """
+            agent {
+              docker 'some-image'
+            }""");
     }
 
     @Test
-    public void fullAgentDocker() throws Exception {
+    void fullAgentDocker() throws Exception {
         DockerPipeline dockerPipeline = new DockerPipeline("some-image");
         dockerPipeline.setAlwaysPull(true);
         dockerPipeline.setArgs("--some-arg");
@@ -82,31 +86,33 @@ public class DockerDirectiveGeneratorTest {
         dockerPipeline.setRegistryUrl("http://some.where");
         AgentDirective agent = new AgentDirective(dockerPipeline);
 
-        assertGenerateDirective(agent, "agent {\n" +
-                "  docker {\n" +
-                "    alwaysPull true\n" +
-                "    args '--some-arg'\n" +
-                "    customWorkspace 'some/path'\n" +
-                "    image 'some-image'\n" +
-                "    label 'some-label'\n" +
-                "    registryCredentialsId 'some-cred-id'\n" +
-                "    registryUrl 'http://some.where'\n" +
-                "    reuseNode true\n" +
-                "  }\n" +
-                "}");
+        assertGenerateDirective(agent, """
+            agent {
+              docker {
+                alwaysPull true
+                args '--some-arg'
+                customWorkspace 'some/path'
+                image 'some-image'
+                label 'some-label'
+                registryCredentialsId 'some-cred-id'
+                registryUrl 'http://some.where'
+                reuseNode true
+              }
+            }""");
     }
 
     @Test
-    public void simpleAgentDockerfile() throws Exception {
+    void simpleAgentDockerfile() throws Exception {
         AgentDirective agent = new AgentDirective(new DockerPipelineFromDockerfile());
 
-        assertGenerateDirective(agent, "agent {\n" +
-                "  dockerfile true\n" +
-                "}");
+        assertGenerateDirective(agent, """
+            agent {
+              dockerfile true
+            }""");
     }
 
     @Test
-    public void fullAgentDockerfile() throws Exception {
+    void fullAgentDockerfile() throws Exception {
         DockerPipelineFromDockerfile dp = new DockerPipelineFromDockerfile();
         dp.setAdditionalBuildArgs("--additional-arg");
         dp.setDir("some-sub/dir");
@@ -116,16 +122,17 @@ public class DockerDirectiveGeneratorTest {
         dp.setLabel("some-label");
         AgentDirective agent = new AgentDirective(dp);
 
-        assertGenerateDirective(agent, "agent {\n" +
-                "  dockerfile {\n" +
-                "    additionalBuildArgs '--additional-arg'\n" +
-                "    args '--some-arg'\n" +
-                "    customWorkspace '/custom/workspace'\n" +
-                "    dir 'some-sub/dir'\n" +
-                "    filename 'NotDockerfile'\n" +
-                "    label 'some-label'\n" +
-                "  }\n" +
-                "}");
+        assertGenerateDirective(agent, """
+            agent {
+              dockerfile {
+                additionalBuildArgs '--additional-arg'
+                args '--some-arg'
+                customWorkspace '/custom/workspace'
+                dir 'some-sub/dir'
+                filename 'NotDockerfile'
+                label 'some-label'
+              }
+            }""");
     }
 
     private void assertGenerateDirective(@NonNull AbstractDirective desc, @NonNull String responseText) throws Exception {
@@ -135,7 +142,7 @@ public class DockerDirectiveGeneratorTest {
         // Then submit the form with the appropriate JSON (we generate it from the directive, but it matches the form JSON exactly)
         JenkinsRule.WebClient wc = r.createWebClient();
         WebRequest wrs = new WebRequest(new URL(r.getURL(), DirectiveGenerator.GENERATE_URL), HttpMethod.POST);
-        List<NameValuePair> params = new ArrayList<NameValuePair>();
+        List<NameValuePair> params = new ArrayList<>();
         params.add(new NameValuePair("json", staplerJsonForDescr(desc).toString()));
         // WebClient.addCrumb *replaces* rather than *adds*:
         params.add(new NameValuePair(r.jenkins.getCrumbIssuer().getDescriptor().getCrumbRequestField(), r.jenkins.getCrumbIssuer().getCrumb((ServletRequest) null)));

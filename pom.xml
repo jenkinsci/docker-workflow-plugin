@@ -35,6 +35,8 @@
         <jenkins.version>${jenkins.baseline}.3</jenkins.version>
         <useBeta>true</useBeta>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
+        <!-- can be enabled when last tests are migrated -->
+        <ban-junit4-imports.skip>true</ban-junit4-imports.skip>
     </properties>
     <repositories>
         <repository>
