@@ -6,18 +6,20 @@ import hudson.model.TaskListener;
 import hudson.util.StreamTaskListener;
 import org.jenkinsci.plugins.docker.commons.fingerprint.ContainerRecord;
 import org.jenkinsci.plugins.docker.workflow.DockerTestUtil;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
-public class WindowsDockerClientTest {
+class WindowsDockerClientTest {
 
     private DockerClient dockerClient;
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         TaskListener taskListener = StreamTaskListener.fromStderr();
         Launcher.LocalLauncher launcher = new Launcher.LocalLauncher(taskListener);
 
@@ -25,7 +27,7 @@ public class WindowsDockerClientTest {
     }
 
     @Test
-    public void test_run() throws Exception {
+    void test_run() throws Exception {
         DockerTestUtil.assumeDocker();
         EnvVars launchEnv = DockerTestUtil.newDockerLaunchEnv();
         String containerId = dockerClient.run(
@@ -39,17 +41,17 @@ public class WindowsDockerClientTest {
             dockerClient.whoAmI(),
             "cat");
 
-        Assert.assertEquals(64, containerId.length());
+        assertEquals(64, containerId.length());
         ContainerRecord containerRecord = dockerClient.getContainerRecord(launchEnv, containerId);
-        Assert.assertEquals(dockerClient.inspect(launchEnv, "busybox", ".Id"), containerRecord.getImageId());
-        Assert.assertTrue(containerRecord.getContainerName().length() > 0);
-        Assert.assertTrue(containerRecord.getHost().length() > 0);
-        Assert.assertTrue(containerRecord.getCreated() > 1000000000000L);
-        Assert.assertEquals(Collections.<String>emptyList(), dockerClient.getVolumes(launchEnv, containerId));
+        assertEquals(dockerClient.inspect(launchEnv, "busybox", ".Id"), containerRecord.getImageId());
+        assertFalse(containerRecord.getContainerName().isEmpty());
+        assertFalse(containerRecord.getHost().isEmpty());
+        assertTrue(containerRecord.getCreated() > 1000000000000L);
+        assertEquals(Collections.<String>emptyList(), dockerClient.getVolumes(launchEnv, containerId));
 
         // Also test that the stop works and cleans up after itself
-        Assert.assertNotNull(dockerClient.inspect(launchEnv, containerId, ".Name"));
+        assertNotNull(dockerClient.inspect(launchEnv, containerId, ".Name"));
         dockerClient.stop(launchEnv, containerId);
-        Assert.assertNull(dockerClient.inspect(launchEnv, containerId, ".Name"));
+        assertNull(dockerClient.inspect(launchEnv, containerId, ".Name"));
     }
 }

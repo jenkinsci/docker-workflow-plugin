@@ -24,23 +24,23 @@
 package org.jenkinsci.plugins.docker.workflow;
 
 import hudson.FilePath;
-import org.hamcrest.collection.IsCollectionWithSize;
-import org.hamcrest.core.IsCollectionContaining;
 import org.hamcrest.core.IsEqual;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
-public class DockerUtilsTest {
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-    @Rule public final ExpectedException exception = ExpectedException.none();
+class DockerUtilsTest {
 
-    @Test public void parseBuildArgs() throws IOException, InterruptedException {
+    @Test
+    void parseBuildArgs() throws Exception {
 
         FilePath dockerfilePath = new FilePath(new File("src/test/resources/Dockerfile-withArgs"));
         Dockerfile dockerfile = new Dockerfile(dockerfilePath);
@@ -50,12 +50,13 @@ public class DockerUtilsTest {
         final String commandLine = "docker build -t hello-world --build-arg "+key+"="+imageToUpdate;
         Map<String, String> buildArgs = DockerUtils.parseBuildArgs(dockerfile, commandLine);
 
-        Assert.assertThat(buildArgs.keySet(), IsCollectionWithSize.hasSize(1));
-        Assert.assertThat(buildArgs.keySet(), IsCollectionContaining.hasItems(key));
-        Assert.assertThat(buildArgs.get(key), IsEqual.equalTo(imageToUpdate));
+        assertThat(buildArgs.keySet(), hasSize(1));
+        assertThat(buildArgs.keySet(), hasItems(key));
+        assertThat(buildArgs.get(key), equalTo(imageToUpdate));
     }
 
-    @Test public void parseBuildArgsWithDefaults() throws IOException, InterruptedException {
+    @Test
+    void parseBuildArgsWithDefaults() throws Exception {
 
         Dockerfile dockerfile = getDockerfileDefaultArgs();
 
@@ -65,13 +66,14 @@ public class DockerUtilsTest {
         final String commandLine = "docker build -t hello-world";
         Map<String, String> buildArgs = DockerUtils.parseBuildArgs(dockerfile, commandLine);
 
-        Assert.assertThat(buildArgs.keySet(), IsCollectionWithSize.hasSize(2));
-        Assert.assertThat(buildArgs.keySet(), IsCollectionContaining.hasItems(key_registry, key_tag));
-        Assert.assertThat(buildArgs.get(key_registry), IsEqual.equalTo(registry));
-        Assert.assertThat(buildArgs.get(key_tag), IsEqual.equalTo("latest"));
+        assertThat(buildArgs.keySet(), hasSize(2));
+        assertThat(buildArgs.keySet(), hasItems(key_registry, key_tag));
+        assertThat(buildArgs.get(key_registry), equalTo(registry));
+        assertThat(buildArgs.get(key_tag), equalTo("latest"));
     }
 
-    @Test public void parseBuildArgsOverridingDefaults() throws IOException, InterruptedException {
+    @Test
+    void parseBuildArgsOverridingDefaults() throws Exception {
 
         Dockerfile dockerfile = getDockerfileDefaultArgs();
 
@@ -83,37 +85,40 @@ public class DockerUtilsTest {
             " --build-arg "+key_registry+"="+registry;
         Map<String, String> buildArgs = DockerUtils.parseBuildArgs(dockerfile, commandLine);
 
-        Assert.assertThat(buildArgs.keySet(), IsCollectionWithSize.hasSize(2));
-        Assert.assertThat(buildArgs.keySet(), IsCollectionContaining.hasItems(key_registry, key_tag));
-        Assert.assertThat(buildArgs.get(key_registry), IsEqual.equalTo(registry));
-        Assert.assertThat(buildArgs.get(key_tag), IsEqual.equalTo(tag));
+        assertThat(buildArgs.keySet(), hasSize(2));
+        assertThat(buildArgs.keySet(), hasItems(key_registry, key_tag));
+        assertThat(buildArgs.get(key_registry), equalTo(registry));
+        assertThat(buildArgs.get(key_tag), IsEqual.equalTo(tag));
     }
 
-    @Test public void parseBuildArgWithKeyAndEqual() throws IOException, InterruptedException {
+    @Test
+    void parseBuildArgWithKeyAndEqual() {
         final String commandLine = "docker build -t hello-world --build-arg key=";
 
         Map<String, String> buildArgs = DockerUtils.parseBuildArgs(null, commandLine);
 
-        Assert.assertThat(buildArgs.keySet(), IsCollectionWithSize.hasSize(1));
-        Assert.assertThat(buildArgs.keySet(), IsCollectionContaining.hasItems("key"));
-        Assert.assertThat(buildArgs.get("key"), IsEqual.equalTo(""));
+        assertThat(buildArgs.keySet(), hasSize(1));
+        assertThat(buildArgs.keySet(), hasItems("key"));
+        assertThat(buildArgs.get("key"), equalTo(""));
     }
 
-    @Test public void parseInvalidBuildArg() throws IOException, InterruptedException {
+    @Test
+    void parseInvalidBuildArg() {
         final String commandLine = "docker build -t hello-world --build-arg";
 
-        exception.expect(IllegalArgumentException.class);
-        DockerUtils.parseBuildArgs(null, commandLine);
+        assertThrows(IllegalArgumentException.class, () ->
+            DockerUtils.parseBuildArgs(null, commandLine));
     }
 
-    @Test public void parseInvalidBuildArgWithKeyOnly() throws IOException, InterruptedException {
+    @Test
+    void parseInvalidBuildArgWithKeyOnly() {
         final String commandLine = "docker build -t hello-world --build-arg key";
 
-        exception.expect(IllegalArgumentException.class);
-        DockerUtils.parseBuildArgs(null, commandLine);
+        assertThrows(IllegalArgumentException.class, () ->
+            DockerUtils.parseBuildArgs(null, commandLine));
     }
 
-    private Dockerfile getDockerfileDefaultArgs() throws IOException, InterruptedException {
+    private Dockerfile getDockerfileDefaultArgs() throws Exception {
         FilePath dockerfilePath = new FilePath(new File("src/test/resources/Dockerfile-defaultArgs"));
         return new Dockerfile(dockerfilePath);
     }

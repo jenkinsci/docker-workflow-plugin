@@ -24,30 +24,33 @@
 package org.jenkinsci.plugins.docker.workflow;
 
 import hudson.FilePath;
-import org.hamcrest.collection.IsCollectionWithSize;
-import org.hamcrest.core.IsCollectionContaining;
-import org.hamcrest.core.IsEqual;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
 
-public class DockerfileTest {
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.hasSize;
+
+class DockerfileTest {
 
     private FilePath dockerfilePath;
 
-    @Before public void setUp() {
+    @BeforeEach
+    void setUp() {
         dockerfilePath = new FilePath(new File("src/test/resources/Dockerfile-defaultArgs"));
     }
 
-    @Test public void parseDockerfile() throws IOException, InterruptedException {
+    @Test
+    void parseDockerfile() throws Exception {
         Dockerfile dockerfile = new Dockerfile(dockerfilePath);
-        Assert.assertThat(dockerfile.getFroms(), IsCollectionWithSize.hasSize(1));
-        Assert.assertThat(dockerfile.getFroms().getLast(), IsEqual.equalTo("${REGISTRY_URL}hello-world:${TAG}"));
-        Assert.assertThat(dockerfile.getArgs().keySet(), IsCollectionWithSize.hasSize(2));
-        Assert.assertThat(dockerfile.getArgs().keySet(), IsCollectionContaining.hasItems("REGISTRY_URL", "TAG"));
+        assertThat(dockerfile.getFroms(), hasSize(1));
+        assertThat(dockerfile.getFroms().getLast(), equalTo("${REGISTRY_URL}hello-world:${TAG}"));
+        assertThat(dockerfile.getArgs().keySet(), hasSize(2));
+        assertThat(dockerfile.getArgs().keySet(), hasItems("REGISTRY_URL", "TAG"));
     }
 }
 

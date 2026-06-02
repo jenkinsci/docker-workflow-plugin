@@ -53,17 +53,22 @@ import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import org.jenkinsci.plugins.workflow.steps.StepExecution;
 
 import static org.jenkinsci.plugins.docker.workflow.DockerTestUtil.assumeNotWindows;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.Issue;
+import org.jvnet.hudson.test.LogRecorder;
 import org.jvnet.hudson.test.MockAuthorizationStrategy;
 import org.jvnet.hudson.test.MockQueueItemAuthenticator;
 import org.jvnet.hudson.test.TestExtension;
+import org.jvnet.hudson.test.junit.jupiter.BuildWatcherExtension;
+import org.jvnet.hudson.test.junit.jupiter.JenkinsSessionExtension;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -76,22 +81,22 @@ import static org.hamcrest.Matchers.not;
 import org.jenkinsci.plugins.structs.describable.DescribableModel;
 import org.jenkinsci.plugins.workflow.support.pickles.FilePathPickle;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
-import org.junit.ClassRule;
-import org.jvnet.hudson.test.BuildWatcher;
-import org.jvnet.hudson.test.JenkinsSessionRule;
-import org.jvnet.hudson.test.LoggerRule;
 import test.ssh_agent.OutboundAgent;
 
 public class RegistryEndpointStepTest {
 
-    @Rule public final JenkinsSessionRule rr = new JenkinsSessionRule();
-    @Rule public LoggerRule logging = new LoggerRule();
-    @ClassRule public static BuildWatcher bw = new BuildWatcher();
+    @RegisterExtension
+    private final JenkinsSessionExtension story = new JenkinsSessionExtension();
+    private final LogRecorder logging = new LogRecorder();
+    @SuppressWarnings("unused")
+    @RegisterExtension
+    private static final BuildWatcherExtension BUILD_WATCHER = new BuildWatcherExtension();
 
     @Issue("JENKINS-51395")
-    @Test public void configRoundTrip() throws Throwable {
+    @Test
+    void configRoundTrip() throws Throwable {
         logging.record(DescribableModel.class, Level.FINE);
-        rr.then(r -> {
+        story.then(r -> {
         { // Recommended syntax.
             SnippetizerTester st = new SnippetizerTester(r);
             RegistryEndpointStep step = new RegistryEndpointStep(new DockerRegistryEndpoint("https://myreg/", null));
@@ -131,21 +136,22 @@ public class RegistryEndpointStepTest {
     }
 
     @Test
-    public void stepExecutionWithCredentials() throws Throwable {
+    void stepExecutionWithCredentials() throws Throwable {
         assumeNotWindows();
 
-        rr.then(r -> {
+        story.then(r -> {
         IdCredentials registryCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "registryCreds", null, "me", "s3cr3t");
         CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), registryCredentials);
 
         WorkflowJob p = r.createProject(WorkflowJob.class, "prj");
         p.setDefinition(new CpsFlowDefinition(
-                "node {\n" +
-                        "  mockDockerLogin {\n" +
-                        "    withDockerRegistry(url: 'https://my-reg:1234', credentialsId: 'registryCreds') {\n" +
-                        "    }\n" +
-                        "  }\n" +
-                        "}", true));
+            """
+                node {
+                  mockDockerLogin {
+                    withDockerRegistry(url: 'https://my-reg:1234', credentialsId: 'registryCreds') {
+                    }
+                  }
+                }""", true));
         WorkflowRun b = r.buildAndAssertSuccess(p);
         r.assertBuildStatusSuccess(r.waitForCompletion(b));
         r.assertLogContains("docker login -u me -p ******** https://my-reg:1234", b);
@@ -154,10 +160,10 @@ public class RegistryEndpointStepTest {
     }
 
     @Test
-    public void stepExecutionWithCredentialsAndQueueItemAuthenticator() throws Throwable {
+    void stepExecutionWithCredentialsAndQueueItemAuthenticator() throws Throwable {
         assumeNotWindows();
 
-        rr.then(r -> {
+        story.then(r -> {
         r.getInstance().setSecurityRealm(r.createDummySecurityRealm());
         MockAuthorizationStrategy auth = new MockAuthorizationStrategy()
                 .grant(Jenkins.READ).everywhere().to("alice", "bob")
@@ -170,12 +176,13 @@ public class RegistryEndpointStepTest {
         IdCredentials registryCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "registryCreds", null, "me", "s3cr3t");
         CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), registryCredentials);
 
-        String script = "node {\n" +
-                "  mockDockerLogin {\n" +
-                "    withDockerRegistry(url: 'https://my-reg:1234', credentialsId: 'registryCreds') {\n" +
-                "    }\n" +
-                "  }\n" +
-                "}";
+        String script = """
+            node {
+              mockDockerLogin {
+                withDockerRegistry(url: 'https://my-reg:1234', credentialsId: 'registryCreds') {
+                }
+              }
+            }""";
         WorkflowJob p1 = r.createProject(WorkflowJob.class, "prj1");
         p1.setDefinition(new CpsFlowDefinition(script, true));
         WorkflowJob p2 = r.createProject(WorkflowJob.class, "prj2");
@@ -200,10 +207,11 @@ public class RegistryEndpointStepTest {
     }
 
     @Issue("JENKINS-75679")
-    @Test public void noFilePathPickle() throws Throwable {
+    @Test
+    void noFilePathPickle() throws Throwable {
         try (var agent = new OutboundAgent()) {
             var connectionDetails = agent.start();
-            rr.then(r -> {
+            story.then(r -> {
                 OutboundAgent.createAgent(r, "remote", connectionDetails);
                 var registryCredentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "registryCreds", null, "me", "s3cr3t");
                 CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), registryCredentials);
@@ -223,8 +231,8 @@ public class RegistryEndpointStepTest {
             });
             @SuppressWarnings("deprecation")
             var verboten = FilePathPickle.class.getName();
-            assertThat(StringEscapeUtils.escapeJava(Files.readString(rr.getHome().toPath().resolve("jobs/p/builds/1/program.dat"), StandardCharsets.ISO_8859_1)), not(containsString(verboten)));
-            rr.then(r -> {
+            assertThat(StringEscapeUtils.escapeJava(Files.readString(story.getHome().toPath().resolve("jobs/p/builds/1/program.dat"), StandardCharsets.ISO_8859_1)), not(containsString(verboten)));
+            story.then(r -> {
                 var b = r.jenkins.getItemByFullName("p", WorkflowJob.class).getBuildByNumber(1);
                 SemaphoreStep.success("wait/1", null);
                 r.assertBuildStatusSuccess(r.waitForCompletion(b));
@@ -245,6 +253,8 @@ public class RegistryEndpointStepTest {
         }
 
         public static class Execution extends StepExecution {
+
+            @Serial
             private static final long serialVersionUID = 1;
 
             private final transient MockLauncherStep step;
@@ -254,7 +264,8 @@ public class RegistryEndpointStepTest {
                 this.step = step;
             }
             
-            @Override public boolean start() throws Exception {
+            @Override
+            public boolean start() throws Exception {
                 getContext().newBodyInvoker().
                         withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator())).
                         withCallback(BodyExecutionCallback.wrap(getContext())).
@@ -267,28 +278,40 @@ public class RegistryEndpointStepTest {
                 
             }
         }
+
         private static class Decorator extends LauncherDecorator implements Serializable {
+
+            @Serial
             private static final long serialVersionUID = 1;
+
             @NonNull
-            @Override public Launcher decorate(@NonNull Launcher launcher, @NonNull Node node) {
+            @Override
+            public Launcher decorate(@NonNull Launcher launcher, @NonNull Node node) {
                 return launcher.decorateByPrefix("true");
             }
         }
-        @TestExtension public static class DescriptorImpl extends StepDescriptor {
+
+        @TestExtension
+        public static class DescriptorImpl extends StepDescriptor {
 
             @Override
             public Set<? extends Class<?>> getRequiredContext() {
                 return ImmutableSet.of(Launcher.class);
             }
 
-            @Override public String getFunctionName() {
+            @Override
+            public String getFunctionName() {
                 return "mockDockerLogin";
             }
+
             @NonNull
-            @Override public String getDisplayName() {
+            @Override
+            public String getDisplayName() {
                 return "Mock Docker Login";
             }
-            @Override public boolean takesImplicitBlockArgument() {
+
+            @Override
+            public boolean takesImplicitBlockArgument() {
                 return true;
             }
         }

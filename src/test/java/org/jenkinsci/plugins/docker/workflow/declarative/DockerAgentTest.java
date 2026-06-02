@@ -33,7 +33,6 @@ import java.util.Arrays;
 import java.util.List;
 import org.jenkinsci.plugins.docker.workflow.DockerTestUtil;
 import org.jenkinsci.plugins.pipeline.modeldefinition.AbstractModelDefTest;
-import static org.jenkinsci.plugins.pipeline.modeldefinition.AbstractModelDefTest.j;
 import static org.junit.Assume.assumeThat;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -97,7 +96,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
 
     @Test
     public void agentDockerDontReuseNode() throws Exception {
-        DockerTestUtil.assumeDocker();
+        DockerTestUtil.assumeDockerJUnit4();
 
         expect(Result.FAILURE, "org/jenkinsci/plugins/docker/workflow/declarative/agentDockerDontReuseNode")
                 .logContains("The answer is 42")
@@ -109,7 +108,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
     @Issue("JENKINS-41605")
     @Test
     public void agentInStageAutoCheckout() throws Exception {
-        DockerTestUtil.assumeDocker();
+        DockerTestUtil.assumeDockerJUnit4();
 
         expect("org/jenkinsci/plugins/docker/workflow/declarative/agentInStageAutoCheckout")
                 .logContains("The answer is 42",
@@ -133,7 +132,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
     @Issue("JENKINS-41950")
     @Test
     public void nonExistentDockerImage() throws Exception {
-        DockerTestUtil.assumeDocker();
+        DockerTestUtil.assumeDockerJUnit4();
 
         expect(Result.FAILURE, "org/jenkinsci/plugins/docker/workflow/declarative/nonExistentDockerImage")
                 .logContains("ERROR: script returned exit code 1",
@@ -144,7 +143,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
 
     @Test
     public void fromDockerfile() throws Exception {
-        DockerTestUtil.assumeDocker();
+        DockerTestUtil.assumeDockerJUnit4();
 
         sampleRepo.write("Dockerfile", "FROM ubuntu:noble\n\nRUN echo 'HI THERE' > /hi-there\n\n");
         sampleRepo.git("init");
@@ -163,7 +162,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
     @Test
     public void userHandbookDockerfile() throws Exception {
         assumeThat("TODO currently failing", System.getenv("CI"), not(is("true")));
-        DockerTestUtil.assumeDocker();
+        DockerTestUtil.assumeDockerJUnit4();
 
         sampleRepo.write("Dockerfile", "FROM node:22.13.0-alpine\nRUN apk add -U subversion\n");
         sampleRepo.git("init");
@@ -178,7 +177,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
 
     @Test
     public void additionalDockerBuildArgs() throws Exception {
-        DockerTestUtil.assumeDocker();
+        DockerTestUtil.assumeDockerJUnit4();
 
         sampleRepo.write("Dockerfile", "FROM ubuntu:noble\n\nARG someArg=thisArgHere\n\nRUN echo \"hi there, $someArg\" > /hi-there\n\n");
         sampleRepo.git("init");
@@ -197,7 +196,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
     @Issue("JENKINS-57162")
     @Test
     public void additionalDockerBuildArgsImageHash() throws Exception {
-        DockerTestUtil.assumeDocker();
+        DockerTestUtil.assumeDockerJUnit4();
 
         sampleRepo.write("Dockerfile",  "FROM ubuntu:noble\n\nARG someArg=thisArgHere\n\nRUN echo \"hi there, $someArg\" > /hi-there\n\n");
         sampleRepo.git("init");
@@ -224,7 +223,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
     @Issue("JENKINS-41668")
     @Test
     public void fromDockerfileInOtherDir() throws Exception {
-        DockerTestUtil.assumeDocker();
+        DockerTestUtil.assumeDockerJUnit4();
 
         sampleRepo.write("subdir/Dockerfile", "FROM ubuntu:noble\n\nRUN echo 'HI THERE' > /hi-there\n\n");
         sampleRepo.git("init");
@@ -242,7 +241,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
     @Issue("JENKINS-42286")
     @Test
     public void dirSepInDockerfileName() throws Exception {
-        DockerTestUtil.assumeDocker();
+        DockerTestUtil.assumeDockerJUnit4();
 
         sampleRepo.write("subdir/Dockerfile", "FROM ubuntu:noble\n\nRUN echo 'HI THERE' > /hi-there\n\n");
         sampleRepo.git("init");
@@ -259,7 +258,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
 
     @Test
     public void fromDockerfileNoArgs() throws Exception {
-        DockerTestUtil.assumeDocker();
+        DockerTestUtil.assumeDockerJUnit4();
 
         sampleRepo.write("Dockerfile", "FROM ubuntu:noble\n\nRUN echo 'HI THERE' > /hi-there\n\n");
         sampleRepo.git("init");
@@ -275,7 +274,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
 
     @Test
     public void fromAlternateDockerfile() throws Exception {
-        DockerTestUtil.assumeDocker();
+        DockerTestUtil.assumeDockerJUnit4();
         sampleRepo.write("Dockerfile.alternate", "FROM ubuntu:noble\n\nRUN echo 'HI THERE' > /hi-there\n\n");
         sampleRepo.git("init");
         sampleRepo.git("add", "Dockerfile.alternate");
@@ -304,7 +303,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
     @Issue("JENKINS-47106")
     @Test
     public void dockerPullLocalImage() throws Exception {
-        DockerTestUtil.assumeDocker();
+        DockerTestUtil.assumeDockerJUnit4();
 
         sampleRepo.write("Dockerfile", "FROM ubuntu:noble\n\nRUN echo 'HI THERE' > /hi-there\n\n");
         sampleRepo.git("init");
@@ -321,7 +320,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
     }
 
     private void agentDocker(final String jenkinsfile, String... additionalLogContains) throws Exception {
-        DockerTestUtil.assumeDocker();
+        DockerTestUtil.assumeDockerJUnit4();
 
         List<String> logContains = new ArrayList<>();
         logContains.add("[Pipeline] { (foo)");
@@ -329,7 +328,7 @@ public class DockerAgentTest extends AbstractModelDefTest {
         logContains.addAll(Arrays.asList(additionalLogContains));
 
         expect(jenkinsfile)
-                .logContains(logContains.toArray(new String[logContains.size()]))
+                .logContains(logContains.toArray(new String[0]))
                 .go();
     }
 
