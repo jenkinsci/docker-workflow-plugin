@@ -71,6 +71,8 @@ import org.kohsuke.accmod.restrictions.NoExternalUse;
 public class DockerClient {
 
     private static final Logger LOGGER = Logger.getLogger(DockerClient.class.getName());
+    private static final Pattern CONTAINER_ID_LINE_PATTERN = Pattern.compile("^([0-9a-f]{12,64})$");
+    private static final Pattern CONTAINER_ID_TOKEN_PATTERN = Pattern.compile("\\b([0-9a-f]{12,64})\\b");
 
     /**
      * Maximum amount of time (in seconds) to wait for {@code docker} client operations which are supposed to be more or less instantaneous.
@@ -143,16 +145,17 @@ public class DockerClient {
 
         LaunchResult result = launch(launchEnv, false, null, argb);
         if (result.getStatus() == 0) {
-            return result.getOut();
+            return normalizeContainerIdOutput(result.getOut());
         } else {
             throw new IOException(String.format("Failed to run image '%s'. Error: %s", image, result.getErr()));
         }
     }
 
     public List<String> listProcess(@NonNull EnvVars launchEnv, @NonNull String containerId) throws IOException, InterruptedException {
-        LaunchResult result = launch(launchEnv, false, "top", containerId, "-eo", "pid,comm");
+        String normalizedContainerId = normalizeContainerIdOutput(containerId);
+        LaunchResult result = launch(launchEnv, false, "top", normalizedContainerId, "-eo", "pid,comm");
         if (result.getStatus() != 0) {
-            throw new IOException(String.format("Failed to run top '%s'. Error: %s", containerId, result.getErr()));
+            throw new IOException(String.format("Failed to run top '%s'. Error: %s", normalizedContainerId, result.getErr()));
         }
         List<String> processes = new ArrayList<>();
         try (Reader r = new StringReader(result.getOut());
@@ -169,6 +172,31 @@ public class DockerClient {
             }
         }
         return processes;
+    }
+
+    static @NonNull String normalizeContainerIdOutput(@CheckForNull String output) throws IOException {
+        if (output == null) {
+            throw new IOException("Container ID is missing from docker output");
+        }
+        try (Reader stringReader = new StringReader(output);
+             BufferedReader reader = new BufferedReader(stringReader)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String trimmed = line.trim();
+                if (trimmed.isEmpty()) {
+                    continue;
+                }
+                Matcher exactLineMatcher = CONTAINER_ID_LINE_PATTERN.matcher(trimmed);
+                if (exactLineMatcher.matches()) {
+                    return exactLineMatcher.group(1);
+                }
+                Matcher tokenMatcher = CONTAINER_ID_TOKEN_PATTERN.matcher(trimmed);
+                if (tokenMatcher.find()) {
+                    return tokenMatcher.group(1);
+                }
+            }
+        }
+        throw new IOException(String.format("Unable to parse container ID from docker output: %s", output));
     }
 
     /**
