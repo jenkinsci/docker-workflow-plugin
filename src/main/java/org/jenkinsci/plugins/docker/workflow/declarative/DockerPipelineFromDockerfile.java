@@ -27,7 +27,7 @@ package org.jenkinsci.plugins.docker.workflow.declarative;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
+
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.pipeline.modeldefinition.agent.DeclarativeAgentDescriptor;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -71,7 +71,7 @@ public class DockerPipelineFromDockerfile extends AbstractDockerAgent<DockerPipe
 
     @NonNull
     public String getActualDir() {
-        if (!StringUtils.isEmpty(dir)) {
+        if (dir != null && !dir.isEmpty()) {
             return dir;
         } else {
             return ".";
@@ -81,7 +81,7 @@ public class DockerPipelineFromDockerfile extends AbstractDockerAgent<DockerPipe
     @NonNull
     public String getDockerfilePath(boolean isUnix) {
         StringBuilder fullPath = new StringBuilder();
-        if (!StringUtils.isEmpty(dir)) {
+        if (dir != null && !dir.isEmpty()) {
             fullPath.append(dir);
             if (isUnix) {
                 fullPath.append(IOUtils.DIR_SEPARATOR_UNIX);

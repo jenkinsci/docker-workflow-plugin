@@ -36,7 +36,7 @@ import hudson.model.ItemGroup;
 import hudson.model.Items;
 import hudson.model.Job;
 import hudson.model.Run;
-import org.apache.commons.lang3.StringUtils;
+
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -112,7 +112,7 @@ public class FolderConfig extends AbstractFolderProperty<AbstractFolder<?>> {
                         FolderConfig config = (FolderConfig) folder.getProperties().get(FolderConfig.class);
                         if (config != null) {
                             String label = config.getDockerLabel();
-                            if (!StringUtils.isBlank(label)) {
+                            if (label != null && !label.isBlank()) {
                                 return label;
                             }
                         }
@@ -140,8 +140,11 @@ public class FolderConfig extends AbstractFolderProperty<AbstractFolder<?>> {
                         FolderConfig config = (FolderConfig) folder.getProperties().get(FolderConfig.class);
                         if (config != null) {
                             DockerRegistryEndpoint registry = config.getRegistry();
-                            if (registry != null && !StringUtils.isBlank(registry.getUrl())) {
-                                return registry.getUrl();
+                            if (registry != null) {
+                                String url = registry.getUrl();
+                                if (url != null && !url.isBlank()) {
+                                    return url;
+                                }
                             }
                         }
                     }
@@ -168,8 +171,11 @@ public class FolderConfig extends AbstractFolderProperty<AbstractFolder<?>> {
                         FolderConfig config = (FolderConfig) folder.getProperties().get(FolderConfig.class);
                         if (config != null) {
                             DockerRegistryEndpoint registry = config.getRegistry();
-                            if (registry != null && !StringUtils.isBlank(registry.getCredentialsId())) {
-                                return registry.getCredentialsId();
+                            if (registry != null) {
+                                String credentialsId = registry.getCredentialsId();
+                                if (credentialsId != null && !credentialsId.isBlank()) {
+                                    return credentialsId;
+                                }
                             }
                         }
                     }

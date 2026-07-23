@@ -26,7 +26,7 @@ package org.jenkinsci.plugins.docker.workflow.declarative;
 
 import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.model.Run;
-import org.apache.commons.lang3.StringUtils;
+
 import org.jenkinsci.plugins.pipeline.modeldefinition.agent.impl.Label;
 import org.jenkinsci.plugins.pipeline.modeldefinition.withscript.WithScriptScript;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
@@ -71,13 +71,13 @@ public class DeclarativeDockerUtils {
 
     @Whitelisted
     public static String getLabel(@Nullable String override) {
-        if (!StringUtils.isBlank(override)) {
+        if (override != null && !override.isBlank()) {
             return override;
         } else {
             Run<?,?> r = currentRun();
             for (DockerPropertiesProvider provider : DockerPropertiesProvider.all()) {
                 String label = provider.getLabel(r);
-                if (!StringUtils.isBlank(label)) {
+                if (label != null && !label.isBlank()) {
                     return label;
                 }
             }
@@ -102,13 +102,13 @@ public class DeclarativeDockerUtils {
 
     @Whitelisted
     public static String getRegistryUrl(@Nullable String override) {
-        if (!StringUtils.isBlank(override)) {
+        if (override != null && !override.isBlank()) {
             return override;
         } else {
             Run<?,?> r = currentRun();
             for (DockerPropertiesProvider provider : DockerPropertiesProvider.all()) {
                 String url = provider.getRegistryUrl(r);
-                if (!StringUtils.isBlank(url)) {
+                if (url != null && !url.isBlank()) {
                     return url;
                 }
             }
@@ -123,13 +123,13 @@ public class DeclarativeDockerUtils {
 
     @Whitelisted
     public static String getRegistryCredentialsId(@Nullable String override) {
-        if (!StringUtils.isBlank(override)) {
+        if (override != null && !override.isBlank()) {
             return override;
         } else {
             Run<?,?> r = currentRun();
             for (DockerPropertiesProvider provider : DockerPropertiesProvider.all()) {
                 String id = provider.getRegistryCredentialsId(r);
-                if (!StringUtils.isBlank(id)) {
+                if (id != null && !id.isBlank()) {
                     return id;
                 }
             }
