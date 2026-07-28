@@ -173,7 +173,7 @@ public class WithContainerStepTest {
                       withDockerContainer('ubuntu:kinetic-20220602') {
                         sh '''
                           trap 'echo got SIGTERM' TERM
-                          trap 'echo exiting; exit 99' EXIT
+                          trap 'echo running cleanup; exit 99' EXIT
                           echo sleeping now with JENKINS_SERVER_COOKIE=$JENKINS_SERVER_COOKIE
                           sleep 999
                         '''
@@ -183,7 +183,8 @@ public class WithContainerStepTest {
                 story.j.waitForMessage("sleeping now", b);
                 b.doStop();
                 story.j.assertBuildStatus(Result.ABORTED, story.j.waitForCompletion(b));
-                story.j.assertLogContains("script returned exit code 99", b);
+                story.j.assertLogContains("got SIGTERM", b);
+                story.j.assertLogContains("running cleanup", b);
             }
         });
     }
