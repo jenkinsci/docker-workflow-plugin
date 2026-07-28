@@ -57,7 +57,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.commons.lang.StringUtils;
+
 import org.jenkinsci.plugins.docker.commons.fingerprint.ContainerRecord;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 import org.kohsuke.accmod.Restricted;
@@ -119,7 +119,7 @@ public class DockerClient {
         argb.add("run", "-t", "-d");
 
         // Username might be empty because we are running on Windows
-        if (StringUtils.isNotEmpty(user)) {
+        if (!user.isEmpty()) {
             argb.add("-u", user);
         }
         if (args != null) {

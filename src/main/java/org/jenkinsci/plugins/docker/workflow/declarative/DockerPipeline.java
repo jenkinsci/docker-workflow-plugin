@@ -28,7 +28,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.Util;
 import hudson.util.FormValidation;
-import org.apache.commons.lang.StringUtils;
+
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.pipeline.modeldefinition.agent.DeclarativeAgentDescriptor;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -67,7 +67,7 @@ public class DockerPipeline extends AbstractDockerAgent<DockerPipeline> {
         }
 
         public FormValidation doCheckImage(@QueryParameter String image) {
-            if (StringUtils.isEmpty(Util.fixEmptyAndTrim(image))) {
+            if (Util.fixEmptyAndTrim(image) == null) {
                 return FormValidation.error("Image is required.");
             } else {
                 return FormValidation.ok();

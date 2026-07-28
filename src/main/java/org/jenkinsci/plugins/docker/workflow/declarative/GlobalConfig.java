@@ -40,7 +40,7 @@ import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
+
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -116,20 +116,26 @@ public class GlobalConfig extends GlobalConfiguration {
 
         @Override
         public String getRegistryUrl(@Nullable Run run) {
-            if (config.getRegistry() != null && !StringUtils.isBlank(config.getRegistry().getUrl())) {
-                return config.getRegistry().getUrl();
-            } else {
-                return null;
+            var registry = config.getRegistry();
+            if (registry != null) {
+                String url = registry.getUrl();
+                if (url != null && !url.isBlank()) {
+                    return url;
+                }
             }
+            return null;
         }
 
         @Override
         public String getRegistryCredentialsId(@Nullable Run run) {
-            if (config.getRegistry() != null && !StringUtils.isBlank(config.getRegistry().getCredentialsId())) {
-                return config.getRegistry().getCredentialsId();
-            } else {
-                return null;
+            var registry = config.getRegistry();
+            if (registry != null) {
+                String credentialsId = registry.getCredentialsId();
+                if (credentialsId != null && !credentialsId.isBlank()) {
+                    return credentialsId;
+                }
             }
+            return null;
         }
     }
 }
