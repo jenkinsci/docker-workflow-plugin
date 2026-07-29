@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>6.2189.v695a_c41f5249</version>
+        <version>6.2211.v27f680c93c53</version>
         <relativePath/>
     </parent>
     <artifactId>docker-workflow</artifactId>
@@ -31,8 +31,9 @@
     <properties>
         <changelist>999999-SNAPSHOT</changelist>
         <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
-        <jenkins.baseline>2.479</jenkins.baseline>
+        <jenkins.baseline>2.541</jenkins.baseline>
         <jenkins.version>${jenkins.baseline}.3</jenkins.version>
+        <banObsoleteDependencyOverrides.skip>false</banObsoleteDependencyOverrides.skip>
         <useBeta>true</useBeta>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
         <ban-commons-lang-2.skip>false</ban-commons-lang-2.skip>
@@ -54,21 +55,9 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-${jenkins.baseline}.x</artifactId>
-                <version>5015.vb_52d36583443</version>
+                <version>6751.v745d6a_31066a_</version>
                 <scope>import</scope>
                 <type>pom</type>
-            </dependency>
-            <!-- TODO until in BOM -->
-            <dependency>
-                <groupId>org.jenkins-ci.plugins</groupId>
-                <artifactId>ssh-slaves</artifactId>
-                <version>3.1071.v0d059c7b_c555</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jenkins-ci.plugins</groupId>
-                <artifactId>ssh-slaves</artifactId>
-                <classifier>tests</classifier>
-                <version>3.1071.v0d059c7b_c555</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

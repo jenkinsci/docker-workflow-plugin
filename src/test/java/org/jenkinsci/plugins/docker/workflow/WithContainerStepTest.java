@@ -168,16 +168,23 @@ public class WithContainerStepTest {
                 DockerTestUtil.assumeDocker();
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
                 p.setDefinition(new CpsFlowDefinition(
-                    "node {\n" +
-                    "  withDockerContainer('ubuntu:kinetic-20220602') {\n" +
-                    "    sh 'trap \\'echo got SIGTERM\\' TERM; trap \\'echo exiting; exit 99\\' EXIT; echo sleeping now with JENKINS_SERVER_COOKIE=$JENKINS_SERVER_COOKIE; sleep 999'\n" +
-                    "  }\n" +
-                    "}", true));
+                    """
+                    node {
+                      withDockerContainer('ubuntu:kinetic-20220602') {
+                        sh '''
+                          trap 'echo got SIGTERM' TERM
+                          trap 'echo running cleanup; exit 99' EXIT
+                          echo sleeping now with JENKINS_SERVER_COOKIE=$JENKINS_SERVER_COOKIE
+                          sleep 999
+                        '''
+                      }
+                    }""", true));
                 WorkflowRun b = p.scheduleBuild2(0).waitForStart();
                 story.j.waitForMessage("sleeping now", b);
                 b.doStop();
                 story.j.assertBuildStatus(Result.ABORTED, story.j.waitForCompletion(b));
-                story.j.assertLogContains("script returned exit code 99", b);
+                story.j.assertLogContains("got SIGTERM", b);
+                story.j.assertLogContains("running cleanup", b);
             }
         });
     }
