@@ -37,7 +37,9 @@ import hudson.tools.ToolProperty;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.Secret;
 import hudson.util.StreamTaskListener;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.logging.Level;
@@ -69,6 +71,7 @@ import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import org.junit.Assume;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -118,6 +121,49 @@ public class WithContainerStepTest {
                     "}", true));
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
                 story.j.assertLogContains("Require method GET POST OPTIONS", b);
+            }
+        });
+    }
+
+    @Issue("JENKINS-73447")
+    @Test public void topFailureIsNotFatal() {
+        story.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                DockerTestUtil.assumeDocker();
+                DockerTestUtil.assumeNotWindows();
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                Launcher.LocalLauncher localLauncher = new Launcher.LocalLauncher(StreamTaskListener.NULL);
+                localLauncher.launch().cmds("/bin/sh", "-c", "command -v docker").stdout(out).start().
+                        joinWithTimeout(DockerClient.CLIENT_TIMEOUT, TimeUnit.SECONDS, localLauncher.getListener());
+                String realDocker = out.toString(StandardCharsets.UTF_8).trim();
+                assumeTrue("found docker on $PATH", !realDocker.isEmpty());
+                // Stand in for a daemon where `docker top` fails because cgroups are unavailable, as with rootless Docker.
+                File toolHome = tmp.newFolder("no-cgroups");
+                File bin = new File(toolHome, "bin");
+                assertTrue(bin.mkdirs());
+                File fakeDocker = new File(bin, "docker");
+                FileUtils.writeStringToFile(fakeDocker,
+                    "#!/bin/sh\n" +
+                    "if [ \"$1\" = top ]; then\n" +
+                    "  echo 'Error response from daemon: runc did not terminate successfully: unable to get all container pids: operation not supported' >&2\n" +
+                    "  exit 1\n" +
+                    "fi\n" +
+                    "exec " + realDocker + " \"$@\"\n", StandardCharsets.UTF_8);
+                assertTrue(fakeDocker.setExecutable(true));
+                story.j.jenkins.getDescriptorByType(DockerTool.DescriptorImpl.class).setInstallations(
+                        new DockerTool("no-cgroups", toolHome.getAbsolutePath(), Collections.<ToolProperty<?>>emptyList()));
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "prj");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node {\n" +
+                    "  withDockerContainer(image: 'httpd:2.4.59', toolName: 'no-cgroups') {\n" +
+                    "    sh 'echo hello from the container'\n" +
+                    "  }\n" +
+                    "}", true));
+                WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
+                story.j.assertLogContains("Could not verify the command running in the container", b);
+                story.j.assertLogContains("hello from the container", b);
+                // The process list was unavailable, so the entrypoint diagnostic must not be reported as a failure.
+                story.j.assertLogNotContains("didn't run the expected command", b);
             }
         });
     }
