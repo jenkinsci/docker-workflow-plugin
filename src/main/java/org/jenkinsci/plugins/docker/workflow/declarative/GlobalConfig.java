@@ -57,6 +57,7 @@ public class GlobalConfig extends GlobalConfiguration {
     private static final Logger LOGGER = Logger.getLogger(GlobalConfig.class.getName());
 
     private String dockerLabel;
+    private String additionalRunArgs;
     private DockerRegistryEndpoint registry;
 
     public GlobalConfig() {
@@ -79,9 +80,18 @@ public class GlobalConfig extends GlobalConfiguration {
         return Util.fixEmpty(dockerLabel);
     }
 
+    public String getAdditionalRunArgs() {
+        return Util.fixNull(additionalRunArgs);
+    }
+
     @DataBoundSetter
     public void setDockerLabel(String dockerLabel) {
         this.dockerLabel = dockerLabel;
+    }
+
+    @DataBoundSetter
+    public void setAdditionalRunArgs(String additionalRunArgs) {
+        this.additionalRunArgs = additionalRunArgs;
     }
 
     public DockerRegistryEndpoint getRegistry() {
@@ -112,6 +122,11 @@ public class GlobalConfig extends GlobalConfiguration {
         @Override
         public String getLabel(@Nullable Run run) {
             return config.getDockerLabel();
+        }
+
+        @Override
+        public String getAdditionalRunArgs(@Nullable Run run) {
+            return config.getAdditionalRunArgs();
         }
 
         @Override

@@ -31,6 +31,7 @@ import com.cloudbees.hudson.plugins.folder.AbstractFolderPropertyDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
+import hudson.Util;
 import hudson.model.Item;
 import hudson.model.ItemGroup;
 import hudson.model.Items;
@@ -47,6 +48,7 @@ import org.kohsuke.stapler.DataBoundSetter;
  */
 public class FolderConfig extends AbstractFolderProperty<AbstractFolder<?>> {
     private String dockerLabel;
+    private String additionalRunArgs;
     private DockerRegistryEndpoint registry;
 
     @DataBoundConstructor
@@ -60,8 +62,9 @@ public class FolderConfig extends AbstractFolderProperty<AbstractFolder<?>> {
      * @param url The registry URL
      * @param creds the registry credentials ID
      */
-    public FolderConfig(String dockerLabel, String url, String creds) {
+    public FolderConfig(String dockerLabel, String additionalRunArgs, String url, String creds) {
         this.dockerLabel = dockerLabel;
+        this.additionalRunArgs = additionalRunArgs;
         this.registry = new DockerRegistryEndpoint(url, creds);
     }
 
@@ -69,9 +72,18 @@ public class FolderConfig extends AbstractFolderProperty<AbstractFolder<?>> {
         return dockerLabel;
     }
 
+    public String getAdditionalRunArgs() {
+        return Util.fixNull(additionalRunArgs);
+    }
+
     @DataBoundSetter
     public void setDockerLabel(String dockerLabel) {
         this.dockerLabel = dockerLabel;
+    }
+
+    @DataBoundSetter
+    public void setAdditionalRunArgs(String additionalArgs) {
+        this.additionalRunArgs = additionalArgs;
     }
 
     public DockerRegistryEndpoint getRegistry() {
@@ -126,6 +138,34 @@ public class FolderConfig extends AbstractFolderProperty<AbstractFolder<?>> {
                 }
             }
             return null;
+        }
+
+        @Override
+        public String getAdditionalRunArgs(@Nullable Run run) {
+            if (run != null) {
+                Job job = run.getParent();
+                ItemGroup parent = job.getParent();
+                while (parent != null) {
+
+                    if (parent instanceof AbstractFolder) {
+                        AbstractFolder folder = (AbstractFolder) parent;
+                        FolderConfig config = (FolderConfig) folder.getProperties().get(FolderConfig.class);
+                        if (config != null) {
+                            String additionalRunArgs = config.getAdditionalRunArgs();
+                            if (!StringUtils.isBlank(additionalRunArgs)) {
+                                return additionalRunArgs;
+                            }
+                        }
+                    }
+
+                    if (parent instanceof Item) {
+                        parent = ((Item) parent).getParent();
+                    } else {
+                        parent = null;
+                    }
+                }
+            }
+            return "";
         }
 
         @Override
