@@ -12,6 +12,9 @@ import hudson.util.ArgumentListBuilder;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -39,8 +42,38 @@ public class WindowsDockerClient extends DockerClient {
         if (workdir != null) {
             argb.add("-w", workdir);
         }
+        Set<String> drives = new HashSet<>();
         for (Map.Entry<String, String> volume : volumes.entrySet()) {
-            argb.add("-v", volume.getKey() + ":" + volume.getValue());
+            String driveName = null;
+
+            try {
+                Path hostPath = Paths.get(volume.getKey());
+                Path rootPath = hostPath.getRoot();
+                // If we have a valid root we can check if we need to do our special root handling
+                if (rootPath != null) {
+                    driveName = rootPath.toString();
+                    if (driveName.endsWith("\\")) {
+                        driveName = driveName.substring(0, driveName.length() - 1);
+                    }
+                }
+            } catch (InvalidPathException e) {
+                // We got a value that is not a valid path. Keeping driveName at null allows us to gracefully handle this
+                // and skip the special drive path handling for those cases
+            }
+            if (driveName == null || driveName.equals("C:")) {
+                // C: path can be mapped directly
+                argb.add("-v", volume.getKey() + ":" + volume.getValue());
+            }
+            else
+            {
+                // Non C: drive paths in the container can not be mapped due to Windows limitations. It is only possible
+                // to map an entire drive so we collect the used drives and map the entire drive
+                drives.add(driveName);
+            }
+        }
+        for (String drive : drives) {
+            // Windows requires that the host part is a directory but the container path must be an entire drive
+            argb.add("-v", String.format("%s\\:%s", drive, drive));
         }
         for (String containerId : volumesFromContainers) {
             argb.add("--volumes-from", containerId);
