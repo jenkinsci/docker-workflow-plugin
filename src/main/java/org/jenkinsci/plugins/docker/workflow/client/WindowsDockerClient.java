@@ -35,7 +35,6 @@ public class WindowsDockerClient extends DockerClient {
         if (args != null) {
             argb.addTokenized(args);
         }
-
         if (workdir != null) {
             argb.add("-w", workdir);
         }
