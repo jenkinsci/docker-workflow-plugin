@@ -206,6 +206,19 @@ public class DockerClient {
     }
 
     /**
+     * Remove a image.
+     *
+     * @param launchEnv Docker client launch environment.
+     * @param imageName The image name.
+     */
+    public void rmi(@Nonnull EnvVars launchEnv, @Nonnull String imageId) throws IOException, InterruptedException {
+        LaunchResult result = launch(launchEnv, false, "rmi", "-f", imageId);
+        if (result.getStatus() != 0) {
+            throw new IOException(String.format("Failed to rmi image '%s'.", imageId));
+        }
+    }
+
+    /**
      * Inspect a docker image/container.
      * @param launchEnv Docker client launch environment.
      * @param objectId The image/container ID.
