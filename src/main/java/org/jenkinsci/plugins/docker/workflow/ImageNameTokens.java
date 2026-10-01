@@ -26,12 +26,13 @@ package org.jenkinsci.plugins.docker.workflow;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 import java.io.Serializable;
+import java.util.regex.Pattern;
 
 /**
  * Image name.
  * 
  * <p>
- * Not including the registry host name.
+ * Including the registry host name.
  * 
  * TODO: Should this be in docker-commons?
  * 
@@ -40,22 +41,34 @@ import java.io.Serializable;
 public class ImageNameTokens implements Serializable {
     
     private static final long serialVersionUID = 1L;
-    
+
+    public final String registry;
     public final String userAndRepo;
     public final String tag;
 
     public ImageNameTokens(@NonNull String name) {
         int tagIdx = name.lastIndexOf(':');
+        String fullName;
         if (tagIdx != -1) {
-            this.userAndRepo = name.substring(0, tagIdx);
+            fullName = name.substring(0, tagIdx);
             if (tagIdx < name.length() - 1) {
                 this.tag = name.substring(tagIdx + 1);
             } else {
                 this.tag = "latest";
             }
         } else {
-            this.userAndRepo = name;
+            fullName = name;
             this.tag = "latest";
+        }
+        int hostIdx = fullName.indexOf('/');
+        String hostname = (hostIdx != -1) ? fullName.substring(0, hostIdx) : null;
+        if (hostname != null && (hostname.equals("localhost") ||
+                Pattern.compile("[.:]").matcher(hostname).find())) {
+            registry = hostname;
+            userAndRepo = fullName.substring(hostIdx + 1);
+        } else {
+            registry = "";
+            userAndRepo = fullName;
         }
     }
 }
