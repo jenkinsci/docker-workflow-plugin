@@ -192,8 +192,24 @@ public class WithContainerStep extends AbstractStepImpl {
                 }
             } else {
                 listener.getLogger().println(node.getDisplayName() + " does not seem to be running inside a container");
-                volumes.put(ws, ws);
-                volumes.put(tmp, tmp);
+
+                if (launcher.isUnix()) {
+                    volumes.put(ws, ws);
+                    volumes.put(tmp, tmp);
+                } else {
+                    char wsDrive = Character.toUpperCase(ws.charAt(0));
+
+                    if (wsDrive != 'C') {
+                        listener.getLogger().println("Detected workspace on drive '" + wsDrive + "'. Mounting entire drive.");
+
+                        // JENKINS-74912 Docker for windows does not support mounting non-root non-C volumes
+                        // Target mount must not end with '/'. Note tmp will be on the same drive.
+                        volumes.put(wsDrive + ":/", wsDrive + ":");
+                    } else {
+                        volumes.put(ws, ws);
+                        volumes.put(tmp, tmp);
+                    }
+                }
             }
 
             String command = launcher.isUnix() ? "cat" : "cmd.exe";
