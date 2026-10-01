@@ -86,6 +86,13 @@ public class DockerClient {
     @Restricted(NoExternalUse.class)
     public static boolean SKIP_RM_ON_STOP = Boolean.getBoolean(DockerClient.class.getName() + ".SKIP_RM_ON_STOP");
 
+    /**
+     * Number of seconds to wait for a container to stop gracefully before sending SIGKILL.
+     */
+    @SuppressFBWarnings(value="MS_SHOULD_BE_FINAL", justification="mutable for scripts")
+    @Restricted(NoExternalUse.class)
+    public static int STOP_TIMEOUT = Integer.getInteger(DockerClient.class.getName() + ".STOP_TIMEOUT", 1);
+
     // e.g. 2015-04-09T13:40:21.981801679Z
     public static final String DOCKER_DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
     
@@ -182,7 +189,7 @@ public class DockerClient {
      * @param containerId The container ID.
      */
     public void stop(@NonNull EnvVars launchEnv, @NonNull String containerId) throws IOException, InterruptedException {
-        LaunchResult result = launch(launchEnv, false, "stop", "--time=1", containerId);
+        LaunchResult result = launch(launchEnv, false, "stop", "-t", String.valueOf(STOP_TIMEOUT), containerId);
         if (result.getStatus() != 0) {
             throw new IOException(String.format("Failed to kill container '%s'.", containerId));
         }
