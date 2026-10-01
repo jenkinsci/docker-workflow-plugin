@@ -220,6 +220,15 @@ class Docker implements Serializable {
                 docker.shell(isUnix, [script: 'docker port "' + docker.asEnv(isUnix, 'JD_ID') + '" "' + docker.asEnv(isUnix, 'JD_PORT') + '"', returnStdout: true]).trim()
             }
         }
+        
+        public String inspect(String format = "") {
+        	if (format != "") {
+        		docker.script.sh(script: "docker inspect ${id} --format ${format}", returnStdout: true).trim()        	                  
+        	} else {
+        		docker.script.sh(script: "docker inspect ${id}", returnStdout: true).trim()        	      
+        	}
+        }
+
     }
 
 }
