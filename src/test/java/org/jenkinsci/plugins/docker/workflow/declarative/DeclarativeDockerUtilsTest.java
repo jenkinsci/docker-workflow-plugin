@@ -82,8 +82,10 @@ public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
         Assume.assumeFalse("Fails using the version of Git installed on the Windows ACI agents on ci.jenkins.io", Functions.isWindows());
         GlobalConfig.get().setDockerLabel("config_docker");
         GlobalConfig.get().setRegistry(new DockerRegistryEndpoint("https://docker.registry", globalCred.getId()));
+        GlobalConfig.get().setAdditionalRunArgs("-v /tmp:/tmptest:ro,z");
         expect("org/jenkinsci/plugins/docker/workflow/declarative/declarativeDockerConfig")
                 .logContains("Docker Label is: config_docker",
+                        "Docker Run Additional Arguments are: -v /tmp:/tmptest:ro,z",
                         "Registry URL is: https://docker.registry",
                         "Registry Creds ID is: " + globalCred.getId()).go();
     }
@@ -100,11 +102,12 @@ public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
     public void directParent() throws Exception {
         Folder folder = j.createProject(Folder.class);
         getFolderStore(folder).addCredentials(Domain.global(), folderCred);
-        folder.addProperty(new FolderConfig("folder_docker", "https://folder.registry", folderCred.getId()));
+        folder.addProperty(new FolderConfig("folder_docker", "", "https://folder.registry", folderCred.getId()));
         expect("org/jenkinsci/plugins/docker/workflow/declarative/declarativeDockerConfig")
                 .inFolder(folder)
                 .runFromRepo(false)
                 .logContains("Docker Label is: folder_docker",
+                        "Docker Run Additional Arguments are: ",
                         "Registry URL is: https://folder.registry",
                         "Registry Creds ID is: " + folderCred.getId()).go();
     }
@@ -114,11 +117,12 @@ public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
         Folder folder = j.createProject(Folder.class);
         getFolderStore(folder).addCredentials(Domain.global(), folderCred);
         getFolderStore(folder).addCredentials(Domain.global(), grandParentCred);
-        folder.addProperty(new FolderConfig("folder_docker", "https://folder.registry", folderCred.getId()));
+        folder.addProperty(new FolderConfig("folder_docker", "", "https://folder.registry", folderCred.getId()));
         expect("org/jenkinsci/plugins/docker/workflow/declarative/declarativeDockerConfigWithOverride")
                 .inFolder(folder)
                 .runFromRepo(false)
                 .logContains("Docker Label is: other-label",
+                        "Docker Run Additional Arguments are: ",
                         "Registry URL is: https://other.registry",
                         "Registry Creds ID is: " + grandParentCred.getId()).go();
     }
@@ -126,17 +130,20 @@ public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
     @Test
     public void directParentNotSystem() throws Exception {
         GlobalConfig.get().setDockerLabel("config_docker");
+        GlobalConfig.get().setAdditionalRunArgs("-v /tmp:/tmp1:ro,z");
         GlobalConfig.get().setRegistry(new DockerRegistryEndpoint("https://docker.registry", globalCred.getId()));
         Folder folder = j.createProject(Folder.class);
         getFolderStore(folder).addCredentials(Domain.global(), folderCred);
-        folder.addProperty(new FolderConfig("folder_docker", "https://folder.registry", folderCred.getId()));
+        folder.addProperty(new FolderConfig("folder_docker", "-v /tmp:/tmp2:ro,z", "https://folder.registry", folderCred.getId()));
         expect("org/jenkinsci/plugins/docker/workflow/declarative/declarativeDockerConfig")
                 .inFolder(folder)
                 .runFromRepo(false)
                 .logContains("Docker Label is: folder_docker",
+                        "Docker Run Additional Arguments are: -v /tmp:/tmp2:ro,z",
                         "Registry URL is: https://folder.registry",
                         "Registry Creds ID is: " + folderCred.getId())
                 .logNotContains("Docker Label is: config_docker",
+                        "Docker Run Additional Arguments are: -v /tmp:/tmp1:ro,z",
                         "Registry URL is: https://docker.registry",
                         "Registry Creds ID is: " + globalCred.getId()).go();
     }
@@ -145,12 +152,13 @@ public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
     public void grandParent() throws Exception {
         Folder grandParent = j.createProject(Folder.class);
         getFolderStore(grandParent).addCredentials(Domain.global(), grandParentCred);
-        grandParent.addProperty(new FolderConfig("parent_docker", "https://parent.registry", grandParentCred.getId()));
+        grandParent.addProperty(new FolderConfig("parent_docker", "", "https://parent.registry", grandParentCred.getId()));
         Folder parent = grandParent.createProject(Folder.class, "testParent"); //Can be static since grandParent should be unique
         expect("org/jenkinsci/plugins/docker/workflow/declarative/declarativeDockerConfig")
                 .inFolder(parent)
                 .runFromRepo(false)
                 .logContains("Docker Label is: parent_docker",
+                        "Docker Run Additional Arguments are: ",
                         "Registry URL is: https://parent.registry",
                         "Registry Creds ID is: " + grandParentCred.getId()).go();
     }
@@ -159,18 +167,20 @@ public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
     public void grandParentOverride() throws Exception {
         Folder grandParent = j.createProject(Folder.class);
         getFolderStore(grandParent).addCredentials(Domain.global(), grandParentCred);
-        grandParent.addProperty(new FolderConfig("parent_docker", "https://parent.registry", grandParentCred.getId()));
+        grandParent.addProperty(new FolderConfig("parent_docker", "-v /tmp:/tmp1:ro,z", "https://parent.registry", grandParentCred.getId()));
         Folder parent = grandParent.createProject(Folder.class, "testParent"); //Can be static since grandParent should be unique
         getFolderStore(parent).addCredentials(Domain.global(), folderCred);
-        parent.addProperty(new FolderConfig("folder_docker", "https://folder.registry", folderCred.getId()));
+        parent.addProperty(new FolderConfig("folder_docker", "-v /tmp:/tmp2:ro,z", "https://folder.registry", folderCred.getId()));
 
         expect("org/jenkinsci/plugins/docker/workflow/declarative/declarativeDockerConfig")
                 .inFolder(parent)
                 .runFromRepo(false)
                 .logContains("Docker Label is: folder_docker",
+                        "Docker Run Additional Arguments are: -v /tmp:/tmp2:ro,z",
                         "Registry URL is: https://folder.registry",
                         "Registry Creds ID is: " + folderCred.getId())
                 .logNotContains("Docker Label is: parent_docker",
+                        "Docker Run Additional Arguments are: -v /tmp:/tmp1:ro,z",
                         "Registry URL is: https://parent.registry",
                         "Registry Creds ID is: " + grandParentCred.getId()).go();
     }
