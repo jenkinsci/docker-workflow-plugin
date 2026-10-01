@@ -74,6 +74,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class WithContainerStep extends AbstractStepImpl {
     
     private static final Logger LOGGER = Logger.getLogger(WithContainerStep.class.getName());
@@ -198,6 +201,13 @@ public class WithContainerStep extends AbstractStepImpl {
 
             String command = launcher.isUnix() ? "cat" : "cmd.exe";
             container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ command);
+            Pattern cid_rx = Pattern.compile("[0-9,a-f]{64}");
+            Matcher cid_mr = cid_rx.matcher(container);
+            
+            if (cid_mr.find()) {
+                container = cid_mr.group();
+            }
+
             final List<String> ps = dockerClient.listProcess(env, container);
             if (!ps.contains(command)) {
                 listener.error(
