@@ -24,6 +24,7 @@
 package org.jenkinsci.plugins.docker.workflow;
 
 import com.google.common.base.Optional;
+import hudson.util.ArgumentListBuilder;
 import com.google.inject.Inject;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -196,8 +197,9 @@ public class WithContainerStep extends AbstractStepImpl {
                 volumes.put(tmp, tmp);
             }
 
+            final String userId = dockerClient.whoAmI();
             String command = launcher.isUnix() ? "cat" : "cmd.exe";
-            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ command);
+            container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, userId, /* expected to hang until killed */ command);
             final List<String> ps = dockerClient.listProcess(env, container);
             if (!ps.contains(command)) {
                 listener.error(
@@ -209,7 +211,7 @@ public class WithContainerStep extends AbstractStepImpl {
 
             ImageAction.add(step.image, run);
             getContext().newBodyInvoker().
-                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws, toolName, dockerVersion))).
+                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws, userId, toolName, dockerVersion))).
                     withCallback(new Callback(container, toolName)).
                     start();
             return false;
@@ -244,17 +246,19 @@ public class WithContainerStep extends AbstractStepImpl {
         private final String container;
         private final String[] envHost;
         private final String ws;
+        private final String user;
         private final @CheckForNull String toolName;
         private final boolean hasEnv;
         private final boolean hasWorkdir;
 
-        Decorator(String container, EnvVars envHost, String ws, @CheckForNull String toolName, VersionNumber dockerVersion) {
+        Decorator(String container, EnvVars envHost, String ws, String user, @CheckForNull String toolName, VersionNumber dockerVersion) {
             this.container = container;
             this.envHost = Util.mapToEnv(envHost);
             this.ws = ws;
             this.toolName = toolName;
             this.hasEnv = dockerVersion != null && dockerVersion.compareTo(new VersionNumber("1.13.0")) >= 0;
             this.hasWorkdir = dockerVersion != null && dockerVersion.compareTo(new VersionNumber("17.12")) >= 0;
+            this.user = user;
         }
 
         @NonNull
@@ -267,8 +271,15 @@ public class WithContainerStep extends AbstractStepImpl {
                     } catch (InterruptedException x) {
                         throw new IOException(x);
                     }
+                    
                     List<String> prefix = new ArrayList<>(Arrays.asList(executable, "exec"));
                     List<Boolean> masksPrefixList = new ArrayList<>(Arrays.asList(false, false));
+                    if (user != null) {
+                        prefix.add("-u");
+                        masksPrefixList.add(false);
+                        prefix.add(user);
+                        masksPrefixList.add(false);
+                    }
                     if (ws != null) {
                         FilePath cwd = starter.pwd();
                         if (cwd != null) {
