@@ -292,6 +292,7 @@ public class WithContainerStep extends AbstractStepImpl {
                     } // otherwise we are loading an old serialized Decorator
                     Set<String> envReduced = new TreeSet<String>(Arrays.asList(starter.envs()));
                     envReduced.removeAll(Arrays.asList(envHost));
+                    envReduced.remove("");
 
                     // Remove PATH or invalid variable during `exec` as well.
                     Iterator<String> it = envReduced.iterator();
