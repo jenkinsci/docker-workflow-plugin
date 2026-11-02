@@ -24,7 +24,7 @@
 package org.jenkinsci.plugins.docker.workflow;
 
 import com.google.common.base.Optional;
-import com.google.inject.Inject;
+import com.google.common.collect.ImmutableSet;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.AbortException;
@@ -40,6 +40,8 @@ import hudson.model.Node;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.os.WindowsUtil;
+import hudson.security.ACL;
+import hudson.security.ACLContext;
 import hudson.slaves.WorkspaceList;
 import hudson.util.VersionNumber;
 import java.util.ArrayList;
@@ -52,18 +54,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.docker.commons.tools.DockerTool;
 import org.jenkinsci.plugins.docker.workflow.client.DockerClient;
 import org.jenkinsci.plugins.docker.workflow.client.WindowsDockerClient;
-import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
-import org.jenkinsci.plugins.workflow.steps.AbstractStepExecutionImpl;
-import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.BodyExecutionCallback;
 import org.jenkinsci.plugins.workflow.steps.BodyInvoker;
+import org.jenkinsci.plugins.workflow.steps.GeneralNonBlockingStepExecution;
+import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
-import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
+import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
+import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.springframework.security.core.Authentication;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -74,7 +78,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class WithContainerStep extends AbstractStepImpl {
+public class WithContainerStep extends Step {
     
     private static final Logger LOGGER = Logger.getLogger(WithContainerStep.class.getName());
     private final @NonNull String image;
@@ -107,29 +111,40 @@ public class WithContainerStep extends AbstractStepImpl {
         this.toolName = Util.fixEmpty(toolName);
     }
 
+    @Override public StepExecution start(StepContext context) throws Exception {
+        return new Execution(this, context);
+    }
+
     private static void destroy(String container, @NonNull Launcher launcher, Node node, EnvVars launcherEnv, String toolName) throws Exception {
         new DockerClient(launcher, node, toolName).stop(launcherEnv, container);
     }
 
-    // TODO switch to GeneralNonBlockingStepExecution
-    public static class Execution extends AbstractStepExecutionImpl {
+    public static class Execution extends GeneralNonBlockingStepExecution {
         private static final long serialVersionUID = 1;
-        @Inject(optional=true) private transient WithContainerStep step;
-        @StepContextParameter private transient Launcher launcher;
-        @StepContextParameter private transient TaskListener listener;
-        @StepContextParameter private transient FilePath workspace;
-        @StepContextParameter private transient EnvVars env;
-        @StepContextParameter private transient Computer computer;
-        @StepContextParameter private transient Node node;
-        @SuppressWarnings("rawtypes") // TODO not compiling on cloudbees.ci
-        @StepContextParameter private transient Run run;
+        private transient final WithContainerStep step;
         private String container;
         private String toolName;
 
-        public Execution() {
+        Execution(WithContainerStep step, StepContext context) {
+            super(context);
+            this.step = step;
         }
 
         @Override public boolean start() throws Exception {
+            run(this::doStart);
+            return false;
+        }
+
+        private void doStart() throws Exception {
+            StepContext context = getContext();
+            Launcher launcher = context.get(Launcher.class);
+            TaskListener listener = context.get(TaskListener.class);
+            FilePath workspace = context.get(FilePath.class);
+            EnvVars env = context.get(EnvVars.class);
+            Computer computer = context.get(Computer.class);
+            Node node = context.get(Node.class);
+            Run<?, ?> run = context.get(Run.class);
+
             EnvVars envReduced = new EnvVars(env);
             EnvVars envHost = computer.getEnvironment();
             envReduced.entrySet().removeAll(envHost.entrySet());
@@ -140,7 +155,7 @@ public class WithContainerStep extends AbstractStepImpl {
 
             LOGGER.log(Level.FINE, "reduced environment: {0}", envReduced);
             workspace.mkdirs(); // otherwise it may be owned by root when created for -v
-            String ws = getPath(workspace);
+            String ws = getPath(launcher, workspace);
             toolName = step.toolName;
             DockerClient dockerClient = launcher.isUnix()
                 ? new DockerClient(launcher, node, toolName)
@@ -162,7 +177,7 @@ public class WithContainerStep extends AbstractStepImpl {
 
             FilePath tempDir = tempDir(workspace);
             tempDir.mkdirs();
-            String tmp = getPath(tempDir);
+            String tmp = getPath(launcher, tempDir);
 
             Map<String, String> volumes = new LinkedHashMap<String, String>();
             Collection<String> volumesFromContainers = new LinkedHashSet<String>();
@@ -208,14 +223,13 @@ public class WithContainerStep extends AbstractStepImpl {
             }
 
             ImageAction.add(step.image, run);
-            getContext().newBodyInvoker().
-                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws, toolName, dockerVersion))).
-                    withCallback(new Callback(container, toolName)).
+            context.newBodyInvoker().
+                    withContext(BodyInvoker.mergeLauncherDecorators(context.get(LauncherDecorator.class), new Decorator(container, envHost, ws, toolName, dockerVersion))).
+                    withCallback(new Callback()).
                     start();
-            return false;
         }
 
-        private String getPath(FilePath filePath)
+        private String getPath(Launcher launcher, FilePath filePath)
             throws IOException, InterruptedException {
             if (launcher.isUnix()) {
                 return filePath.getRemote();
@@ -230,9 +244,60 @@ public class WithContainerStep extends AbstractStepImpl {
         }
 
         @Override public void stop(@NonNull Throwable cause) throws Exception {
-            if (container != null) {
-                LOGGER.log(Level.FINE, "stopping container " + container, cause);
-                destroy(container, launcher, getContext().get(Node.class), env, toolName);
+            super.stop(cause);
+            destroyContainerAsync(cause);
+        }
+
+        private void destroyContainer() throws Exception {
+            if (container == null) {
+                return;
+            }
+            LOGGER.log(Level.FINE, "stopping container {0}", container);
+            StepContext context = getContext();
+            destroy(container, context.get(Launcher.class), context.get(Node.class), context.get(EnvVars.class), toolName);
+        }
+
+        private void destroyContainerAsync(Throwable cause) {
+            if (container == null) {
+                return;
+            }
+            Authentication auth = Jenkins.getAuthentication2();
+            Computer.threadPoolForRemoting.submit(() -> {
+                try (ACLContext ignored = ACL.as2(auth)) {
+                    destroyContainer();
+                } catch (Exception x) {
+                    if (cause != null) {
+                        cause.addSuppressed(x);
+                    }
+                    LOGGER.log(Level.WARNING, "failed to stop container " + container, x);
+                }
+            });
+        }
+
+        private class Callback extends BodyExecutionCallback {
+            private static final long serialVersionUID = 1;
+
+            @Override public void onSuccess(StepContext context, Object result) {
+                run(() -> {
+                    try {
+                        destroyContainer();
+                    } catch (Exception x) {
+                        context.onFailure(x);
+                        return;
+                    }
+                    context.onSuccess(result);
+                });
+            }
+
+            @Override public void onFailure(StepContext context, Throwable t) {
+                run(() -> {
+                    try {
+                        destroyContainer();
+                    } catch (Exception x) {
+                        t.addSuppressed(x);
+                    }
+                    context.onFailure(t);
+                });
             }
         }
 
@@ -414,31 +479,7 @@ public class WithContainerStep extends AbstractStepImpl {
 
     }
 
-    private static class Callback extends BodyExecutionCallback.TailCall {
-
-        private static final long serialVersionUID = 1;
-        private final String container;
-        private final String toolName;
-
-        Callback(String container, String toolName) {
-            this.container = container;
-            this.toolName = toolName;
-        }
-
-        @Override protected void finished(StepContext context) throws Exception {
-            Launcher launcher = context.get(Launcher.class);
-            if (launcher != null) {
-                destroy(container, launcher, context.get(Node.class), context.get(EnvVars.class), toolName);
-            }
-        }
-
-    }
-
-    @Extension public static class DescriptorImpl extends AbstractStepDescriptorImpl {
-
-        public DescriptorImpl() {
-            super(Execution.class);
-        }
+    @Extension public static class DescriptorImpl extends StepDescriptor {
 
         @Override public String getFunctionName() {
             return "withDockerContainer";
@@ -455,6 +496,10 @@ public class WithContainerStep extends AbstractStepImpl {
 
         @Override public boolean isAdvanced() {
             return true;
+        }
+
+        @Override public Set<? extends Class<?>> getRequiredContext() {
+            return ImmutableSet.of(Launcher.class, TaskListener.class, FilePath.class, EnvVars.class, Computer.class, Node.class, Run.class);
         }
 
     }

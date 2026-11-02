@@ -46,6 +46,7 @@ import hudson.util.VersionNumber;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Set;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
@@ -69,6 +70,7 @@ import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.test.steps.SemaphoreStep;
 import org.junit.Assume;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -119,6 +121,59 @@ public class WithContainerStepTest {
                 WorkflowRun b = story.j.assertBuildStatusSuccess(p.scheduleBuild2(0));
                 story.j.assertLogContains("Require method GET POST OPTIONS", b);
             }
+        });
+    }
+
+    /**
+     * {@code docker run} must not occupy the CPS VM. Otherwise a parallel sibling
+     * cannot proceed until the container is up.
+     */
+    @Test public void containerStartDoesNotBlockCpsVm() {
+        story.then(r -> {
+            DockerTestUtil.assumeDocker();
+            // A docker wrapper which stalls on `docker run` and delegates everything else,
+            // so the step really does launch a container once released.
+            File home = tmp.newFolder();
+            File started = new File(home, "started");
+            File release = new File(home, "release");
+            File docker = new File(home, "bin/docker");
+            assertTrue(docker.getParentFile().mkdirs());
+            FileUtils.writeStringToFile(docker,
+                "#!/bin/sh\n" +
+                "if [ \"$1\" = run ]; then\n" +
+                "  : > '" + started + "'\n" +
+                "  while [ ! -f '" + release + "' ]; do sleep 0.2; done\n" +
+                "fi\n" +
+                "exec docker \"$@\"\n", StandardCharsets.UTF_8);
+            assertTrue(docker.setExecutable(true));
+            r.jenkins.getDescriptorByType(DockerTool.DescriptorImpl.class).setInstallations(
+                new DockerTool("blocking", home.getAbsolutePath(), Collections.<ToolProperty<?>>emptyList()));
+
+            WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "prj");
+            p.setDefinition(new CpsFlowDefinition(
+                "node {\n" +
+                "  parallel(\n" +
+                "    container: {\n" +
+                "      withDockerContainer(image: 'httpd:2.4.59', toolName: 'blocking') {\n" +
+                "        echo 'inside'\n" +
+                "      }\n" +
+                "    },\n" +
+                "    other: {\n" +
+                "      echo 'other branch ran'\n" +
+                "    }\n" +
+                "  )\n" +
+                "}", true));
+            WorkflowRun b = p.scheduleBuild2(0).waitForStart();
+            long deadline = System.nanoTime() + TimeUnit.MINUTES.toNanos(1);
+            while (!started.exists() && System.nanoTime() < deadline) {
+                Thread.sleep(100);
+            }
+            assertTrue("docker run must start on a background thread", started.exists());
+            // The sibling branch must make progress while `docker run` is still stalled.
+            r.waitForMessage("other branch ran", b);
+            assertTrue(release.createNewFile());
+            r.assertBuildStatusSuccess(r.waitForCompletion(b));
+            r.assertLogContains("inside", b);
         });
     }
 
