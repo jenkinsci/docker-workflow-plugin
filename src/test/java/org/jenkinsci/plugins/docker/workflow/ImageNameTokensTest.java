@@ -64,4 +64,31 @@ public class ImageNameTokensTest {
         Assert.assertEquals("examplecorp/spring-petclinic", name.userAndRepo);
         Assert.assertEquals("1", name.tag);
     }
+
+    @Test
+    public void test_with_registry_and_tag() {
+        ImageNameTokens name = new ImageNameTokens("docker.io/busybox:staging");
+
+        Assert.assertEquals("docker.io", name.registry);
+        Assert.assertEquals("busybox", name.userAndRepo);
+        Assert.assertEquals("staging", name.tag);
+
+        name = new ImageNameTokens("privateregistry:123/spring-petclinic:1");
+
+        Assert.assertEquals("privateregistry:123", name.registry);
+        Assert.assertEquals("spring-petclinic", name.userAndRepo);
+        Assert.assertEquals("1", name.tag);
+
+        name = new ImageNameTokens("another.registry-corp.net/example.corp/spring-petclinic:1");
+
+        Assert.assertEquals("another.registry-corp.net", name.registry);
+        Assert.assertEquals("example.corp/spring-petclinic", name.userAndRepo);
+        Assert.assertEquals("1", name.tag);
+
+        name = new ImageNameTokens("localhost/spring-petclinic:1");
+
+        Assert.assertEquals("localhost", name.registry);
+        Assert.assertEquals("spring-petclinic", name.userAndRepo);
+        Assert.assertEquals("1", name.tag);
+    }
 }
