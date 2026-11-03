@@ -86,6 +86,27 @@ public class DeclarativeDockerUtils {
     }
 
     @Whitelisted
+    public static String getAdditionalRunArgs() {
+        return getAdditionalRunArgs(null);
+    }
+
+    @Whitelisted
+    public static String getAdditionalRunArgs(@Nullable String override) {
+        if (!StringUtils.isBlank(override)) {
+            return override;
+        } else {
+            Run<?,?> r = currentRun();
+            for (DockerPropertiesProvider provider : DockerPropertiesProvider.all()) {
+                String additionalRunArgs = provider.getAdditionalRunArgs(r);
+                if (!StringUtils.isBlank(additionalRunArgs)) {
+                    return additionalRunArgs;
+                }
+            }
+        }
+        return "";
+    }
+
+    @Whitelisted
     public static WithScriptScript<?> getLabelScript(AbstractDockerAgent<?> describable, CpsScript script) throws Exception {
         String targetLabel = getLabel(describable.getLabel());
         Label l = (Label) Label.DescriptorImpl.instanceForName("label", Collections.singletonMap("label", targetLabel));

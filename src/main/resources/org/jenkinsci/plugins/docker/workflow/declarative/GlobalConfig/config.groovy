@@ -32,5 +32,8 @@ f.section(title:_("Declarative Pipeline (Docker)")) {
     f.entry(field: "dockerLabel", title:_("Docker Label")) {
         f.textbox()
     }
+    f.entry(field: "additionalRunArgs", title:_("Docker Additional Run Arguments")) {
+        f.textbox()
+    }
     f.property(field: "registry")
 }
