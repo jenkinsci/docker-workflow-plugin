@@ -198,8 +198,17 @@ public class WithContainerStep extends AbstractStepImpl {
 
             String command = launcher.isUnix() ? "cat" : "cmd.exe";
             container = dockerClient.run(env, step.image, step.args, ws, volumes, volumesFromContainers, envReduced, dockerClient.whoAmI(), /* expected to hang until killed */ command);
-            final List<String> ps = dockerClient.listProcess(env, container);
-            if (!ps.contains(command)) {
+            // The process list is only a diagnostic: `docker top` needs cgroups, and fails on configurations such as
+            // rootless Docker or rootless dind where the container itself is perfectly healthy (JENKINS-73447).
+            // Skip the check rather than failing the build when the process list cannot be obtained.
+            List<String> ps = null;
+            try {
+                ps = dockerClient.listProcess(env, container);
+            } catch (IOException x) {
+                LOGGER.log(Level.FINE, "failed to list processes in container " + container, x);
+                listener.getLogger().println("Could not verify the command running in the container: " + x.getMessage());
+            }
+            if (ps != null && !ps.contains(command)) {
                 listener.error(
                     "The container started but didn't run the expected command. " +
                         "Please double check your ENTRYPOINT does execute the command passed as docker run argument, " +
