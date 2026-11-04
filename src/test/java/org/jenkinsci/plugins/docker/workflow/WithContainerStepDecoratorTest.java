@@ -10,9 +10,9 @@ import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Proc;
+import hudson.remoting.VirtualChannel;
 import hudson.util.StreamTaskListener;
 import hudson.util.VersionNumber;
-import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -92,7 +92,8 @@ public class WithContainerStepDecoratorTest {
             }
         };
         WithContainerStep.Decorator decorator = new WithContainerStep.Decorator("c1", new EnvVars(), WS, null, version, podman);
-        decorator.decorate(recorder, r.jenkins).launch().cmds("pwd").pwd(new FilePath(new File(dir))).envs("FOO=bar").join();
+        // A Unix agent's path as is: new File(dir) would turn it into \... on Windows.
+        decorator.decorate(recorder, r.jenkins).launch().cmds("pwd").pwd(new FilePath((VirtualChannel) null, dir)).envs("FOO=bar").join();
         return launched;
     }
 
