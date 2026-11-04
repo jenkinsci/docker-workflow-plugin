@@ -154,7 +154,12 @@ public class DeclarativeDockerUtils {
         }
 
         public static DockerRegistry build(String dockerHub, String creds){
-            return new DockerRegistry( getRegistryUrl(dockerHub), getRegistryCredentialsId(creds));
+            String url = getRegistryUrl(dockerHub);
+            if ((creds == null || creds.isBlank()) && dockerHub != null && !dockerHub.isBlank() && !dockerHub.equals(getRegistryUrl(null))) {
+                // An explicit registry other than the configured one must not be sent the configured registry's credentials.
+                return new DockerRegistry(url, null);
+            }
+            return new DockerRegistry(url, getRegistryCredentialsId(creds));
         }
     }
 }
