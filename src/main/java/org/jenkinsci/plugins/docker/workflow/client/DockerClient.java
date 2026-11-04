@@ -269,6 +269,15 @@ public class DockerClient {
         }
     }
     
+    /**
+     * Whether the docker executable is podman, e.g. through podman-docker.
+     * Its version numbers are podman's own, so they say nothing about Docker features.
+     */
+    public boolean isPodman() throws IOException, InterruptedException {
+        LaunchResult result = launch(new EnvVars(), true, "-v");
+        return result.getStatus() == 0 && result.getOut().trim().startsWith("podman ");
+    }
+
     private static final Pattern pattern = Pattern.compile("^(\\D+)(\\d+)\\.(\\d+)\\.(\\d+)(.*)");
     /**
      * Parse a Docker version string (e.g. "Docker version 1.5.0, build a8a31ef").
