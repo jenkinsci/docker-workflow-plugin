@@ -94,6 +94,9 @@ public class DockerTestUtil {
             Assume.assumeNoException("have Docker installed", x);
         }
         DockerClient dockerClient = new DockerClient(localLauncher, null, null);
+        if (dockerClient.isPodman()) {
+            return; // podman numbers its own versions, not comparable to Docker's
+        }
         Assume.assumeFalse("Docker version not < " + minimumVersion.toString(), dockerClient.version().isOlderThan(minimumVersion));
     }
 

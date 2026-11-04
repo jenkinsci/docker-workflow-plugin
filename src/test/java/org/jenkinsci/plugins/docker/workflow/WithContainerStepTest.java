@@ -28,6 +28,7 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SecretBytes;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.google.common.collect.ImmutableSet;
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.FileParameterValue;
 import hudson.model.Result;
@@ -46,6 +47,7 @@ import hudson.util.VersionNumber;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
@@ -321,6 +323,61 @@ public class WithContainerStepTest {
                 story.j.assertLogContains("SOMECONTENT", b);
             }
         });
+    }
+
+    // A step that launches in its own working directory, as SCMs do, rather than through sh,
+    // whose durable task creates that directory on the host first.
+    @Test public void cdIntoDirectoryOnlyInContainer() {
+        story.then(r -> {
+            DockerTestUtil.assumeDocker(); // older versions take the sh -c "cd …" path instead of --workdir
+            String dir = "/tmp/only-in-container-" + UUID.randomUUID();
+            assumeTrue(!new File(dir).exists());
+            WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "prj");
+            p.setDefinition(new CpsFlowDefinition(
+                "node {\n" +
+                "  withDockerContainer('ubuntu') {\n" +
+                "    sh 'mkdir -p " + dir + "'\n" +
+                "    dir('" + dir + "') {\n" +
+                "      pwdWithLauncher()\n" +
+                "    }\n" +
+                "  }\n" +
+                "}", true));
+            WorkflowRun b = r.assertBuildStatusSuccess(p.scheduleBuild2(0));
+            r.assertLogContains("launched in " + dir, b);
+            if (new DockerClient(new Launcher.LocalLauncher(StreamTaskListener.NULL), null, null).isPodman()) {
+                r.assertLogContains("exec --workdir " + dir, b); // podman's own --workdir (1.0.0+), not Docker's 17.12 gate
+                r.assertLogNotContains("sh -c 'cd ", b);
+            }
+        });
+    }
+    public static final class PwdWithLauncher extends Step {
+        @DataBoundConstructor public PwdWithLauncher() {}
+        @Override public StepExecution start(StepContext context) throws Exception {
+            return new Execution(context);
+        }
+        private static final class Execution extends SynchronousNonBlockingStepExecution<Void> {
+            Execution(StepContext context) {
+                super(context);
+            }
+            @Override protected Void run() throws Exception {
+                FilePath pwd = getContext().get(FilePath.class);
+                Launcher.ProcStarter ps = getContext().get(Launcher.class).launch()
+                    .pwd(pwd).cmds("sh", "-c", "echo launched in $(pwd)")
+                    .stdout(getContext().get(TaskListener.class));
+                if (ps.join() != 0) {
+                    throw new IOException("failed to run pwd in " + pwd);
+                }
+                return null;
+            }
+        }
+        @TestExtension("cdIntoDirectoryOnlyInContainer") public static final class DescriptorImpl extends StepDescriptor {
+            @Override public String getFunctionName() {
+                return "pwdWithLauncher";
+            }
+            @Override public Set<? extends Class<?>> getRequiredContext() {
+                return ImmutableSet.of(FilePath.class, Launcher.class, TaskListener.class);
+            }
+        }
     }
 
     @Ignore("TODO reproducible")

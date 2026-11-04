@@ -209,7 +209,7 @@ public class WithContainerStep extends AbstractStepImpl {
 
             ImageAction.add(step.image, run);
             getContext().newBodyInvoker().
-                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws, toolName, dockerVersion))).
+                    withContext(BodyInvoker.mergeLauncherDecorators(getContext().get(LauncherDecorator.class), new Decorator(container, envHost, ws, toolName, dockerVersion, dockerClient.isPodman()))).
                     withCallback(new Callback(container, toolName)).
                     start();
             return false;
@@ -248,13 +248,18 @@ public class WithContainerStep extends AbstractStepImpl {
         private final boolean hasEnv;
         private final boolean hasWorkdir;
 
-        Decorator(String container, EnvVars envHost, String ws, @CheckForNull String toolName, VersionNumber dockerVersion) {
+        Decorator(String container, EnvVars envHost, String ws, @CheckForNull String toolName, VersionNumber dockerVersion, boolean podman) {
             this.container = container;
             this.envHost = Util.mapToEnv(envHost);
             this.ws = ws;
             this.toolName = toolName;
-            this.hasEnv = dockerVersion != null && dockerVersion.compareTo(new VersionNumber("1.13.0")) >= 0;
-            this.hasWorkdir = dockerVersion != null && dockerVersion.compareTo(new VersionNumber("17.12")) >= 0;
+            if (podman) { // dockerVersion is podman's own: exec has --env since its first release, --workdir since 1.0.0
+                this.hasEnv = true;
+                this.hasWorkdir = dockerVersion != null && dockerVersion.compareTo(new VersionNumber("1.0.0")) >= 0;
+            } else {
+                this.hasEnv = dockerVersion != null && dockerVersion.compareTo(new VersionNumber("1.13.0")) >= 0;
+                this.hasWorkdir = dockerVersion != null && dockerVersion.compareTo(new VersionNumber("17.12")) >= 0;
+            }
         }
 
         @NonNull
@@ -287,6 +292,8 @@ public class WithContainerStep extends AbstractStepImpl {
                                     String safePath = path.replace("'", "'\"'\"'");
                                     starter.cmds().addAll(0, Arrays.asList("sh", "-c", "cd '" + safePath + "'; exec \"$@\"", "--"));
                                 }
+                                // Both reach path in the container; docker exec itself runs on the host, where it may not exist.
+                                starter.pwd(new FilePath(cwd.getChannel(), ws));
                             }
                         }
                     } // otherwise we are loading an old serialized Decorator
