@@ -44,6 +44,8 @@ import org.junit.Test;
 
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -86,6 +88,25 @@ public class DeclarativeDockerUtilsTest extends AbstractModelDefTest {
                 .logContains("Docker Label is: config_docker",
                         "Registry URL is: https://docker.registry",
                         "Registry Creds ID is: " + globalCred.getId()).go();
+    }
+
+    @Test
+    public void explicitRegistryDoesNotInheritConfiguredCredentials() throws Exception {
+        GlobalConfig.get().setRegistry(new DockerRegistryEndpoint("https://docker.registry", globalCred.getId()));
+
+        DeclarativeDockerUtils.DockerRegistry other = DeclarativeDockerUtils.DockerRegistry.build("https://other.registry", null);
+        assertEquals("https://other.registry", other.registry);
+        assertNull(other.credential);
+
+        DeclarativeDockerUtils.DockerRegistry same = DeclarativeDockerUtils.DockerRegistry.build("https://docker.registry", null);
+        assertEquals(globalCred.getId(), same.credential);
+
+        DeclarativeDockerUtils.DockerRegistry none = DeclarativeDockerUtils.DockerRegistry.build(null, null);
+        assertEquals("https://docker.registry", none.registry);
+        assertEquals(globalCred.getId(), none.credential);
+
+        DeclarativeDockerUtils.DockerRegistry explicit = DeclarativeDockerUtils.DockerRegistry.build("https://other.registry", "folderCreds");
+        assertEquals("folderCreds", explicit.credential);
     }
 
     @Test
