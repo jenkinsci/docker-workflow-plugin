@@ -26,6 +26,7 @@ package org.jenkinsci.plugins.docker.workflow.client;
 import org.jenkinsci.plugins.docker.workflow.DockerTestUtil;
 import hudson.EnvVars;
 import hudson.Launcher;
+import hudson.Proc;
 import hudson.model.TaskListener;
 import hudson.util.StreamTaskListener;
 import hudson.util.VersionNumber;
@@ -35,6 +36,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 
 /**
@@ -95,5 +99,32 @@ public class DockerClientTest {
     @Test
     public void test_invalid_version() {
         Assert.assertNull(DockerClient.parseVersionNumber("xxx"));
+    }
+
+    @Test
+    public void test_is_podman() throws Exception {
+        Assert.assertTrue(clientPrinting("podman version 4.9.3\n").isPodman());
+        Assert.assertTrue(clientPrinting("podman version 5.8.9\n").isPodman());
+        Assert.assertFalse(clientPrinting("Docker version 27.5.1, build 9f9e405\n").isPodman());
+        // podman's own number, which Docker's feature gates must not be applied to
+        Assert.assertEquals(new VersionNumber("4.9.3"), DockerClient.parseVersionNumber("podman version 4.9.3"));
+    }
+
+    // A DockerClient whose docker command prints versionOutput and exits 0.
+    private static DockerClient clientPrinting(String versionOutput) {
+        Launcher launcher = new Launcher.DummyLauncher(StreamTaskListener.fromStderr()) {
+            @Override public Proc launch(ProcStarter starter) throws IOException {
+                starter.stdout().write(versionOutput.getBytes(StandardCharsets.UTF_8));
+                return new Proc() {
+                    @Override public boolean isAlive() { return false; }
+                    @Override public void kill() {}
+                    @Override public int join() { return 0; }
+                    @Override public InputStream getStdout() { return null; }
+                    @Override public InputStream getStderr() { return null; }
+                    @Override public OutputStream getStdin() { return null; }
+                };
+            }
+        };
+        return new DockerClient(launcher, null, null);
     }
 }
